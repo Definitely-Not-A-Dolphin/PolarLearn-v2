@@ -1,6 +1,6 @@
 <div style="text-align: center;">
 
-![PolarLearn Banner](/img/Group%2048.png)
+![PolarLearn Banner](/public/banner.png)
 
 ---
 
