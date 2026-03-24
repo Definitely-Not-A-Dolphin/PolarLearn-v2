@@ -1,13 +1,15 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
-
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-}
+import { Button } from "@polarnl/polarui-react"
+import { useNavigate } from "react-router";
 
 export default function Home() {
-  return <Welcome />;
+  const navigate = useNavigate()
+  return (
+    <>
+      <h1>Marketing here.. (t.b.d by andrei)</h1>
+      <br />
+      <Button textColor="black" onClick={() => navigate("/auth/sign-in")}>
+        Go to login
+      </Button>
+    </>
+  );
 }
