@@ -11,6 +11,7 @@ import { quotes } from "~/lib/quotes"
 import entree from "~/img/entree.svg"
 import pnl_logo from "~/img/pnl.svg"
 import i18n from "~/i18n";
+import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
 
 export default function SignInPage() {
   const rootData = useRouteLoaderData("root") as any;
@@ -81,12 +82,12 @@ export default function SignInPage() {
               });
 
               if (res?.error) {
-                toast.error(res.error.message || "Failed to sign in");
+                toast.error(getBetterAuthErrorMessage(res.error));
               } else {
                 navigate("/home");
               }
             } catch (err: any) {
-              toast.error(err.message || "An error occurred");
+              toast.error(getBetterAuthErrorMessage(err));
             } finally {
               setIsLoading(false);
             }
