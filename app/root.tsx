@@ -7,9 +7,11 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
+import { Slide, ToastContainer } from "react-toastify"
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -25,7 +27,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader({ params }: Route.LoaderArgs) {
-  const theme = "light"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
+  const theme = "dark"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
   return {
     theme,
     lang: process.env.APP_LANG
@@ -45,6 +47,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="font-sans">
+        <ToastContainer
+          position="top-center"
+          autoClose={5000}
+          closeOnClick
+          icon={(icon) => {
+            switch (icon.type) {
+              case "success":
+                return <Check />
+              case "error":
+                return <Ban />
+              case "info":
+                return <Info />
+              case "warning":
+                return <TriangleAlert />
+            }
+          }}
+          transition={Slide}
+          theme="colored"
+        />
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -56,7 +77,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return <Outlet />;
 }
-
+// Sean can you make the error page look like the cloudflare one? thx
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@polarnl/polarui-react/styles.css";
+@import "react-toastify/dist/ReactToastify.css";
 
 @theme {
   --font-sans:
