@@ -1,12 +1,14 @@
 import { Button, Input } from "@polarnl/polarui-react";
 import { Mail, Lock } from "lucide-react"
-import { Link } from "react-router";
+import { Link, useRouteLoaderData } from "react-router";
 import { Image } from "@unpic/react"
 import { quotes } from "~/lib/quotes"
 import entree from "~/img/entree.svg"
 import pnl_logo from "~/img/pnl.svg"
 
 export default function SignInPage() {
+  const rootData = useRouteLoaderData("root");
+  const theme = rootData?.theme || "dark";
   const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
 
   return (
@@ -23,12 +25,12 @@ export default function SignInPage() {
         <h1 className="text-5xl font-bold">Log in</h1>
         <p className="text-xl mt-3">Met uw <strong>PolarLearn</strong> account.</p>
         <form>
-          <label htmlFor="email" className="block mt-5 mb-2 text-sm font-medium text-white">E-mailadres</label>
-          <Input scheme="dark" icon={<Mail />} placeholder="Je e-mailadres" className="w-full " />
-          <label htmlFor="password" className="block mt-5 mb-2 text-sm font-medium text-white">Wachtwoord</label>
-          <Input scheme="dark" icon={<Lock />} type="password" placeholder="Je wachtwoord" className="w-full mb-2" />
+          <label htmlFor="email" className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>E-mailadres</label>
+          <Input scheme={theme === "dark" ? "dark" : "light"} icon={<Mail />} placeholder="Je e-mailadres" className="w-full " />
+          <label htmlFor="password" className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>Wachtwoord</label>
+          <Input scheme={theme === "dark" ? "dark" : "light"} icon={<Lock />} type="password" placeholder="Je wachtwoord" className="w-full mb-2" />
           <Link to="/auth/forgot-pass" className="text-md text-sky-400 font-bold">Wachtwoord vergeten?</Link>
-          <Button textColor="white" className="w-full mt-5" type="submit">Inloggen</Button>
+          <Button textColor={theme === "dark" ? "black" : "white"} color="sky" className="w-full mt-5" type="submit">Inloggen</Button>
           <div className="w-full items-center justify-center mt-4 flex gap-1">
             <p className="font-bold">Geen account?</p>
             <Link to="/auth/sign-up" className="text-md text-sky-400 font-bold">Maak er eentje!</Link>
@@ -39,8 +41,8 @@ export default function SignInPage() {
             <hr className="grow border-neutral-600" />
           </div>
           <div className="flex flex-col gap-4">
-            <Button textColor="white" className="w-full" type="button" color="dark" icon={<Image src={entree} width={23} height={23} />}>Inloggen met Entree Federatie</Button>
-            <Button textColor="white" className="w-full" type="button" color="dark" icon={<Image src={pnl_logo} width={23} height={23} />}>Medewerkers inlog</Button>
+            <Button textColor={theme === "dark" ? "black" : "white"} className="w-full" type="button" color={theme === "dark" ? "light" : "dark"} icon={<Image src={entree} width={23} height={23} />}>Inloggen met Entree Federatie</Button>
+            <Button textColor={theme === "dark" ? "black" : "white"} className="w-full" type="button" color={theme === "dark" ? "light" : "dark"} icon={<Image src={pnl_logo} width={23} height={23} />}>Medewerkers inlog</Button>
           </div>
         </form>
       </div>

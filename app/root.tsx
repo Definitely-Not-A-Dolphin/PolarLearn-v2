@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -23,9 +24,20 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export async function loader({ params }: Route.LoaderArgs) {
+  const theme = "light"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
+  return {
+    theme,
+    lang: process.env.APP_LANG
+  }
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const loaderData = useRouteLoaderData<typeof loader>("root");
+  const theme = loaderData?.theme || "dark";
+
   return (
-    <html lang="en">
+    <html lang="en" className={theme}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

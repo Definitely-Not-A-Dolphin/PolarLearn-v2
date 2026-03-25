@@ -9,5 +9,10 @@
 
 html,
 body {
-  @apply bg-neutral-900 text-white
+  @apply bg-white text-neutral-900;
+}
+
+html.dark,
+html.dark body {
+  @apply bg-neutral-900 text-white;
 }

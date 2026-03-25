@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.5.6",
     "@polarnl/polarui-react": "^0.0.8",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
