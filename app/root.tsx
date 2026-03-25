@@ -12,6 +12,7 @@ import { Slide, ToastContainer } from "react-toastify"
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
+import { initI18n } from "./i18n";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -30,16 +31,19 @@ export async function loader({ params }: Route.LoaderArgs) {
   const theme = "dark"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
   return {
     theme,
-    lang: process.env.APP_LANG
+    lang: process.env.APP_LANG || "nl"
   }
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useRouteLoaderData<typeof loader>("root");
   const theme = loaderData?.theme || "dark";
+  const lang = loaderData?.lang || "nl";
+
+  initI18n(lang);
 
   return (
-    <html lang="en" className={theme}>
+    <html lang={lang} className={theme}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
