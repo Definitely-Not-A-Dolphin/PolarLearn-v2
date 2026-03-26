@@ -1,22 +1,38 @@
 import { Button, Input } from "@polarnl/polarui-react";
 import { Mail, Lock, Loader2, LogIn } from "lucide-react"
-import { Link, useRouteLoaderData, useNavigate } from "react-router";
+import { Link, useLoaderData, useRouteLoaderData, useNavigate, redirect } from "react-router";
 import { Image } from "@unpic/react"
 import { useState, useRef } from "react";
 import { toast } from "react-toastify";
 import { authClient } from "~/lib/auth/client";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { quotes } from "~/lib/quotes"
+import { getRandomQuote } from "~/lib/quotes"
 import entree from "~/img/entree.svg"
-import pnl_logo from "~/img/pnl.svg"
 import i18n from "~/i18n";
 import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
+import type { Route } from "./+types/sign-in";
+import { auth } from "~/lib/auth/server";
+
+export async function loader(loaderArgs: Route.LoaderArgs) {
+  const headers = new Headers(loaderArgs.request.headers)
+  const result = await auth.api.getSession({ headers })
+  const user = result?.user
+  if (user) {
+    return redirect('/home')
+  }
+
+  const lang = process.env.APP_LANG || "nl";
+
+  return {
+    quote: getRandomQuote(lang),
+  };
+}
 
 export default function SignInPage() {
+  const { quote } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData("root") as any;
   const theme = rootData?.theme || "dark";
-  const lang = rootData?.lang || "nl";
   const t = i18n.t;
   const navigate = useNavigate();
 
@@ -39,17 +55,14 @@ export default function SignInPage() {
     }
   }, [showPassword]);
 
-  const filteredQuotes = quotes.filter((q) => q.lang === lang);
-  const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
-
   return (
     <div className="flex flex-row h-screen w-screen">
       <div className="w-[67%] bg-linear-to-b from-sky-400 to-sky-100 h-full md:flex hidden flex-col justify-center px-16 lg:px-32">
         <h1 className="text-5xl lg:text-7xl xl:text-8xl font-bold font-sans text-black tracking-tight leading-tight">
-          {randomQuote.text}
+          {quote.text}
         </h1>
         <p className="text-2xl lg:text-4xl text-black font-sans font-semibold mt-8">
-          ~ {randomQuote.author}
+          ~ {quote.author}
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col">
@@ -163,13 +176,6 @@ export default function SignInPage() {
               color={theme === "dark" ? "dark" : "light"}
               icon={<Image src={entree} width={23} height={23} />}>
               {t("auth:signinEntree")}
-            </Button>
-            <Button
-              textColor={theme === "dark" ? "white" : "black"}
-              className="w-full" type="button"
-              color={theme === "dark" ? "dark" : "light"}
-              icon={<Image src={pnl_logo} width={23} height={23} />}>
-              {t("auth:signinStaff")}
             </Button>
           </div>
         </form>

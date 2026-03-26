@@ -12,7 +12,6 @@ export default function Home() {
     <>
       <h1>{t("welcome")}</h1>
       <p>{t("description")}</p>
-      <p className="text-sm text-neutral-500">{lang.toUpperCase()}</p>
       <br />
       <Button textColor="black" onClick={() => navigate("/auth/sign-in")}>
         {t("auth:login")}

@@ -1,19 +1,37 @@
 import { Button, Input } from "@polarnl/polarui-react";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import { Link, useRouteLoaderData } from "react-router";
+import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { useState } from "react";
 import { zxcvbn } from "@zxcvbn-ts/core";
-import { quotes } from "~/lib/quotes";
+import { toast } from "react-toastify";
+import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
+import { authClient } from "~/lib/auth/client";
+import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
+import type { Route } from "./+types/sign-up";
+import { auth } from "~/lib/auth/server";
+
+export async function loader(loaderArgs: Route.LoaderArgs) {
+  const headers = new Headers(loaderArgs.request.headers)
+  const result = await auth.api.getSession({ headers })
+  const user = result?.user
+  if (user) {
+    return redirect('/home')
+  }
+
+  const lang = process.env.APP_LANG || "nl";
+
+  return {
+    quote: getRandomQuote(lang),
+  };
+}
 
 export default function SignUpPage() {
+  const { quote } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData("root") as any;
   const theme = rootData?.theme || "dark";
-  const lang = rootData?.lang || "nl";
   const t = i18n.t;
-
-  const filteredQuotes = quotes.filter((q) => q.lang === lang);
-  const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
+  const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,18 +49,40 @@ export default function SignUpPage() {
     <div className="flex flex-row h-screen w-screen">
       <div className="w-[67%] bg-linear-to-b from-sky-400 to-sky-100 h-full md:flex hidden flex-col justify-center px-16 lg:px-32">
         <h1 className="text-5xl lg:text-7xl xl:text-8xl font-bold font-sans text-black tracking-tight leading-tight">
-          {randomQuote.text}
+          {quote.text}
         </h1>
         <p className="text-2xl lg:text-4xl text-black font-sans font-semibold mt-8">
-          ~ {randomQuote.author}
+          ~ {quote.author}
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
         <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signupTitle")}</h1>
         <p className="text-lg mb-8 text-neutral-300">{t("auth:signupSubtitle")}</p>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const username = formData.get("username") as string;
+            const email = formData.get("email") as string;
+            const password = formData.get("password") as string;
+            try {
+              const res = await authClient.signUp.email({
+                name: username,
+                username,
+                email,
+                password,
+              });
+
+              if (res.error) {
+                toast.error(getBetterAuthErrorMessage(res.error));
+                return;
+              }
+
+              toast.success(t("auth:signUpOk"));
+              navigate("/auth/sign-in");
+            } catch (err) {
+              toast.error(getBetterAuthErrorMessage(err));
+            }
           }}
         >
           <label
@@ -53,6 +93,7 @@ export default function SignUpPage() {
           </label>
           <Input
             id="username"
+            name="username"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<User />}
             placeholder={t("auth:usernamePlaceholder")}
@@ -67,6 +108,7 @@ export default function SignUpPage() {
           </label>
           <Input
             id="email"
+            name="email"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
             placeholder={t("auth:emailPlaceholder")}
@@ -82,6 +124,7 @@ export default function SignUpPage() {
           <div className="relative mb-3">
             <Input
               id="password"
+              name="password"
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type={showPassword ? "text" : "password"}
