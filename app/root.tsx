@@ -7,12 +7,12 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
-import { Slide, ToastContainer } from "react-toastify"
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 import { initI18n } from "./i18n";
+import { Toaster } from "./components/ui/sonner";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -51,25 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="font-sans">
-        <ToastContainer
-          position="top-center"
-          autoClose={5000}
-          closeOnClick
-          icon={(icon) => {
-            switch (icon.type) {
-              case "success":
-                return <Check />
-              case "error":
-                return <Ban />
-              case "info":
-                return <Info />
-              case "warning":
-                return <TriangleAlert />
-            }
-          }}
-          transition={Slide}
-          theme="colored"
-        />
+        <Toaster richColors position="top-center" />
         {children}
         <ScrollRestoration />
         <Scripts />

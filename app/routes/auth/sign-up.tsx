@@ -3,7 +3,7 @@ import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { useState } from "react";
 import { zxcvbn } from "@zxcvbn-ts/core";
-import { toast } from "react-toastify";
+import { toast } from "sonner"
 import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";

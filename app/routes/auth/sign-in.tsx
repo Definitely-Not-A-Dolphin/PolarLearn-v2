@@ -3,7 +3,7 @@ import { Mail, Lock, Loader2, LogIn } from "lucide-react"
 import { Link, useLoaderData, useRouteLoaderData, useNavigate, redirect } from "react-router";
 import { Image } from "@unpic/react"
 import { useState, useRef } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner"
 import { authClient } from "~/lib/auth/client";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
