@@ -65,6 +65,13 @@
       "title": "Interne serverfout",
       "message": "Er is een fout opgetreden aan onze kant. Probeer het later opnieuw."
     },
-    "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw."
+    "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
+    "page": {
+      "unavailableTitle": "Deze service is momenteel onbeschikbaar",
+      "reloadAction": "Herlaad de pagina",
+      "reloadHint": "om het opnieuw te proberen. Als het probleem aanhoudt, neem contact op met support.",
+      "moreInfo": "Meer informatie",
+      "copySupportId": "Kopieer support-id"
+    }
   }
 }

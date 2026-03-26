@@ -7,11 +7,15 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
+import { useState } from "react";
+import { Check, ChevronDown, Copy } from "lucide-react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { initI18n } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
+import i18n from "./i18n";
+import polarlearnLogo from "~/img/polarlearn.svg";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -28,7 +32,7 @@ export const links: Route.LinksFunction = () => [
 
 export async function loader({ params }: Route.LoaderArgs) {
   const theme = "dark"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
-                        // Fetch theme from user configuration w/ prisma
+  // Fetch theme from user configuration w/ prisma
   return {
     theme,
     lang: process.env.APP_LANG || "nl"
@@ -69,30 +73,83 @@ export default function App() {
 
 // Sean can you make the error page look like the cloudflare one? thx
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
+  const t = i18n.t;
+  let message = t("errors.page.unavailableTitle");
+  let details = t("errors.500.message");
   let stack: string | undefined;
+  let technicalDetails = t("errors.unknown");
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    message =
+      error.status === 404
+        ? t("errors.404.title")
+        : t("errors.page.unavailableTitle");
     details =
       error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
+        ? t("errors.404.message")
+        : t("errors.500.message");
+    technicalDetails = error.statusText || `${error.status}`;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
+    details = error.message || details;
     stack = error.stack;
+    technicalDetails = error.message;
+  } else if (error instanceof Error) {
+    technicalDetails = error.message || technicalDetails;
+  }
+
+  const [isMoreInfoOpen, setIsMoreInfoOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  async function handleCopySupportId() {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      return;
+    }
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
+    <main className="min-h-screen flex items-center justify-center px-5 py-12">
+      <section className="w-full max-w-155 text-left">
+        <img src={polarlearnLogo} alt="PolarLearn" className="h-15 w-15 mb-5" />
+
+        <h1 className="text-[23px] leading-tight font-bold text-foreground mb-2">{message}</h1>
+        <p className="text-[19px] leading-relaxed text-muted-foreground">{details}</p>
+
+        <p className="text-[16px] text-muted-foreground mt-4">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.location.reload();
+              }
+            }}
+            className="underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            {t("errors.page.reloadAction")}
+          </button>{" "}
+          {t("errors.page.reloadHint")}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setIsMoreInfoOpen((value) => !value)}
+          className="mt-3 inline-flex items-center gap-1 text-[13px] text-muted-foreground/70 hover:text-foreground transition-colors"
+        >
+          {t("errors.page.moreInfo")}
+          <ChevronDown
+            className={`size-3.5 transition-transform ${isMoreInfoOpen ? "rotate-180" : "rotate-0"}`}
+          />
+        </button>
+
+        {isMoreInfoOpen ? (
+          <div className="mt-2 rounded-lg border border-border bg-card/60 px-4 py-3 text-xs text-muted-foreground">
+            <p>{technicalDetails}</p>
+            {stack ? (
+              <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-background/80 p-2 text-[11px] text-muted-foreground">
+                <code>{stack}</code>
+              </pre>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
     </main>
   );
 }
