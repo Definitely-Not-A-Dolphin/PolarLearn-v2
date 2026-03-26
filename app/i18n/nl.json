@@ -1,6 +1,16 @@
 {
   "welcome": "Welkom bij PolarLearn!",
   "description": "PolarLearn is een gratis en open-source leerplatform.",
+  "home": {
+    "sidebar": {
+      "expandSidebar": "Zijbalk uitklappen",
+      "collapseSidebar": "Zijbalk inklappen",
+      "home": "Home",
+      "forum": "Forum",
+      "logout": "Uitloggen",
+      "settings": "Instellingen"
+    }
+  },
   "auth": {
     "login": "Inloggen",
     "logout": "Uitloggen",
@@ -36,8 +46,7 @@
       "invcreds": "Ongeldige inloggegevens. Probeer het opnieuw.",
       "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
       "UserShort": "De gebruikersnaam/e-mail is in een ongeldig formaat. Probeer een andere gebruikersnaam of e-mail.",
-      "noConnectedAccount": "Er is geen bestaande PolarLearn account verbonden met deze provider.",
-      "AccountDisabled": "Dit account is permenant gedeactiveerd door schending van onze voorwaarden van gebruik, neem contact op met support@polarlearn.nl",
+      "AccountDisabled": "Dit account is permanent gedeactiveerd door schending van onze voorwaarden van gebruik.",
       "ProviderDisabled": "Deze inlogmethode is inactief. Probeer het met een andere inlogmethode.",
       "OauthError": "Er is een probleem opgetreden bij het gebruik van OAuth2.1.",
       "Ratelimit": "Woah! Rustig aan! Je bent te snel bezig. Probeer het over een paar seconden opnieuw.",

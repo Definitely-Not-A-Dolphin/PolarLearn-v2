@@ -16,7 +16,7 @@ export default function HomePage() {
   const navigate = useNavigate()
   return (
     <div className="flex items-center justify-center h-screen flex-col">
-      <h1 className="text-4xl font-bold">Welcome to PolarLearn!</h1>
+      <h1 className="text-4xl font-bold">PolarLearn!!!</h1>
       <Button
         onClick={() => {
           authClient.signOut()

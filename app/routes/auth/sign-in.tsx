@@ -26,11 +26,12 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 
   return {
     quote: getRandomQuote(lang),
+    enableEntreeFederatedSignIn: !!process.env.ENTREE_THING // We do not have a contract w/ kennisnet yet, later replace with actual env var
   };
 }
 
 export default function SignInPage() {
-  const { quote } = useLoaderData<typeof loader>();
+  const { quote, enableEntreeFederatedSignIn } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData("root") as any;
   const theme = rootData?.theme || "dark";
   const t = i18n.t;
@@ -164,19 +165,23 @@ export default function SignInPage() {
               {t("auth:signinCreateOne")}
             </Link>
           </div>
-          <div className="flex items-center my-4">
-            <hr className="grow border-neutral-600" />
-            <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">{t("auth:signinSeparator")}</span>
-            <hr className="grow border-neutral-600" />
-          </div>
           <div className="flex flex-col gap-4">
-            <Button
-              textColor={theme === "dark" ? "white" : "black"}
-              className="w-full" type="button"
-              color={theme === "dark" ? "dark" : "light"}
-              icon={<Image src={entree} width={23} height={23} />}>
-              {t("auth:signinEntree")}
-            </Button>
+            {rootData.lang === "nl" && enableEntreeFederatedSignIn ? (
+              <>
+                <div className="flex items-center my-4">
+                  <hr className="grow border-neutral-600" />
+                  <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">{t("auth:signinSeparator")}</span>
+                  <hr className="grow border-neutral-600" />
+                </div>
+                <Button
+                  textColor={theme === "dark" ? "white" : "black"}
+                  className="w-full" type="button"
+                  color={theme === "dark" ? "dark" : "light"}
+                  icon={<Image src={entree} width={23} height={23} />}>
+                  {t("auth:signinEntree")}
+                </Button>
+              </>
+            ) : null}
           </div>
         </form>
       </div>

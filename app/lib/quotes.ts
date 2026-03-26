@@ -7,12 +7,12 @@ export type Quote = {
 export const quotes: Quote[] = [
   {
     text: "Open Source zal voor altijd heersen.",
-    author: "Andrei K.",
+    author: "Andrei K. (Stichter PolarNL)",
     lang: "nl"
   },
   {
     text: "Open Source will reign forever.",
-    author: "Andrei K.",
+    author: "Andrei K. (Founder of PolarNL)",
     lang: "en"
   },
   {
@@ -41,7 +41,7 @@ export const quotes: Quote[] = [
     lang: "nl"
   },
   {
-    text: "Gebouwt door discipline, niet door geluk.",
+    text: "Gebouwd door discipline, niet door geluk.",
     author: "Nerissa Z.",
     lang: "nl"
   },
@@ -49,6 +49,21 @@ export const quotes: Quote[] = [
     text: "Gemaakt met ❤️",
     author: "Team PolarNL",
     lang: "nl"
+  },
+  {
+    text: "Een klant is meer dan data waard.",
+    author: "Quinn",
+    lang: "nl"
+  },
+  {
+    text: "Veni, Vidi, Vici.",
+    author: "Julius Caesar",
+    lang: "nl"
+  },
+  {
+    text: "Veni, Vidi, Vici.",
+    author: "Julius Caesar",
+    lang: "en"
   }
 ]
 
