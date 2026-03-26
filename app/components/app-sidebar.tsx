@@ -198,7 +198,7 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
                 align="end"
                 sideOffset={8}
                 avoidCollisions={false}
-                className="w-64"
+                className="w-64 ml-2"
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-3 px-2 py-1.5 text-left">

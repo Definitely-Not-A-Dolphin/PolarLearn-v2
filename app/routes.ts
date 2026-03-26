@@ -7,5 +7,6 @@ export default [
   route("auth/sign-up", "routes/auth/sign-up.tsx"),
   layout("routes/home/layout.tsx", [
     route("home", "routes/home/_index.tsx"),
-  ])
+    route("home/forum", "routes/home/forum/_index.tsx"),
+  ]),
 ] satisfies RouteConfig;
