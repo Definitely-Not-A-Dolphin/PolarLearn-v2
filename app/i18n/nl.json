@@ -1,15 +1,17 @@
 {
   "welcome": "Welkom bij PolarLearn!",
   "description": "PolarLearn is een gratis en open-source leerplatform.",
-  "home": {
-    "sidebar": {
-      "expandSidebar": "Zijbalk uitklappen",
-      "collapseSidebar": "Zijbalk inklappen",
-      "home": "Thuis",
-      "forum": "Forum",
-      "logout": "Uitloggen",
-      "settings": "Instellingen"
-    }
+  "sidebar": {
+    "expandSidebar": "Zijbalk uitklappen",
+    "collapseSidebar": "Zijbalk inklappen"
+  },
+  "general": {
+    "welcomeText": "Welkom terug, {{username}}!",
+    "settings": "Instellingen",
+    "home": "Thuis",
+    "forum": "Forum",
+    "logout": "Uitloggen",
+    "quickstart": "Quick-start"
   },
   "auth": {
     "login": "Inloggen",

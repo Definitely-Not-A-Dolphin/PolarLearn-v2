@@ -4,8 +4,6 @@ import { useRouteLoaderData } from "react-router";
 import i18n from "~/i18n";
 
 export default function Home() {
-  const rootData = useRouteLoaderData("root") as any;
-  const lang = rootData?.lang || "nl";
   const t = i18n.t;
   const navigate = useNavigate()
   return (

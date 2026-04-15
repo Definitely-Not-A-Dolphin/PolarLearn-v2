@@ -87,8 +87,8 @@ export function AppSidebar() {
   const theme = rootData?.theme || "dark"
 
   const navItems = [
-    { title: "home.sidebar.home", icon: Home, url: "/home" },
-    { title: "home.sidebar.forum", icon: MessageCircle, url: "/home/forum" },
+    { title: "general.home", icon: Home, url: "/home" },
+    { title: "general.forum", icon: MessageCircle, url: "/home/forum" },
   ]
 
   const isActiveNavItem = (itemUrl: string) => {
@@ -114,8 +114,8 @@ export function AppSidebar() {
             <SidebarTooltip
               label={
                 state === "collapsed"
-                  ? i18n.t("home.sidebar.expandSidebar")
-                  : i18n.t("home.sidebar.collapseSidebar")
+                  ? i18n.t("sidebar.expandSidebar")
+                  : i18n.t("sidebar.collapseSidebar")
               }
             >
               <Button
@@ -206,9 +206,8 @@ export function AppSidebar() {
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
-                        {rootData.user?.name || i18n.t("home.sidebar.logout")}
+                        {rootData.user?.name || i18n.t("general.logout")}
                       </span>
-                      <div className="" />
                       <ChevronsUpDown className="size-4 shrink-0 opacity-70" />
                     </>
                   )}
@@ -238,7 +237,7 @@ export function AppSidebar() {
                       )}
                     </div>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("home.sidebar.logout")}</span>
+                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("general.logout")}</span>
                       {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}
                     </div>
                   </div>
@@ -279,7 +278,7 @@ export function AppSidebar() {
                   onClick={() => { handleLogout() }}
                   icon={<LogOut size={20} />}
                 >
-                  {i18n.t("home.sidebar.logout")}
+                  {i18n.t("general.logout")}
                 </Button>
               </DropdownMenuContent>
             </DropdownMenu>
