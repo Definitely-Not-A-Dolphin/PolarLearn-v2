@@ -1,5 +1,3 @@
-import { Button } from "@polarnl/polarui-react";
-import { authClient } from "~/lib/auth/client";
 import { auth } from "~/lib/auth/server";
 import { redirect, useNavigate } from "react-router";
 
@@ -15,16 +13,8 @@ export async function loader(loaderArgs: { request: Request }) {
 export default function HomePage() {
   const navigate = useNavigate()
   return (
-    <div className="flex items-center justify-center h-screen flex-col">
-      <h1 className="text-4xl font-bold">PolarLearn!!!</h1>
-      <Button
-        onClick={() => {
-          authClient.signOut()
-          navigate('/')
-        }}
-      >
-        Log Out
-      </Button>
+    <div className="">
+      assdf
     </div>
   );
 }

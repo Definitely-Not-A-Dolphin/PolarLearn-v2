@@ -1,16 +1,21 @@
-import nlTranslation from "./i18n/nl.json";
-
 type TranslationValue = string | Record<string, unknown>;
 
-type TranslationResources = {
-  nl: Record<string, unknown>;
-};
+const modules = import.meta.glob("./i18n/*.json", { eager: true });
 
-const resources: TranslationResources = {
-  nl: nlTranslation as Record<string, unknown>,
-};
+const resources: Record<string, Record<string, unknown>> = {};
 
-let currentLanguage = "nl";
+const DEFAULT_LANG = "nl";
+
+for (const path in modules) {
+  const match = path.match(/\/([^/]+)\.json$/);
+  if (match) {
+    const lang = match[1];
+    const mod = modules[path] as { default: Record<string, unknown> } | Record<string, unknown>;
+    resources[lang] = ('default' in mod ? mod.default : mod) as Record<string, unknown>;
+  }
+}
+
+let currentLanguage = DEFAULT_LANG;
 let initialized = false;
 
 function resolvePath(source: Record<string, unknown>, path: string): unknown {
@@ -38,7 +43,7 @@ function interpolate(value: string, options?: Record<string, unknown>): string {
 
 function translate(key: string, options?: { defaultValue?: string } & Record<string, unknown>): string {
   const normalizedKey = key.includes(":") ? key.replace(":", ".") : key;
-  const languageResource = resources[currentLanguage] ?? resources.nl;
+  const languageResource = resources[currentLanguage] ?? resources[DEFAULT_LANG];
   const value = resolvePath(languageResource, normalizedKey) as TranslationValue | undefined;
 
   if (typeof value === "string") {
@@ -50,21 +55,22 @@ function translate(key: string, options?: { defaultValue?: string } & Record<str
 
 const i18n = {
   get language() {
-    return currentLanguage;
+    return process.env.APP_LANG;
   },
   get isInitialized() {
     return initialized;
   },
   changeLanguage(lang: string) {
-    currentLanguage = lang || "nl";
+    currentLanguage = lang || DEFAULT_LANG;
     initialized = true;
     return i18n;
   },
   t: translate,
   resources,
+  DEFAULT_LANG,
 };
 
-export function initI18n(lang: string = "nl") {
+export function initI18n(lang: string = DEFAULT_LANG) {
   return i18n.changeLanguage(lang);
 }
 

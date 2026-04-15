@@ -12,6 +12,7 @@ export const auth = betterAuth({
   baseURL: process.env.APP_BASE as string,
   emailAndPassword: { enabled: true },
   secret: process.env.SECRET,
+  trustedOrigins: ["*"],
   plugins: [
     username(),
     admin({
@@ -33,13 +34,13 @@ export const auth = betterAuth({
           const superadmins = await prisma.user.findMany({
             where: { role: "admin" }
           });
-          const adminsToAdd = superadmins.filter(admin => admin.id !== creator.id);
+          const adminsToAdd = superadmins.filter((superadmin: { id: string }) => superadmin.id !== creator.id);
           if (adminsToAdd.length > 0) {
             await prisma.member.createMany({
-              data: adminsToAdd.map(admin => ({
+              data: adminsToAdd.map((superadmin: { id: string }) => ({
                 id: crypto.randomUUID(),
                 organizationId: organization.id,
-                userId: admin.id,
+                userId: superadmin.id,
                 role: "owner",
                 createdAt: new Date(),
                 updatedAt: new Date()

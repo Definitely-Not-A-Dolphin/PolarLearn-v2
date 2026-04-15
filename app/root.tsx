@@ -8,7 +8,7 @@ import {
   useRouteLoaderData,
 } from "react-router";
 import { useState } from "react";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -16,6 +16,7 @@ import { initI18n } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
+import { auth } from "./lib/auth/server";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -30,19 +31,29 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export async function loader({ params }: Route.LoaderArgs) {
-  const theme = "dark"; // replace later with actual thweme logic. Dark should be default and if no theme is found (e.g unauthenricated).
+export async function loader(loaderArgs: { request: Request }) {
+  const theme = "dark"; // replace later with actual theeme logic. Dark should be default and if no theme is found (e.g unauthenricated).
   // Fetch theme from user configuration w/ prisma
+
+  const headers = new Headers(loaderArgs.request.headers)
+  const result = await auth.api.getSession({ headers })
+  const user = result?.user
   return {
     theme,
-    lang: process.env.APP_LANG || "nl"
+    lang: process.env.APP_LANG || "nl",
+    user: {
+      name: user?.name || null,
+      image: user?.image || null,
+      email: user?.email || null,
+      role: user?.role || null,
+    }
   }
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useRouteLoaderData<typeof loader>("root");
-  const theme = loaderData?.theme || "dark";
-  const lang = loaderData?.lang || "nl";
+  const theme = loaderData!.theme;
+  const lang = loaderData!.lang;
 
   initI18n(lang);
 
@@ -67,11 +78,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 // istg if anyone removes this i will find you and I will end you
 // remove = break entire app
 // neither do i know why it is like that
+// best regards andrei1010
 export default function App() {
   return <Outlet />;
 }
 
-// Sean can you make the error page look like the cloudflare one? thx
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const t = i18n.t;
   let message = t("errors.page.unavailableTitle");
@@ -98,12 +109,6 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   const [isMoreInfoOpen, setIsMoreInfoOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  async function handleCopySupportId() {
-    if (typeof navigator === "undefined" || !navigator.clipboard) {
-      return;
-    }
-  }
 
   return (
     <main className="min-h-screen flex items-center justify-center px-5 py-12">

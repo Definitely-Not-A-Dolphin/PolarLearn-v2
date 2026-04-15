@@ -1,6 +1,6 @@
-import { useLocation, useNavigate, useRouteLoaderData } from "react-router"
+import { useNavigate, useRouteLoaderData, useLocation } from "react-router"
 import type { ReactElement } from "react"
-import { Cog, Home, MessageCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { Cog, Home, MessageCircle, PanelLeftClose, PanelLeftOpen, ShieldUser } from "lucide-react"
 
 import {
   Sidebar,
@@ -21,7 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -70,26 +69,37 @@ function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
         height={24}
         className="h-5.5 w-5.5 object-contain transition-opacity duration-200 group-hover:opacity-0"
       />
-      <Icon className="absolute inset-0 m-auto size-5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <Icon className="absolute inset-0 m-auto size-5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-black dark:text-white " />
     </div>
   )
 }
 
-export function AppSidebar({ user }: { user: { image: string; name: string; email?: string } }) {
+export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar()
   const isCollapsed = state === "collapsed"
-  const location = useLocation()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/"
+  const currentPath = normalizePath(location.pathname)
 
   const rootData = useRouteLoaderData("root") as any
   const theme = rootData?.theme || "dark"
-  const buttonColor = theme === "dark" ? "dark" : "light"
-  const buttonTextColor = theme === "dark" ? "white" : "black"
 
   const navItems = [
     { title: "home.sidebar.home", icon: Home, url: "/home" },
     { title: "home.sidebar.forum", icon: MessageCircle, url: "/home/forum" },
   ]
+
+  const isActiveNavItem = (itemUrl: string) => {
+    const normalizedItemUrl = normalizePath(itemUrl)
+
+    if (normalizedItemUrl === "/home") {
+      return currentPath === normalizedItemUrl
+    }
+
+    return currentPath === normalizedItemUrl || currentPath.startsWith(`${normalizedItemUrl}/`)
+  }
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -97,8 +107,8 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-neutral-200 dark:border-neutral-800">
-      <SidebarHeader className="py-4">
+    <Sidebar collapsible="icon" className="border-r border-neutral-700 bg-neutral-800">
+      <SidebarHeader className="hidden py-4 md:flex">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarTooltip
@@ -108,23 +118,25 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
                   : i18n.t("home.sidebar.collapseSidebar")
               }
             >
-              <button
-                onClick={toggleSidebar}
+              <Button
+                variant="transparent"
+                scheme={theme}
                 className={cn(
-                  "group flex h-10 w-full items-center rounded-xl p-2 hover:bg-neutral-700/90 transition-all cursor-pointer",
+                  "group flex h-10 w-full items-center rounded-xl p-2",
                   isCollapsed ? "justify-center p-0!" : "justify-start"
                 )}
+                onClick={toggleSidebar}
               >
                 <SidebarToggleIcon isCollapsed={isCollapsed} />
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left leading-none ml-2">
-                    <span className="truncate text-xl font-semibold font-heading flex-row flex">
+                    <span className="truncate text-xl font-bold font-heading flex-row flex">
                       <p className=" bg-linear-to-r from-sky-400 to-sky-100 bg-clip-text text-transparent">Polar</p>
                       Learn
                     </span>
                   </div>
                 )}
-              </button>
+              </Button>
             </SidebarTooltip>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -133,20 +145,29 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
       <SidebarContent className="px-2">
         <SidebarMenu className="gap-2">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.url || (item.url !== "/home" && location.pathname.startsWith(item.url))
+            const isActive = isActiveNavItem(item.url)
             return (
               <SidebarMenuItem key={item.url}>
                 <SidebarTooltip label={i18n.t(item.title)}>
                   <Button
-                    color={isActive ? "sky" : buttonColor}
-                    textColor={isActive ? "white" : buttonTextColor}
+                    scheme={theme}
                     onClick={() => navigate(item.url)}
                     className={cn(
                       "flex h-9 w-full items-center rounded-xl p-2",
-                      isCollapsed ? "justify-center p-0!" : "justify-start"
+                      isCollapsed ? "justify-center p-0!" : "justify-start",
+                      isActive && "bg-sky-400/30"
                     )}
+                    variant={"transparent"}
                   >
-                    <item.icon className="size-5 shrink-0" />
+                    <div
+                      className={cn(
+                        "relative flex size-7 shrink-0 items-center justify-center",
+                        isActive &&
+                        "before:absolute before:inset-0 before:rounded-full before:bg-sky-400/40 before:content-['']"
+                      )}
+                    >
+                      <item.icon className="relative z-10 size-5 shrink-0" />
+                    </div>
                     {!isCollapsed && <span className="truncate ml-2">{i18n.t(item.title)}</span>}
                   </Button>
                 </SidebarTooltip>
@@ -162,31 +183,32 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  color={buttonColor}
-                  textColor={buttonTextColor}
+                  scheme={theme}
+                  variant={"transparent"}
                   className={cn(
                     "flex h-10 w-full items-center rounded-xl py-2",
                     isCollapsed ? "justify-center" : "justify-start px-2"
                   )}
                 >
-                  <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                    {user?.image ? (
+                  <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-full overflow-hidden">
+                    {rootData.user?.image ? (
                       <Image
-                        src={user.image}
-                        alt={user.name}
+                        src={rootData.user.image}
+                        alt={rootData.user.name}
                         width={40}
                         height={40}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-xs font-medium uppercase">{user?.name?.charAt(0) || "U"}</span>
+                      <span className="text-xs font-medium uppercase">{rootData.user?.name?.charAt(0) || "U"}</span>
                     )}
                   </div>
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
-                        {user?.name || i18n.t("home.sidebar.logout")}
+                        {rootData.user?.name || i18n.t("home.sidebar.logout")}
                       </span>
+                      <div className="" />
                       <ChevronsUpDown className="size-4 shrink-0 opacity-70" />
                     </>
                   )}
@@ -198,47 +220,67 @@ export function AppSidebar({ user }: { user: { image: string; name: string; emai
                 align="end"
                 sideOffset={8}
                 avoidCollisions={false}
-                className="w-64 ml-2"
+                className={`w-64 ml-2 rounded-lg border p-1 dark:bg-neutral-800`}
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-3 px-2 py-1.5 text-left">
-                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                      {user?.image ? (
+                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded-full overflow-hidden">
+                      {rootData.user?.image ? (
                         <Image
-                          src={user.image}
-                          alt={user.name}
+                          src={rootData.user.image}
+                          alt={rootData.user.name}
                           width={40}
                           height={40}
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-sm font-medium uppercase">{user?.name?.charAt(0) || "U"}</span>
+                        <span className="text-sm font-medium uppercase">{rootData.user?.name?.charAt(0) || "U"}</span>
                       )}
                     </div>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{user?.name || i18n.t("home.sidebar.logout")}</span>
-                      {user?.email ? <span className="truncate text-xs text-muted-foreground">{user.email}</span> : null}
+                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("home.sidebar.logout")}</span>
+                      {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}
                     </div>
                   </div>
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
 
+                {rootData.user?.role === "admin" && (
+                  <DropdownMenuGroup>
+                    <Button
+                      variant="transparent"
+                      scheme={theme}
+                      className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
+                      icon={<ShieldUser size={20} />}
+                      onClick={() => navigate("/administrator")}>
+                      Admin
+                    </Button>
+                  </DropdownMenuGroup>
+                )}
+
                 <DropdownMenuGroup>
-                  <DropdownMenuItem className="gap-2" onSelect={() => navigate("/home/usersettings")}>
-                    <Cog />
+                  <Button
+                    variant="transparent"
+                    scheme={theme}
+                    className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
+                    icon={<Cog size={20} />}
+                    onClick={() => navigate("/home/usersettings")}>
                     Instellingen
-                  </DropdownMenuItem>
+                  </Button>
                 </DropdownMenuGroup>
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem className="gap-2 text-destructive" onSelect={() => {
-                  handleLogout()
-                }}>
-                  <LogOut />
+                <Button
+                  variant="transparent"
+                  scheme={theme}
+                  className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
+                  onClick={() => { handleLogout() }}
+                  icon={<LogOut size={20} />}
+                >
                   {i18n.t("home.sidebar.logout")}
-                </DropdownMenuItem>
+                </Button>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
