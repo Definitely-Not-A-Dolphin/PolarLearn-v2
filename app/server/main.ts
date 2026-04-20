@@ -1,9 +1,9 @@
 import { createTRPCRouter } from './trpc'
 
-import { greetingRouter } from './routers/greeting'
+import { ListRouter } from './routers/lists'
 
 export const appRouter = createTRPCRouter({
-  greeting: greetingRouter
+  list: ListRouter
 })
 
 export type AppRouter = typeof appRouter

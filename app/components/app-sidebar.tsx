@@ -87,8 +87,8 @@ export function AppSidebar() {
   const theme = rootData?.theme || "dark"
 
   const navItems = [
-    { title: "general.home", icon: Home, url: "/home" },
-    { title: "general.forum", icon: MessageCircle, url: "/home/forum" },
+    { title: "navigation.home", icon: Home, url: "/home" },
+    { title: "navigation.forum", icon: MessageCircle, url: "/app/forum" },
   ]
 
   const isActiveNavItem = (itemUrl: string) => {
@@ -153,15 +153,14 @@ export function AppSidebar() {
                     scheme={theme}
                     onClick={() => navigate(item.url)}
                     className={cn(
-                      "flex h-9 w-full items-center rounded-xl p-2",
+                      "flex h-9 w-full items-center rounded-xl",
                       isCollapsed ? "justify-center p-0!" : "justify-start",
-                      isActive && "bg-sky-400/30"
                     )}
                     variant={"transparent"}
                   >
                     <div
                       className={cn(
-                        "relative flex size-7 shrink-0 items-center justify-center",
+                        "relative flex size-9 shrink-0 items-center justify-center",
                         isActive &&
                         "before:absolute before:inset-0 before:rounded-full before:bg-sky-400/40 before:content-['']"
                       )}
@@ -206,7 +205,7 @@ export function AppSidebar() {
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
-                        {rootData.user?.name || i18n.t("general.logout")}
+                        {rootData.user?.name || i18n.t("userMenu.guest")}
                       </span>
                       <ChevronsUpDown className="size-4 shrink-0 opacity-70" />
                     </>
@@ -237,7 +236,7 @@ export function AppSidebar() {
                       )}
                     </div>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("general.logout")}</span>
+                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("userMenu.guest")}</span>
                       {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}
                     </div>
                   </div>
@@ -253,7 +252,7 @@ export function AppSidebar() {
                       className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                       icon={<ShieldUser size={20} />}
                       onClick={() => navigate("/administrator")}>
-                      Admin
+                      {i18n.t("userMenu.admin")}
                     </Button>
                   </DropdownMenuGroup>
                 )}
@@ -264,8 +263,8 @@ export function AppSidebar() {
                     scheme={theme}
                     className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                     icon={<Cog size={20} />}
-                    onClick={() => navigate("/home/usersettings")}>
-                    Instellingen
+                    onClick={() => navigate("/app/usersettings")}>
+                    {i18n.t("userMenu.settings")}
                   </Button>
                 </DropdownMenuGroup>
 
@@ -278,7 +277,7 @@ export function AppSidebar() {
                   onClick={() => { handleLogout() }}
                   icon={<LogOut size={20} />}
                 >
-                  {i18n.t("general.logout")}
+                  {i18n.t("userMenu.logout")}
                 </Button>
               </DropdownMenuContent>
             </DropdownMenu>

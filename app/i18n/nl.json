@@ -1,61 +1,103 @@
 {
-  "welcome": "Welkom bij PolarLearn!",
-  "description": "PolarLearn is een gratis en open-source leerplatform.",
+  "home": {
+    "title": "Welkom bij PolarLearn!",
+    "description": "PolarLearn is een gratis en open-source leerplatform.",
+    "welcomeText": "Welkom terug, {{username}}!"
+  },
   "sidebar": {
     "expandSidebar": "Zijbalk uitklappen",
     "collapseSidebar": "Zijbalk inklappen"
   },
-  "general": {
-    "welcomeText": "Welkom terug, {{username}}!",
-    "settings": "Instellingen",
+  "navigation": {
     "home": "Thuis",
     "forum": "Forum",
+    "quickstart": "Quick-start",
+    "settings": "Instellingen"
+  },
+  "userMenu": {
+    "guest": "Gast",
     "logout": "Uitloggen",
-    "quickstart": "Quick-start"
+    "admin": "Admin",
+    "settings": "Instellingen"
+  },
+  "learning": {
+    "initialCommit": "Initieel commit"
+  },
+  "subjects": {
+    "art": "Kunst",
+    "biology": "Biologie",
+    "chemistry": "Scheikunde",
+    "computerScience": "Informatica",
+    "dutch": "Nederlands",
+    "economics": "Economie",
+    "english": "Engels",
+    "french": "Frans",
+    "german": "Duits",
+    "geography": "Aardrijkskunde",
+    "greek": "Grieks",
+    "history": "Geschiedenis",
+    "latin": "Latijn",
+    "math": "Wiskunde",
+    "music": "Muziek",
+    "other": "Anders",
+    "physics": "Natuurkunde",
+    "spanish": "Spaans",
+    "unknown": "Anders"
   },
   "auth": {
-    "login": "Inloggen",
-    "logout": "Uitloggen",
-    "signup": "Registreren",
-    "signupMarketing": "Maak een account aan om te beginnen met leren!",
-    "noAccountSignUp": "Nog geen account?",
-    "username": "Gebruikersnaam",
-    "password": "Wachtwoord",
-    "email": "E-mail",
-    "forgotPassword": "Wachtwoord vergeten?",
-    "emailOrUsername": "E-mail of gebruikersnaam",
-    "signUpOk": "Je account is aangemaakt! Check je e-mail voor een bevestigingslink.",
-    "signinTitle": "Log in",
-    "signinSubtitle": "Met uw PolarLearn account.",
-    "signinLoading": "Een ogenblik geduld...",
-    "signinContinue": "Doorgaan",
-    "signinNoAccount": "Geen account?",
-    "signinCreateOne": "Maak er eentje!",
-    "signinSeparator": "OF",
-    "signinEntree": "Inloggen met Entree Federatie",
-    "signinStaff": "Medewerkers inlog",
-    "signupTitle": "Maak een account aan",
-    "signupSubtitle": "Bij PolarLearn",
-    "usernamePlaceholder": "Je gebruikersnaam",
-    "emailPlaceholder": "Je e-mailadres",
-    "passwordPlaceholder": "Je wachtwoord",
-    "signupButton": "Maak een account aan",
-    "loginLink": "Log in",
-    "passwordStrengthWeak": "Zwak",
-    "passwordStrengthMedium": "Het kan nog sterker!",
-    "passwordStrengthStrong": "Sterk wachtwoord!",
+    "actions": {
+      "login": "Inloggen",
+      "signup": "Registreren"
+    },
+    "signIn": {
+      "title": "Inloggen",
+      "subtitle": "Met je PolarLearn-account.",
+      "loading": "Even geduld...",
+      "continue": "Doorgaan",
+      "noAccount": "Geen account?",
+      "createOne": "Maak er één!",
+      "separator": "OF",
+      "entree": "Inloggen met Entree Federatie",
+      "staff": "Medewerkerslogin",
+      "email": "E-mail",
+      "emailPlaceholder": "Je e-mailadres",
+      "password": "Wachtwoord",
+      "passwordPlaceholder": "Je wachtwoord",
+      "forgotPassword": "Wachtwoord vergeten?"
+    },
+    "signUp": {
+      "title": "Maak een account aan",
+      "subtitle": "Bij PolarLearn",
+      "marketing": "Maak een account aan om te beginnen met leren!",
+      "button": "Maak een account aan",
+      "haveAccount": "Heb je al een account?",
+      "ok": "Je account is aangemaakt!",
+      "okEmail": "Je account is aangemaakt! Check je e-mail voor een bevestigingslink.",
+      "username": "Gebruikersnaam",
+      "usernamePlaceholder": "Je gebruikersnaam",
+      "email": "E-mail",
+      "emailPlaceholder": "Je e-mailadres",
+      "password": "Wachtwoord",
+      "passwordPlaceholder": "Je wachtwoord",
+      "passwordStrength": {
+        "weak": "Zwak",
+        "medium": "Het kan nog sterker!",
+        "strong": "Sterk wachtwoord!"
+      },
+      "loginLink": "Inloggen"
+    },
     "errors": {
-      "invcreds": "Ongeldige inloggegevens. Probeer het opnieuw.",
-      "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
-      "UserShort": "De gebruikersnaam/e-mail is in een ongeldig formaat. Probeer een andere gebruikersnaam of e-mail.",
-      "AccountDisabled": "Dit account is permanent gedeactiveerd door schending van onze voorwaarden van gebruik.",
-      "ProviderDisabled": "Deze inlogmethode is inactief. Probeer het met een andere inlogmethode.",
-      "OauthError": "Er is een probleem opgetreden bij het gebruik van OAuth2.1.",
-      "Ratelimit": "Woah! Rustig aan! Je bent te snel bezig. Probeer het over een paar seconden opnieuw.",
-      "usernameIsInvalid": "De gebruikersnaam is ongeldig.",
-      "AuthError": "Er is een fout opgetreden bij het inloggen.",
+      "accountDisabled": "Dit account is permanent gedeactiveerd door schending van onze voorwaarden van gebruik.",
+      "authError": "Er is een fout opgetreden bij het inloggen.",
+      "invalidCredentials": "Ongeldige inloggegevens. Probeer het opnieuw.",
+      "noConnectedAccount": "Dit account is nog niet gekoppeld aan een inlogmethode.",
+      "oauthError": "Er is een probleem opgetreden bij het gebruik van OAuth2.1.",
+      "providerDisabled": "Deze inlogmethode is inactief. Probeer het met een andere inlogmethode.",
+      "rateLimit": "Woah! Rustig aan! Je bent te snel bezig. Probeer het over een paar seconden opnieuw.",
       "signupDisabled": "Registraties zijn momenteel uitgeschakeld.",
-      "accountNotLinked": "Dit account is nog niet gekoppeld aan een inlogmethode."
+      "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
+      "usernameInvalid": "De gebruikersnaam is ongeldig.",
+      "usernameTooShort": "De gebruikersnaam/e-mail is in een ongeldig formaat. Probeer een andere gebruikersnaam of e-mail."
     }
   },
   "errors": {
@@ -72,8 +114,7 @@
       "unavailableTitle": "Deze service is momenteel onbeschikbaar",
       "reloadAction": "Herlaad de pagina",
       "reloadHint": "om het opnieuw te proberen. Als het probleem aanhoudt, neem contact op met support.",
-      "moreInfo": "Meer informatie",
-      "copySupportId": "Kopieer support-id"
+      "moreInfo": "Meer informatie"
     }
   }
 }

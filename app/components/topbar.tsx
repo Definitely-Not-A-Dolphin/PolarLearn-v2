@@ -17,14 +17,13 @@ export function TopBar({ children }: { children?: React.ReactNode }) {
       <SidebarTrigger
         className="md:hidden shrink-0"
         scheme={theme as "dark" | "light"}
-        variant="transparent"
       />
       {children}
       {location.pathname === "/home" && (
-        <h1 className="text-2xl font-bold">👋 {t("general.welcomeText", { username: rootData.user.name })}</h1>
+        <h1 className="text-2xl font-bold">👋 {t("home.welcomeText", { username: rootData.user.name })}</h1>
       )}
-      {location.pathname === "/home/forum" && (
-        <h1 className="text-2xl font-bold">{t("general.forum")}</h1>
+      {location.pathname === "/app/forum" && (
+        <h1 className="text-2xl font-bold">{t("navigation.forum")}</h1>
       )}
     </div>
   )

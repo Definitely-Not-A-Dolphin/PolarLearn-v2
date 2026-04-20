@@ -32,14 +32,13 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader(loaderArgs: { request: Request }) {
-  const theme = "dark"; // replace later with actual theeme logic. Dark should be default and if no theme is found (e.g unauthenricated).
-  // Fetch theme from user configuration w/ prisma
-
   const headers = new Headers(loaderArgs.request.headers)
   const result = await auth.api.getSession({ headers })
   const user = result?.user
+  const fetchedTheme = "dark" //placeholder
+
   return {
-    theme,
+    theme: fetchedTheme,
     lang: process.env.APP_LANG || "nl",
     user: {
       name: user?.name || null,
@@ -52,8 +51,8 @@ export async function loader(loaderArgs: { request: Request }) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useRouteLoaderData<typeof loader>("root");
-  const theme = loaderData!.theme;
-  const lang = loaderData!.lang;
+  const theme = loaderData?.theme || "dark";
+  const lang = loaderData?.lang;
 
   initI18n(lang);
 

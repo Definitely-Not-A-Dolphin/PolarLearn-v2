@@ -41,11 +41,6 @@ const links = [
   httpBatchLink({
     transformer: SuperJSON,
     url: getBaseUrl() + '/api/rpc',
-    headers() {
-      const headers = new Headers()
-      headers.set('x-trpc-source', 'react')
-      return headers
-    }
   })
 ]
 

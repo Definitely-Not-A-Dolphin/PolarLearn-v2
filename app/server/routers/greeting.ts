@@ -1,3 +1,5 @@
+// VOORBELD ROUTER! GEBRUIK DIT NIET IN PROD
+
 import type { TRPCRouterRecord } from '@trpc/server'
 
 import { protectedProcedure, publicProcedure } from '~/server/trpc'

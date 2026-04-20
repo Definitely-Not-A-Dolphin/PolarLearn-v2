@@ -40,9 +40,9 @@ export default function SignUpPage() {
 
   let scoreText = "";
   if (password) {
-    if (score < 2) scoreText = t("auth:passwordStrengthWeak");
-    else if (score < 4) scoreText = t("auth:passwordStrengthMedium");
-    else scoreText = t("auth:passwordStrengthStrong");
+    if (score < 2) scoreText = t("auth:signUp.passwordStrength.weak");
+    else if (score < 4) scoreText = t("auth:signUp.passwordStrength.medium");
+    else scoreText = t("auth:signUp.passwordStrength.strong");
   }
 
   return (
@@ -56,8 +56,8 @@ export default function SignUpPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signupTitle")}</h1>
-        <p className="text-lg mb-8 text-neutral-300">{t("auth:signupSubtitle")}</p>
+        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signUp.title")}</h1>
+        <p className="text-lg mb-8 text-neutral-300">{t("auth:signUp.subtitle")}</p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -78,7 +78,7 @@ export default function SignUpPage() {
                 return;
               }
 
-              toast.success(t("auth:signUpOk"));
+              toast.success(t("auth:signUp.ok"));
               navigate("/auth/sign-in");
             } catch (err) {
               toast.error(getBetterAuthErrorMessage(err));
@@ -89,14 +89,14 @@ export default function SignUpPage() {
             htmlFor="username"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:username")}
+            {t("auth:signUp.username")}
           </label>
           <Input
             id="username"
             name="username"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<User />}
-            placeholder={t("auth:usernamePlaceholder")}
+            placeholder={t("auth:signUp.usernamePlaceholder")}
             className="w-full mb-5"
           />
 
@@ -104,14 +104,14 @@ export default function SignUpPage() {
             htmlFor="email"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:email")}
+            {t("auth:signUp.email")}
           </label>
           <Input
             id="email"
             name="email"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
-            placeholder={t("auth:emailPlaceholder")}
+            placeholder={t("auth:signUp.emailPlaceholder")}
             className="w-full mb-5"
           />
 
@@ -119,7 +119,7 @@ export default function SignUpPage() {
             htmlFor="password"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:password")}
+            {t("auth:signUp.password")}
           </label>
           <div className="relative mb-3">
             <Input
@@ -128,7 +128,7 @@ export default function SignUpPage() {
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type={showPassword ? "text" : "password"}
-              placeholder={t("auth:passwordPlaceholder")}
+              placeholder={t("auth:signUp.passwordPlaceholder")}
               className="w-full pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -177,18 +177,18 @@ export default function SignUpPage() {
             className="w-full mt-6"
             type="submit"
           >
-            {t("auth:signupButton")} →
+            {t("auth:signUp.button")} →
           </Button>
 
           <div className="w-full items-center justify-center mt-6 flex gap-1">
             <p className="font-medium text-sm text-neutral-400">
-              {t("auth:signinNoAccount")}
+              {t("auth:signUp.haveAccount")}
             </p>
             <Link
               to="/auth/sign-in"
               className="text-sm text-sky-400 font-bold hover:underline"
             >
-              {t("auth:loginLink")}
+              {t("auth:actions.login")}
             </Link>
           </div>
         </form>

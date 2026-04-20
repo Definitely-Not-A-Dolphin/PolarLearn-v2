@@ -67,8 +67,8 @@ export default function SignInPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col">
-        <h1 className="text-5xl font-bold">{t("auth:signinTitle")}</h1>
-        <p className="text-xl mt-3">{t("auth:signinSubtitle")}</p>
+        <h1 className="text-5xl font-bold">{t("auth:signIn.title")}</h1>
+        <p className="text-xl mt-3">{t("auth:signIn.subtitle")}</p>
         <form onSubmit={async (e: React.FormEvent) => {
           e.preventDefault();
           setIsLoading(true);
@@ -110,12 +110,12 @@ export default function SignInPage() {
           <label
             htmlFor="email"
             className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>
-            {t("auth:email")}
+            {t("auth:signIn.email")}
           </label>
           <Input
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
-            placeholder={t("auth:emailPlaceholder")}
+            placeholder={t("auth:signIn.emailPlaceholder")}
             className="w-full "
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -127,13 +127,13 @@ export default function SignInPage() {
             <label
               htmlFor="password"
               className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>
-              {t("auth:password")}
+              {t("auth:signIn.password")}
             </label>
             <Input
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type="password"
-              placeholder={t("auth:passwordPlaceholder")}
+              placeholder={t("auth:signIn.passwordPlaceholder")}
               className="w-full mb-2"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -142,7 +142,7 @@ export default function SignInPage() {
             <Link
               to="/auth/forgot-pass"
               className="text-md text-sky-400 font-bold block mb-2">
-              {t("auth:forgotPassword")}
+              {t("auth:signIn.forgotPassword")}
             </Link>
           </div>
 
@@ -153,16 +153,16 @@ export default function SignInPage() {
             type="submit"
             disabled={isLoading}
             icon={isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}>
-            {isLoading ? t("auth:signinLoading") : (showPassword ? t("auth:login") : t("auth:signinContinue"))}
+            {isLoading ? t("auth:signIn.loading") : (showPassword ? t("auth:actions.login") : t("auth:signIn.continue"))}
           </Button>
           <div className="w-full items-center justify-center mt-4 flex gap-1">
             <p className="font-bold">
-              {t("auth:signinNoAccount")}
+              {t("auth:signIn.noAccount")}
             </p>
             <Link
               to="/auth/sign-up"
               className="text-md text-sky-400 font-bold hover:underline">
-              {t("auth:signinCreateOne")}
+              {t("auth:signIn.createOne")}
             </Link>
           </div>
           <div className="flex flex-col gap-4">
@@ -170,7 +170,7 @@ export default function SignInPage() {
               <>
                 <div className="flex items-center my-4">
                   <hr className="grow border-neutral-600" />
-                  <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">{t("auth:signinSeparator")}</span>
+                  <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">{t("auth:signIn.separator")}</span>
                   <hr className="grow border-neutral-600" />
                 </div>
                 <Button
@@ -178,7 +178,7 @@ export default function SignInPage() {
                   className="w-full" type="button"
                   color={theme === "dark" ? "dark" : "light"}
                   icon={<Image src={entree} width={23} height={23} />}>
-                  {t("auth:signinEntree")}
+                  {t("auth:signIn.entree")}
                 </Button>
               </>
             ) : null}

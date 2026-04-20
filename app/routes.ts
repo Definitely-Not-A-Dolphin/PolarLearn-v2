@@ -5,8 +5,9 @@ export default [
   route("api/auth/*", "routes/api/auth/[...auth].ts"),
   route("auth/sign-in", "routes/auth/sign-in.tsx"),
   route("auth/sign-up", "routes/auth/sign-up.tsx"),
-  layout("routes/home/layout.tsx", [
-    route("home", "routes/home/_index.tsx"),
-    route("home/forum", "routes/home/forum/_index.tsx"),
+  layout("routes/app/layout.tsx", [
+    route("home", "routes/app/_index.tsx"),
+    route("home/forum", "routes/app/forum/_index.tsx"),
+    route("home/editlist/:id", "routes/app/editlist/[id].tsx"),
   ]),
 ] satisfies RouteConfig;

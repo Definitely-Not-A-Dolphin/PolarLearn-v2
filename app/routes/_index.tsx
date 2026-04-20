@@ -1,6 +1,5 @@
 import { Button } from "@polarnl/polarui-react"
 import { useNavigate } from "react-router";
-import { useRouteLoaderData } from "react-router";
 import i18n from "~/i18n";
 
 export default function Home() {
@@ -8,11 +7,11 @@ export default function Home() {
   const navigate = useNavigate()
   return (
     <>
-      <h1>{t("welcome")}</h1>
-      <p>{t("description")}</p>
+      <h1>{t("home.title")}</h1>
+      <p>{t("home.description")}</p>
       <br />
       <Button textColor="black" onClick={() => navigate("/auth/sign-in")}>
-        {t("auth:login")}
+        {t("auth:actions.login")}
       </Button>
     </>
   );
