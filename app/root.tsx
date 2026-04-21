@@ -39,19 +39,19 @@ export async function loader(loaderArgs: { request: Request }) {
 
   return {
     theme: fetchedTheme,
-    lang: process.env.APP_LANG || "nl",
+    lang: process.env.APP_LANG ?? "nl",
     user: {
-      name: user?.name || null,
-      image: user?.image || null,
-      email: user?.email || null,
-      role: user?.role || null,
+      name: user?.name ?? null,
+      image: user?.image ?? null,
+      email: user?.email ?? null,
+      role: user?.role ?? null,
     }
   }
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useRouteLoaderData<typeof loader>("root");
-  const theme = loaderData?.theme || "dark";
+  const theme = loaderData?.theme ?? "dark";
   const lang = loaderData?.lang;
 
   initI18n(lang);
@@ -98,7 +98,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       error.status === 404
         ? t("errors.404.message")
         : t("errors.500.message");
-    technicalDetails = error.statusText || `${error.status}`;
+    technicalDetails = error.statusText || error.status.toString();
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message || details;
     stack = error.stack;
@@ -134,7 +134,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
         <button
           type="button"
-          onClick={() => setIsMoreInfoOpen((value) => !value)}
+          onClick={() => { setIsMoreInfoOpen((value) => !value); }}
           className="mt-3 inline-flex items-center gap-1 text-[13px] text-muted-foreground/70 hover:text-foreground transition-colors"
         >
           {t("errors.page.moreInfo")}

@@ -44,7 +44,7 @@ export function getBetterAuthErrorMessage(error: unknown): string {
       error?: string;
     };
 
-    const candidateCode = typedError.code || typedError.error;
+    const candidateCode = typedError.code ?? typedError.error;
     if (candidateCode) {
       const normalized = normalizeErrorCode(candidateCode);
       const key = errorCodeToTranslationKey[normalized];

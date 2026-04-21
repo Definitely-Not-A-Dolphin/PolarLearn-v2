@@ -10,7 +10,7 @@ export default function Home() {
       <h1>{t("home.title")}</h1>
       <p>{t("home.description")}</p>
       <br />
-      <Button textColor="black" onClick={() => navigate("/auth/sign-in")}>
+      <Button textColor="black" onClick={() => { void navigate("/auth/sign-in"); }}>
         {t("auth:actions.login")}
       </Button>
     </>

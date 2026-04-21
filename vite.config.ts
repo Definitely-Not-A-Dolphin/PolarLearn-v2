@@ -50,4 +50,7 @@ export default defineConfig({
       'snappy'
     ]
   },
+  build: {
+    target: "esnext"
+  }
 });

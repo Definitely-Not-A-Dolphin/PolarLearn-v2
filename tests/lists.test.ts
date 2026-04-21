@@ -2,55 +2,56 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { appRouter } from "~/server/main"
 import { createCallerFactory } from "~/server/trpc"
 
+import type { List, Prisma, PrismaClient } from "@prisma/client"
+
 const mocks = vi.hoisted(() => {
-  const lists = new Map<string, any>()
+  const lists = new Map<string, List>()
 
   const prisma = {
     list: {
-      findFirst: vi.fn(async ({ where }: { where: { id: string } }) => {
+      findFirst: vi.fn(({ where }: { where: { id: string } }) => {
         const record = lists.get(where.id)
-        return record ? structuredClone(record) : null
+        return Promise.resolve(record ? structuredClone(record) : null)
       }),
-      create: vi.fn(async ({ data }: { data: any }) => {
-        const record = {
+      create: vi.fn(({ data }: { data: Prisma.ListUncheckedCreateInput }) => {
+        const record: List = {
           id: data.id,
           name: data.name,
           description: data.description ?? null,
           subject: data.subject,
           userId: data.userId,
-          items: structuredClone(data.items),
-          versionData: structuredClone(data.versionData),
-          collaborators: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          items: structuredClone(data.items) as Prisma.JsonValue,
+          versionData: structuredClone(data.versionData) as Prisma.JsonValue,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }
 
         lists.set(record.id, record)
-        return structuredClone(record)
+        return Promise.resolve(structuredClone(record))
       }),
-      update: vi.fn(async ({ where, data }: { where: { id: string }, data: any }) => {
+      update: vi.fn(({ where, data }: { where: { id: string }, data: Prisma.ListUncheckedUpdateInput }) => {
         const existing = lists.get(where.id)
 
         if (!existing) {
-          throw new Error(`Missing list ${where.id}`)
+          return Promise.reject(new Error(`Missing list ${where.id}`))
         }
 
-        const updated = {
+        const updated: List = {
           ...existing,
-          ...data,
-          name: data.name ?? existing.name,
-          description: data.description ?? existing.description,
-          subject: data.subject ?? existing.subject,
-          items: data.items ?? existing.items,
-          versionData: data.versionData ?? existing.versionData,
+          name: typeof data.name === 'string' ? data.name : existing.name,
+          description: typeof data.description === 'string' ? data.description : existing.description,
+          subject: typeof data.subject === 'string' ? data.subject : existing.subject,
+          items: data.items ? (data.items as Prisma.JsonValue) : existing.items,
+          versionData: data.versionData ? (data.versionData as Prisma.JsonValue) : existing.versionData,
+          updatedAt: new Date(),
         }
 
         lists.set(where.id, updated)
-        return structuredClone(updated)
+        return Promise.resolve(structuredClone(updated))
       }),
     },
     user: {
-      findFirst: vi.fn(async () => null),
+      findFirst: vi.fn(() => Promise.resolve(null)),
     },
   }
 
@@ -64,7 +65,7 @@ vi.mock("~/lib/db", () => ({
 vi.mock("~/lib/auth/server", () => ({
   auth: {
     api: {
-      getSession: vi.fn(async () => null),
+      getSession: vi.fn(() => Promise.resolve(null)),
     },
   },
 }))
@@ -85,9 +86,9 @@ const branchItem = {
 
 function createAuthedCaller(userId = "user-1") {
   return createCaller({
-    prisma: mocks.prisma as any,
+    prisma: mocks.prisma as unknown as PrismaClient,
     user: { id: userId },
-  } as any)
+  } as unknown as Parameters<typeof createCaller>[0])
 }
 
 function buildInitialDiff() {

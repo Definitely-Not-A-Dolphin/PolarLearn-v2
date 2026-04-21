@@ -1,9 +1,9 @@
 import type { TRPCRouterRecord } from '@trpc/server'
 
-import { protectedProcedure, publicProcedure } from '~/server/trpc'
+import { publicProcedure } from '~/server/trpc'
 
 export const forumRouter = {
-  getPosts: publicProcedure.query(async ({ ctx }) => {
-    
+  getPosts: publicProcedure.query(() => {
+    return []
   })
 } satisfies TRPCRouterRecord

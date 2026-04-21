@@ -1,8 +1,8 @@
-export type Quote = {
+export interface Quote {
   text: string;
   author: string;
   lang: string;
-};
+}
 
 export const quotes: Quote[] = [
   {

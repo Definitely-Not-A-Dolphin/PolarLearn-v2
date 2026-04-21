@@ -22,7 +22,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
     return redirect('/home')
   }
 
-  const lang = process.env.APP_LANG || "nl";
+  const lang = process.env.APP_LANG ?? "nl";
 
   return {
     quote: getRandomQuote(lang),
@@ -31,9 +31,21 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 }
 
 export default function SignInPage() {
+  interface RootData {
+    theme: "light" | "dark";
+    lang: string;
+    user: {
+      name: string | null;
+      image: string | null;
+      email: string | null;
+      role: string | null;
+    } | null;
+  }
+
   const { quote, enableEntreeFederatedSignIn } = useLoaderData<typeof loader>();
-  const rootData = useRouteLoaderData("root") as any;
-  const theme = rootData?.theme || "dark";
+  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+  const rootData = useRouteLoaderData("root") as RootData;
+  const theme = rootData.theme;
   const t = i18n.t;
   const navigate = useNavigate();
 
@@ -48,7 +60,7 @@ export default function SignInPage() {
 
   useGSAP(() => {
     if (showPassword && passwordContainerRef.current) {
-      gsap.fromTo(
+      void gsap.fromTo(
         passwordContainerRef.current,
         { height: 0, opacity: 0 },
         { height: "auto", opacity: 1, duration: 0.4, ease: "power2.out" }
@@ -69,42 +81,38 @@ export default function SignInPage() {
       <div className="p-10 w-full md:w-[33%] flex flex-col">
         <h1 className="text-5xl font-bold">{t("auth:signIn.title")}</h1>
         <p className="text-xl mt-3">{t("auth:signIn.subtitle")}</p>
-        <form onSubmit={async (e: React.FormEvent) => {
+        <form onSubmit={(e: React.SyntheticEvent) => {
           e.preventDefault();
           setIsLoading(true);
 
           if (!showPassword) {
-            try {
-              const sso = await authClient.signIn.sso({
-                email: email,
-                callbackURL: "/home",
-              });
-
+            authClient.signIn.sso({
+              email: email,
+              callbackURL: "/home",
+            }).then((sso) => {
               if (sso.error) {
                 setShowPassword(true);
               }
-            } catch (err) {
+            }).catch(() => {
               setShowPassword(true);
-            } finally {
+            }).finally(() => {
               setIsLoading(false);
-            }
+            });
           } else {
-            try {
-              const res = await authClient.signIn.email({
-                email,
-                password,
-              });
-
-              if (res?.error) {
+            authClient.signIn.email({
+              email,
+              password,
+            }).then((res) => {
+              if (res.error) {
                 toast.error(getBetterAuthErrorMessage(res.error));
               } else {
-                navigate("/home");
+                void navigate("/home");
               }
-            } catch (err: any) {
+            }).catch((err: unknown) => {
               toast.error(getBetterAuthErrorMessage(err));
-            } finally {
+            }).finally(() => {
               setIsLoading(false);
-            }
+            });
           }
         }}>
           <label
@@ -118,7 +126,7 @@ export default function SignInPage() {
             placeholder={t("auth:signIn.emailPlaceholder")}
             className="w-full "
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); }}
             disabled={showPassword}
             required
           />
@@ -136,7 +144,7 @@ export default function SignInPage() {
               placeholder={t("auth:signIn.passwordPlaceholder")}
               className="w-full mb-2"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); }}
               required={showPassword}
             />
             <Link

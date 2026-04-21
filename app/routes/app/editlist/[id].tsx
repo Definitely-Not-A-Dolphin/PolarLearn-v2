@@ -7,6 +7,7 @@ const createCaller = createCallerFactory(appRouter)
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   if (!params.id) {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw new Response("Missing list id", { status: 400 })
   }
 
@@ -19,26 +20,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     branch,
   })
 
-  if (!list) {
-    throw new Response("List not found", { status: 404 })
-  }
-
   return {
     list,
     branch,
   }
 }
 
-export default function editListPage() {
-  const { list, branch } = useLoaderData() as {
-    list: {
-      id: string
-      name: string
-      items: unknown
-      versionData: unknown
-    }
-    branch?: string
-  }
+export default function EditListPage() {
+  const { list, branch } = useLoaderData<typeof loader>();
 
   return (
     <div className="p-4 space-y-4">

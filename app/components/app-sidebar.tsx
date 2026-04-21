@@ -83,8 +83,20 @@ export function AppSidebar() {
   const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/"
   const currentPath = normalizePath(location.pathname)
 
-  const rootData = useRouteLoaderData("root") as any
-  const theme = rootData?.theme || "dark"
+  interface RootData {
+    theme: "light" | "dark";
+    lang: string;
+    user: {
+      name: string | null;
+      image: string | null;
+      email: string | null;
+      role: string | null;
+    } | null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+  const rootData = useRouteLoaderData("root") as RootData;
+  const theme = rootData.theme
 
   const navItems = [
     { title: "navigation.home", icon: Home, url: "/home" },
@@ -101,9 +113,10 @@ export function AppSidebar() {
     return currentPath === normalizedItemUrl || currentPath.startsWith(`${normalizedItemUrl}/`)
   }
 
-  const handleLogout = async () => {
-    await authClient.signOut();
-    navigate("/auth/sign-in");
+  const handleLogout = () => {
+    void authClient.signOut().then(() => {
+      void navigate("/auth/sign-in");
+    });
   }
 
   return (
@@ -151,7 +164,7 @@ export function AppSidebar() {
                 <SidebarTooltip label={i18n.t(item.title)}>
                   <Button
                     scheme={theme}
-                    onClick={() => navigate(item.url)}
+                    onClick={() => void navigate(item.url)}
                     className={cn(
                       "flex h-9 w-full items-center rounded-xl",
                       isCollapsed ? "justify-center p-0!" : "justify-start",
@@ -193,19 +206,19 @@ export function AppSidebar() {
                     {rootData.user?.image ? (
                       <Image
                         src={rootData.user.image}
-                        alt={rootData.user.name}
+                        alt={rootData.user.name ?? "User"}
                         width={40}
                         height={40}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-xs font-medium uppercase">{rootData.user?.name?.charAt(0) || "U"}</span>
+                      <span className="text-xs font-medium uppercase">{rootData.user?.name?.charAt(0) ?? "U"}</span>
                     )}
                   </div>
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
-                        {rootData.user?.name || i18n.t("userMenu.guest")}
+                        {rootData.user?.name ?? i18n.t("userMenu.guest")}
                       </span>
                       <ChevronsUpDown className="size-4 shrink-0 opacity-70" />
                     </>
@@ -226,17 +239,17 @@ export function AppSidebar() {
                       {rootData.user?.image ? (
                         <Image
                           src={rootData.user.image}
-                          alt={rootData.user.name}
+                          alt={rootData.user.name ?? "User"}
                           width={40}
                           height={40}
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-sm font-medium uppercase">{rootData.user?.name?.charAt(0) || "U"}</span>
+                        <span className="text-sm font-medium uppercase">{rootData.user?.name?.charAt(0) ?? "U"}</span>
                       )}
                     </div>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{rootData.user?.name || i18n.t("userMenu.guest")}</span>
+                      <span className="truncate font-medium">{rootData.user?.name ?? i18n.t("userMenu.guest")}</span>
                       {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}
                     </div>
                   </div>
@@ -251,7 +264,7 @@ export function AppSidebar() {
                       scheme={theme}
                       className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                       icon={<ShieldUser size={20} />}
-                      onClick={() => navigate("/administrator")}>
+                      onClick={() => void navigate("/administrator")}>
                       {i18n.t("userMenu.admin")}
                     </Button>
                   </DropdownMenuGroup>
@@ -263,7 +276,7 @@ export function AppSidebar() {
                     scheme={theme}
                     className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                     icon={<Cog size={20} />}
-                    onClick={() => navigate("/app/usersettings")}>
+                    onClick={() => void navigate("/app/usersettings")}>
                     {i18n.t("userMenu.settings")}
                   </Button>
                 </DropdownMenuGroup>

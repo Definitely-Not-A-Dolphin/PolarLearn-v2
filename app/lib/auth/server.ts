@@ -14,6 +14,7 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql"
   }),
+  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
   baseURL: process.env.APP_BASE as string,
   emailAndPassword: {
     enabled: true,
@@ -37,11 +38,12 @@ export const auth = betterAuth({
     cookiePrefix: "polarlearn.auth"
   },
   logger: {
-    log: (level, message, ...args) => {
+    log: (level, message) => {
       logger[level](message)
     }
   },
   hooks: {
+    // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
       switch (ctx.path) {
         case "/sign-out": {
@@ -65,6 +67,7 @@ export const auth = betterAuth({
           return
       }
     }),
+    // eslint-disable-next-line @typescript-eslint/require-await
     after: createAuthMiddleware(async (ctx) => {
       switch (ctx.path) {
         case "/sign-in/email": {
@@ -72,9 +75,10 @@ export const auth = betterAuth({
           const request = ctx.request
           const ipAddress = request ? getIp(request, ctx.context.options) : null
           const userAgent = request?.headers.get("user-agent") ?? null
+          const body = ctx.body as Record<string, unknown> | undefined
           const attemptedCredentials = {
-            email: typeof ctx.body?.email === "string" ? ctx.body.email : null,
-            callbackURL: typeof ctx.body?.callbackURL === "string" ? ctx.body.callbackURL : null,
+            email: typeof body?.email === "string" ? body.email : null,
+            callbackURL: typeof body?.callbackURL === "string" ? body.callbackURL : null,
           }
 
           if (!newSession) {

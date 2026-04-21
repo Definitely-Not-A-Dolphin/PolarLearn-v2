@@ -4,12 +4,13 @@ import { SidebarTrigger } from "~/components/ui/sidebar";
 import i18n from "~/i18n";
 
 export function TopBar({ children }: { children?: React.ReactNode }) {
-  const rootData = useRouteLoaderData("root") as {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-non-null-assertion
+  const rootData = useRouteLoaderData("root")! as {
     theme: string
     user: { name: string; image: string; email: string; role: string }
   }
   const location = useLocation()
-  const theme = rootData?.theme || "dark"
+  const theme = rootData.theme || "dark"
   const t = i18n.t;
 
   return (

@@ -2,7 +2,7 @@
 
 import superjson from 'superjson'
 
-import { ZodError } from 'zod'
+import { z, ZodError } from 'zod'
 import { initTRPC, TRPCError } from '@trpc/server'
 
 import { prisma } from '~/lib/db'
@@ -25,7 +25,7 @@ const t = initTRPC.context<Context>().create({
     ...shape,
     data: {
       ...shape.data,
-      zodError: error.cause instanceof ZodError ? error.cause.flatten() : null
+      zodError: error.cause instanceof ZodError ? z.treeifyError(error.cause) : null
     }
   })
 })

@@ -99,7 +99,7 @@ const listRecordSchema = z.object({
   items: listSnapshotSchema,
   versionData,
   collaborators: z.array(z.object({ id: z.string() })),
-}).passthrough()
+}).catchall(z.any())
 
 type VersionCommit = z.infer<typeof versionCommitSchema>
 type VersionData = z.infer<typeof versionData>
@@ -122,7 +122,7 @@ function hasBranchAccess(list: ListRecord, branch: BranchRecord, userId: string)
 function getBranchOrThrow(versioning: VersionData, branchName: string): BranchRecord {
   const selectedBranch = versioning.branches[branchName]
 
-  if (!selectedBranch) {
+  if (!(branchName in versioning.branches)) {
     throw new TRPCError({
       code: 'NOT_FOUND',
       message: t('lists.branches.notFound', { branchName }),
@@ -200,7 +200,9 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
       })
     }
 
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
     const resolvedMainItem = mainItem as ListItem
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
     const resolvedBranchItem = branchItem as ListItem
 
     if (areListItemsEqual(resolvedMainItem, resolvedBranchItem)) {
@@ -296,9 +298,9 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
 function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSnapshot {
   try {
     return jsonpatch.applyPatch(
-      structuredClone(snapshot) as any,
-      listDiff.changes as any,
-    ).newDocument as ListSnapshot;
+      structuredClone(snapshot),
+      listDiff.changes as jsonpatch.Operation[],
+    ).newDocument;
   } catch {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -338,7 +340,7 @@ export const ListRouter = createTRPCRouter({
       const resolvedBranchName = input.branch ?? 'main'
       const selectedBranch = versioning.branches[resolvedBranchName]
 
-      if (!selectedBranch) {
+      if (!(resolvedBranchName in versioning.branches)) {
         throw new TRPCError({
           code: 'NOT_FOUND',
         })
@@ -378,20 +380,20 @@ export const ListRouter = createTRPCRouter({
       const resolvedBranchName = input.branch ?? 'main'
       const selectedBranch = versioning.branches[resolvedBranchName]
 
-      if (!selectedBranch) {
+      if (!(resolvedBranchName in versioning.branches)) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: t('lists.branches.notFound', { branchName: resolvedBranchName }),
         })
       }
-      const history: Array<z.infer<typeof versionCommitSchema> & { id: string }> = []
+      const history: (z.infer<typeof versionCommitSchema> & { id: string })[] = []
 
       let currentCommitId: string | null | undefined = selectedBranch.headCommitId
 
       while (currentCommitId) {
         const commit: VersionCommit | undefined = versioning.commits[currentCommitId]
 
-        if (!commit) {
+        if (!(currentCommitId in versioning.commits)) {
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: t('lists.commits.notFound', { commitId: currentCommitId }),
@@ -494,9 +496,8 @@ export const ListRouter = createTRPCRouter({
         })
       }
 
-      const headCommit = versioning.commits[headCommitId]
 
-      if (!headCommit) {
+      if (!(headCommitId in versioning.commits)) {
         throw new TRPCError({
           code: 'NOT_FOUND',
         })
@@ -566,7 +567,7 @@ export const ListRouter = createTRPCRouter({
 
       // PS: no auth checks, anyone should be able to create a pr / suggest new items
 
-      if (versioning.branches[input.newBranchName]) {
+      if (input.newBranchName in versioning.branches) {
         throw new TRPCError({
           code: 'CONFLICT',
         })
@@ -888,13 +889,13 @@ export const ListRouter = createTRPCRouter({
         })
       }
 
-      const commitsInOrder: Array<VersionCommit> = []
+      const commitsInOrder: VersionCommit[] = []
       let currentCommitId: string | null | undefined = currentBranch.baseCommitId
 
       while (currentCommitId) {
         const commit: VersionCommit | undefined = versioning.commits[currentCommitId]
 
-        if (!commit) {
+        if (!(currentCommitId in versioning.commits)) {
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: t('lists.commits.notFound', { commitId: currentCommitId }),
@@ -920,14 +921,14 @@ export const ListRouter = createTRPCRouter({
           for (let index = mainSnapshot.length - 1; index >= 0; index -= 1) {
             changes.push({
               op: 'remove',
-              path: `/${index}`,
+              path: `/${index.toString()}`,
             })
           }
 
           for (let index = 0; index < mergedSnapshot.length; index += 1) {
             changes.push({
               op: 'add',
-              path: `/${index}`,
+              path: `/${index.toString()}`,
               value: structuredClone(mergedSnapshot[index]),
             })
           }

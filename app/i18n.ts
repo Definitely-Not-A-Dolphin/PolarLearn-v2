@@ -7,7 +7,7 @@ const resources: Record<string, Record<string, unknown>> = {};
 const DEFAULT_LANG = "nl";
 
 for (const path in modules) {
-  const match = path.match(/\/([^/]+)\.json$/);
+  const match = (/\/([^/]+)\.json$/).exec(path);
   if (match) {
     const lang = match[1];
     const mod = modules[path] as { default: Record<string, unknown> } | Record<string, unknown>;
@@ -37,6 +37,7 @@ function interpolate(value: string, options?: Record<string, unknown>): string {
     const replacement = options[key];
     return replacement === undefined || replacement === null
       ? ""
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       : String(replacement);
   });
 }

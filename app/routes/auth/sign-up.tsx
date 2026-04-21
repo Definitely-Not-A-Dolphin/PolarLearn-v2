@@ -19,7 +19,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
     return redirect('/home')
   }
 
-  const lang = process.env.APP_LANG || "nl";
+  const lang = process.env.APP_LANG ?? "nl";
 
   return {
     quote: getRandomQuote(lang),
@@ -27,9 +27,21 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 }
 
 export default function SignUpPage() {
+  interface RootData {
+    theme: "light" | "dark";
+    lang: string;
+    user: {
+      name: string | null;
+      image: string | null;
+      email: string | null;
+      role: string | null;
+    } | null;
+  }
+
   const { quote } = useLoaderData<typeof loader>();
-  const rootData = useRouteLoaderData("root") as any;
-  const theme = rootData?.theme || "dark";
+  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+  const rootData = useRouteLoaderData("root") as RootData;
+  const theme = rootData.theme;
   const t = i18n.t;
   const navigate = useNavigate();
 
@@ -59,30 +71,29 @@ export default function SignUpPage() {
         <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signUp.title")}</h1>
         <p className="text-lg mb-8 text-neutral-300">{t("auth:signUp.subtitle")}</p>
         <form
-          onSubmit={async (e) => {
+          onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);
             const username = formData.get("username") as string;
             const email = formData.get("email") as string;
-            const password = formData.get("password") as string;
-            try {
-              const res = await authClient.signUp.email({
-                name: username,
-                username,
-                email,
-                password,
-              });
-
+            const passwordValue = formData.get("password") as string;
+            
+            authClient.signUp.email({
+              name: username,
+              username,
+              email,
+              password: passwordValue,
+            }).then((res) => {
               if (res.error) {
                 toast.error(getBetterAuthErrorMessage(res.error));
                 return;
               }
 
               toast.success(t("auth:signUp.ok"));
-              navigate("/auth/sign-in");
-            } catch (err) {
+              void navigate("/auth/sign-in");
+            }).catch((err: unknown) => {
               toast.error(getBetterAuthErrorMessage(err));
-            }
+            });
           }}
         >
           <label
@@ -131,11 +142,11 @@ export default function SignUpPage() {
               placeholder={t("auth:signUp.passwordPlaceholder")}
               className="w-full pr-10"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); }}
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => { setShowPassword(!showPassword); }}
               className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
             >
               {showPassword ? <Eye /> : <EyeOff />}
@@ -161,7 +172,7 @@ export default function SignUpPage() {
                     >
                       <div
                         className={`absolute inset-0 rounded-full origin-left transition-transform duration-300 ease-out ${activeColor} ${isActive ? "scale-x-100" : "scale-x-0"}`}
-                        style={{ transitionDelay: `${(level - 1) * 70}ms` }}
+                        style={{ transitionDelay: `${((level - 1) * 70).toString()}ms` }}
                       />
                     </div>
                   );

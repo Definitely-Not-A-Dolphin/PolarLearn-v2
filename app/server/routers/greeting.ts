@@ -8,10 +8,10 @@ export const greetingRouter = {
   hello: publicProcedure.query(() => {
     return 'hello world'
   }),
-  user: protectedProcedure.query(async ({ input, ctx }) => {
+  user: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findFirst({
       where: {
-        id: ctx.user?.id
+        id: ctx.user.id
       }
     })
 

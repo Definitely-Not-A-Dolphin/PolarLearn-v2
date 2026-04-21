@@ -1,16 +1,12 @@
-import { Image, type ImageProps } from "@unpic/react"
-
+import { type SubjectNames } from "./subjects"
+import { subjectIcons } from "./subjecticons"
 import i18n from "../i18n"
-import { subjectIcons } from "./subjecticons.ts"
-import { SubjectNamesArray, type SubjectNames } from "./subjects.ts"
-
-export type { SubjectNames }
-export { SubjectNamesArray }
+import { Image, type ImageProps } from "@unpic/react"
 
 export type SubjectIconProps = Omit<ImageProps, "src" | "alt" | "layout" | "aspectRatio">
 
-type SubjectMetadata = {
-  icon: ImageProps["src"]
+interface SubjectMetadata {
+  icon: string
   labelKey: string
   defaultLabel: string
 }
@@ -106,7 +102,7 @@ export const subjects: Record<SubjectNames, SubjectMetadata> = {
     labelKey: "subjects.spanish",
     defaultLabel: "Spanish",
   },
-} satisfies Record<SubjectNames, SubjectMetadata>
+}
 
 export class Subject {
   public getIcon(subject: SubjectNames, props: SubjectIconProps = {}) {

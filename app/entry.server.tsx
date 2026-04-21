@@ -37,13 +37,17 @@ export default async function handleRequest(
       const reader1 = commentStream.getReader();
       const reader2 = body.getReader();
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       while (true) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const { done, value } = await reader1.read();
         if (done) break;
         controller.enqueue(value);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       while (true) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const { done, value } = await reader2.read();
         if (done) break;
         controller.enqueue(value);

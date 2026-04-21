@@ -60,11 +60,11 @@ const transports: winston.transport[] = [
 
 const lokiHost = process.env.LOKI_HOST
 
-if (!!lokiHost) {
+if (lokiHost) {
   transports.push(
     new LokiTransport({
       host: lokiHost,
-      basicAuth: process.env.LOKI_BASIC_AUTH?.trim() || undefined,
+      basicAuth: process.env.LOKI_BASIC_AUTH?.trim() ?? undefined,
       format: winston.format.json(),
       json: true,
       labels: {
