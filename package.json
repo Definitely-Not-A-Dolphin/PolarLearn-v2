@@ -13,7 +13,7 @@
     "@better-auth/passkey": "^1.6.3",
     "@better-auth/sso": "^1.6.3",
     "@gsap/react": "^2.1.2",
-    "@polarnl/polarui-react": "^0.1.3",
+    "@polarnl/polarui-react": "^0.2.0",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@react-router/node": "7.13.2",
