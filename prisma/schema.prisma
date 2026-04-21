@@ -289,11 +289,15 @@ model ForumPost {
   id       String  @id
   content  String
   category String
+  subject  String // only if category == "school-related"
   votes    Int     @default(0)
   userId   String
   user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   voters   Json
   deleted  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }

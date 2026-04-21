@@ -23,6 +23,31 @@
   "learning": {
     "initialCommit": "Initieel commit"
   },
+  "lists": {
+    "branches": {
+      "notFound": "Branch {{branchName}} is niet gevonden",
+      "cannotMergeMainIntoItself": "De main branch kan niet in zichzelf worden samengevoegd",
+      "onlyMainClonesCanMerge": "Alleen branches die van main zijn gekloond kunnen in main worden samengevoegd",
+      "prOnlyFromMain": "Pull requests kunnen alleen worden aangemaakt van branches die van main zijn gekloond",
+      "prCloseOnlyFromMain": "Pull requests kunnen alleen worden gesloten voor branches die van main zijn gekloond",
+      "prReopenOnlyFromMain": "Pull requests kunnen alleen opnieuw worden geopend voor branches die van main zijn gekloond",
+      "prReopenRequiresClosed": "Pull requests kunnen alleen opnieuw worden geopend nadat ze zijn gesloten"
+    },
+    "commits": {
+      "notFound": "Commit {{commitId}} is niet gevonden",
+      "initial": "Initieel commit",
+      "merge": "Branch {{branch}} samenvoegen met main"
+    },
+    "merge": {
+      "conflictBothCreatedDifferently": "Kan item {{itemId}} niet samenvoegen omdat het anders is aangemaakt op beide branches",
+      "conflictMainDeletedBranchChanged": "Kan item {{itemId}} niet samenvoegen omdat main het heeft verwijderd terwijl de branch het heeft gewijzigd",
+      "conflictBranchDeletedMainChanged": "Kan item {{itemId}} niet samenvoegen omdat de branch het heeft verwijderd terwijl main het heeft gewijzigd",
+      "conflictBothChangedField": "Kan item {{itemId}} niet samenvoegen omdat beide branches {{field}} hebben gewijzigd"
+    },
+    "diff": {
+      "cannotApply": "Kan verschil niet toepassen op lijst"
+    }
+  },
   "subjects": {
     "art": "Kunst",
     "biology": "Biologie",

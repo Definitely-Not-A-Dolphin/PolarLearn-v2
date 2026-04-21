@@ -4,6 +4,7 @@ import crypto from "crypto";
 import * as jsonpatch from "fast-json-patch";
 import { SubjectNamesArray } from "~/lib/subjects";
 import { TRPCError } from "@trpc/server";
+import { t } from "~/i18n";
 
 function generateCommitHash(diff: Diff): string {
   return crypto.createHash("sha256")
@@ -89,25 +90,6 @@ export const versionData = z.object({
   commits: z.record(z.string(), versionCommitSchema)
 })
 
-const branchSummarySchema = z.object({
-  name: z.string(),
-  owner: z.string(),
-  baseCommitId: z.string(),
-  headCommitId: z.string(),
-  parentBranch: z.string().optional(),
-  isPR: z.boolean().optional(),
-  PR: pullRequestSchema.optional(),
-})
-
-const branchHistoryEntrySchema = z.object({
-  id: z.string(),
-  parentId: z.string().nullish(),
-  author: z.string(),
-  message: z.string(),
-  createdAt: z.string(),
-  diff,
-})
-
 const listRecordSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -124,8 +106,6 @@ type VersionData = z.infer<typeof versionData>
 type BranchRecord = z.infer<typeof branchRecordSchema>
 type ListRecord = z.infer<typeof listRecordSchema>
 type ListItem = z.infer<typeof listItem>
-
-const listItemFields: Array<Exclude<keyof ListItem, 'id'>> = ['question', 'answer']
 
 function areListItemsEqual(left: ListItem, right: ListItem): boolean {
   return left.id === right.id
@@ -145,74 +125,11 @@ function getBranchOrThrow(versioning: VersionData, branchName: string): BranchRe
   if (!selectedBranch) {
     throw new TRPCError({
       code: 'NOT_FOUND',
-      message: `Branch ${branchName} was not found`,
+      message: t('lists.branches.notFound', { branchName }),
     })
   }
 
   return selectedBranch
-}
-
-function getCommitSnapshot(versioning: VersionData, commitId: string): ListSnapshot {
-  const commitsInOrder: Array<VersionCommit> = []
-
-  let currentCommitId: string | null | undefined = commitId
-
-  while (currentCommitId) {
-    const commit: VersionCommit | undefined = versioning.commits[currentCommitId]
-
-    if (!commit) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: `Commit ${currentCommitId} was not found`,
-      })
-    }
-
-    commitsInOrder.push(commit)
-    currentCommitId = commit.parentId ?? undefined
-  }
-
-  return commitsInOrder
-    .reverse()
-    .reduce<ListSnapshot>((snapshot, commit) => applyListDiffToSnapshot(snapshot, commit.diff), [])
-}
-
-function mergeListItem(baseItem: ListItem, mainItem: ListItem, branchItem: ListItem): ListItem {
-  const mergedItem = structuredClone(baseItem) as ListItem
-
-  for (const field of listItemFields) {
-    const baseValue = baseItem[field]
-    const mainValue = mainItem[field]
-    const branchValue = branchItem[field]
-
-    if (Object.is(mainValue, branchValue)) {
-      mergedItem[field] = mainValue
-      continue
-    }
-
-    const mainChanged = !Object.is(mainValue, baseValue)
-    const branchChanged = !Object.is(branchValue, baseValue)
-
-    if (mainChanged && branchChanged) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: `Unable to merge item ${baseItem.id} because both branches changed ${field}`,
-      })
-    }
-
-    if (mainChanged) {
-      mergedItem[field] = mainValue
-      continue
-    }
-
-    if (branchChanged) {
-      mergedItem[field] = branchValue
-      continue
-    }
-
-    mergedItem[field] = baseValue
-  }
-
-  return mergedItem
 }
 
 function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnapshot): ListSnapshot {
@@ -237,7 +154,7 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
         if (!areListItemsEqual(mainItem, branchItem)) {
           throw new TRPCError({
             code: 'CONFLICT',
-            message: `Unable to merge item ${itemId} because it was created differently on both branches`,
+            message: t('lists.merge.conflictBothCreatedDifferently', { itemId }),
           })
         }
 
@@ -268,7 +185,7 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
 
       throw new TRPCError({
         code: 'CONFLICT',
-        message: `Unable to merge item ${itemId} because main deleted it while the branch changed it`,
+        message: t('lists.merge.conflictMainDeletedBranchChanged', { itemId }),
       })
     }
 
@@ -279,7 +196,7 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
 
       throw new TRPCError({
         code: 'CONFLICT',
-        message: `Unable to merge item ${itemId} because the branch deleted it while main changed it`,
+        message: t('lists.merge.conflictBranchDeletedMainChanged', { itemId }),
       })
     }
 
@@ -309,7 +226,42 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
       continue
     }
 
-    mergedById.set(itemId, mergeListItem(baseItem, resolvedMainItem, resolvedBranchItem))
+    const mergedItem = structuredClone(baseItem)
+
+    for (const field of ['question', 'answer'] as const) {
+      const baseValue = baseItem[field]
+      const mainValue = resolvedMainItem[field]
+      const branchValue = resolvedBranchItem[field]
+
+      if (Object.is(mainValue, branchValue)) {
+        mergedItem[field] = mainValue
+        continue
+      }
+
+      const mainChanged = !Object.is(mainValue, baseValue)
+      const branchChanged = !Object.is(branchValue, baseValue)
+
+      if (mainChanged && branchChanged) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: t('lists.merge.conflictBothChangedField', { itemId: baseItem.id, field }),
+        })
+      }
+
+      if (mainChanged) {
+        mergedItem[field] = mainValue
+        continue
+      }
+
+      if (branchChanged) {
+        mergedItem[field] = branchValue
+        continue
+      }
+
+      mergedItem[field] = baseValue
+    }
+
+    mergedById.set(itemId, mergedItem)
   }
 
   const mergedSnapshot: ListSnapshot = []
@@ -341,27 +293,6 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
   return mergedSnapshot
 }
 
-function buildRewriteDiff(fromSnapshot: ListSnapshot, toSnapshot: ListSnapshot): Diff {
-  const changes: z.infer<typeof listPatchOperationSchema>[] = []
-
-  for (let index = fromSnapshot.length - 1; index >= 0; index -= 1) {
-    changes.push({
-      op: 'remove',
-      path: `/${index}`,
-    })
-  }
-
-  for (let index = 0; index < toSnapshot.length; index += 1) {
-    changes.push({
-      op: 'add',
-      path: `/${index}`,
-      value: structuredClone(toSnapshot[index]),
-    })
-  }
-
-  return diff.parse({ changes })
-}
-
 function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSnapshot {
   try {
     return jsonpatch.applyPatch(
@@ -371,7 +302,7 @@ function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSn
   } catch {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Unable to apply list diff',
+      message: t('lists.diff.cannotApply'),
     })
   }
 }
@@ -450,10 +381,10 @@ export const ListRouter = createTRPCRouter({
       if (!selectedBranch) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: `Branch ${resolvedBranchName} was not found`,
+          message: t('lists.branches.notFound', { branchName: resolvedBranchName }),
         })
       }
-      const history: Array<z.infer<typeof branchHistoryEntrySchema>> = []
+      const history: Array<z.infer<typeof versionCommitSchema> & { id: string }> = []
 
       let currentCommitId: string | null | undefined = selectedBranch.headCommitId
 
@@ -463,11 +394,18 @@ export const ListRouter = createTRPCRouter({
         if (!commit) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: `Commit ${currentCommitId} was not found`,
+            message: t('lists.commits.notFound', { commitId: currentCommitId }),
           })
         }
 
-        history.push(branchHistoryEntrySchema.parse({
+        history.push(z.object({
+          id: z.string(),
+          parentId: z.string().nullish(),
+          author: z.string(),
+          message: z.string(),
+          createdAt: z.string(),
+          diff,
+        }).parse({
           id: currentCommitId,
           parentId: commit.parentId,
           author: commit.author,
@@ -484,7 +422,15 @@ export const ListRouter = createTRPCRouter({
           ...list,
           items: structuredClone(selectedBranch.cachedSnapshot),
         },
-        branch: branchSummarySchema.parse({
+        branch: z.object({
+          name: z.string(),
+          owner: z.string(),
+          baseCommitId: z.string(),
+          headCommitId: z.string(),
+          parentBranch: z.string().optional(),
+          isPR: z.boolean().optional(),
+          PR: pullRequestSchema.optional(),
+        }).parse({
           name: resolvedBranchName,
           owner: selectedBranch.owner,
           baseCommitId: selectedBranch.baseCommitId,
@@ -681,7 +627,7 @@ export const ListRouter = createTRPCRouter({
               [initialCommitId]: {
                 parentId: null,
                 author: ctx.user.id,
-                message: 'Initial commit',
+                message: t('lists.commits.initial'),
                 createdAt: new Date().toISOString(),
                 diff: input.diff
               }
@@ -723,7 +669,7 @@ export const ListRouter = createTRPCRouter({
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Pull requests can only be created from branches cloned from main',
+          message: t('lists.branches.prOnlyFromMain'),
         })
       }
 
@@ -789,7 +735,7 @@ export const ListRouter = createTRPCRouter({
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Pull requests can only be closed for branches cloned from main',
+          message: t('lists.branches.prCloseOnlyFromMain'),
         })
       }
 
@@ -858,14 +804,14 @@ export const ListRouter = createTRPCRouter({
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Pull requests can only be reopened for branches cloned from main',
+          message: t('lists.branches.prReopenOnlyFromMain'),
         })
       }
 
       if (currentBranch.PR?.status !== 'closed') {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: 'Pull requests can only be reopened after they are closed',
+          message: t('lists.branches.prReopenRequiresClosed'),
         })
       }
 
@@ -919,20 +865,20 @@ export const ListRouter = createTRPCRouter({
       }
 
       const versioning = list.versionData
-      const mainBranch = getBranchOrThrow(versioning, 'main')
       const currentBranch = getBranchOrThrow(versioning, input.branch)
+      const mainBranch = getBranchOrThrow(versioning, 'main')
 
       if (input.branch === 'main') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'The main branch cannot be merged into itself',
+          message: t('lists.branches.cannotMergeMainIntoItself'),
         })
       }
 
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Only branches cloned from main can be merged into main',
+          message: t('lists.branches.onlyMainClonesCanMerge'),
         })
       }
 
@@ -942,14 +888,52 @@ export const ListRouter = createTRPCRouter({
         })
       }
 
-      const baseSnapshot = getCommitSnapshot(versioning, currentBranch.baseCommitId)
+      const commitsInOrder: Array<VersionCommit> = []
+      let currentCommitId: string | null | undefined = currentBranch.baseCommitId
+
+      while (currentCommitId) {
+        const commit: VersionCommit | undefined = versioning.commits[currentCommitId]
+
+        if (!commit) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: t('lists.commits.notFound', { commitId: currentCommitId }),
+          })
+        }
+
+        commitsInOrder.push(commit)
+        currentCommitId = commit.parentId ?? undefined
+      }
+
+      const baseSnapshot = commitsInOrder
+        .reverse()
+        .reduce<ListSnapshot>((snapshot, commit) => applyListDiffToSnapshot(snapshot, commit.diff), [])
       const mainSnapshot = structuredClone(mainBranch.cachedSnapshot)
       const branchSnapshot = structuredClone(currentBranch.cachedSnapshot)
       const mergedSnapshot = mergeSnapshots(baseSnapshot, mainSnapshot, branchSnapshot)
       const shouldCreateMergeCommit = JSON.stringify(mainSnapshot) !== JSON.stringify(mergedSnapshot)
 
       const mergeDiff = shouldCreateMergeCommit
-        ? buildRewriteDiff(mainSnapshot, mergedSnapshot)
+        ? (() => {
+          const changes: z.infer<typeof listPatchOperationSchema>[] = []
+
+          for (let index = mainSnapshot.length - 1; index >= 0; index -= 1) {
+            changes.push({
+              op: 'remove',
+              path: `/${index}`,
+            })
+          }
+
+          for (let index = 0; index < mergedSnapshot.length; index += 1) {
+            changes.push({
+              op: 'add',
+              path: `/${index}`,
+              value: structuredClone(mergedSnapshot[index]),
+            })
+          }
+
+          return diff.parse({ changes })
+        })()
         : null
 
       const mergeCommitId = mergeDiff
@@ -985,7 +969,7 @@ export const ListRouter = createTRPCRouter({
             [mergeCommitId]: {
               parentId: mainBranch.headCommitId,
               author: ctx.user.id,
-              message: `Merge branch ${input.branch} into main`,
+              message: t('lists.commits.merge', { branch: input.branch }),
               createdAt: new Date().toISOString(),
               diff: mergeDiff,
             },

@@ -74,4 +74,6 @@ export function initI18n(lang: string = DEFAULT_LANG) {
   return i18n.changeLanguage(lang);
 }
 
+export const t = translate;
+
 export default i18n;
