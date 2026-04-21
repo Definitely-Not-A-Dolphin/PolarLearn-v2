@@ -3,4 +3,4 @@ export const CATEGORIES = [
   "non-school-related",
   "announcement",
   "pr-discussion",
-]
+] as const

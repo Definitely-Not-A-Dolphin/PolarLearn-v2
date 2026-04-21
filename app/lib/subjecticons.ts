@@ -1,7 +1,5 @@
 import UnknownIcon from "../img/subjects/Unknown.svg"
 import Biology from "../img/subjects/Biology.svg"
-// import Chemistry from "../img/subjects/Chemistry.svg"
-const Chemistry = UnknownIcon;
 import Dutch from "../img/subjects/Dutch.svg"
 import English from "../img/subjects/English.svg"
 import French from "../img/subjects/French.svg"
@@ -14,12 +12,11 @@ import Math from "../img/subjects/Math.svg"
 import Physics from "../img/subjects/Physics.svg"
 import Spanish from "../img/subjects/Spanish.svg"
 
-import type { SubjectNames } from "./subjects"
+import type { SubjectNames } from "./subjectnames"
 
 export const subjectIcons: Record<SubjectNames, string> = {
   art: UnknownIcon,
   biology: Biology,
-  chemistry: Chemistry,
   computerScience: UnknownIcon,
   dutch: Dutch,
   economics: UnknownIcon,

@@ -1,4 +1,4 @@
-import { type SubjectNames } from "./subjects"
+import { type SubjectNames } from "./subjectnames"
 import { subjectIcons } from "./subjecticons"
 import i18n from "../i18n"
 import { Image, type ImageProps } from "@unpic/react"
@@ -21,11 +21,6 @@ export const subjects: Record<SubjectNames, SubjectMetadata> = {
     icon: subjectIcons.biology,
     labelKey: "subjects.biology",
     defaultLabel: "Biology",
-  },
-  chemistry: {
-    icon: subjectIcons.chemistry,
-    labelKey: "subjects.chemistry",
-    defaultLabel: "Chemistry",
   },
   computerScience: {
     icon: subjectIcons.computerScience,

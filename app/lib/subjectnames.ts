@@ -1,3 +1,5 @@
+// In environments where React is not available (e.g Vitest) and we need the subject names you can import them from this file instead of subjects.tsx, else it will error
+
 export const SubjectNamesArray = [
   "math",
   "english",
@@ -9,7 +11,6 @@ export const SubjectNamesArray = [
   "computerScience",
   "economics",
   "biology",
-  "chemistry",
   "physics",
   "greek",
   "latin",
