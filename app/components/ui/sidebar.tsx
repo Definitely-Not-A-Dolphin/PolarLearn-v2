@@ -234,7 +234,6 @@ function Sidebar({
         data-side={side}
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]/sidebar:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]/sidebar:right-[calc(var(--sidebar-width)*-1)] md:flex",
-          // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]/sidebar:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]/sidebar:w-(--sidebar-width-icon) group-data-[side=left]/sidebar:border-r group-data-[side=right]/sidebar:border-l",
@@ -265,6 +264,7 @@ function SidebarTrigger({
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
+      variant="transparent"
       className={cn(className)}
       onClick={(event) => {
         onClick?.(event)
@@ -308,7 +308,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        "relative flex min-w-0 w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
       {...props}

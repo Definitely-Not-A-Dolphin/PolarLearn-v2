@@ -19,7 +19,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   const result = await auth.api.getSession({ headers })
   const user = result?.user
   if (user) {
-    return redirect('/home')
+    return redirect('/app')
   }
 
   const lang = process.env.APP_LANG ?? "nl";
@@ -88,7 +88,7 @@ export default function SignInPage() {
           if (!showPassword) {
             authClient.signIn.sso({
               email: email,
-              callbackURL: "/home",
+              callbackURL: "/app",
             }).then((sso) => {
               if (sso.error) {
                 setShowPassword(true);
@@ -106,7 +106,7 @@ export default function SignInPage() {
               if (res.error) {
                 toast.error(getBetterAuthErrorMessage(res.error));
               } else {
-                void navigate("/home");
+                void navigate("/app");
               }
             }).catch((err: unknown) => {
               toast.error(getBetterAuthErrorMessage(err));

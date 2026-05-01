@@ -16,7 +16,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   const result = await auth.api.getSession({ headers })
   const user = result?.user
   if (user) {
-    return redirect('/home')
+    return redirect('/app')
   }
 
   const lang = process.env.APP_LANG ?? "nl";
@@ -77,7 +77,7 @@ export default function SignUpPage() {
             const username = formData.get("username") as string;
             const email = formData.get("email") as string;
             const passwordValue = formData.get("password") as string;
-            
+
             authClient.signUp.email({
               name: username,
               username,

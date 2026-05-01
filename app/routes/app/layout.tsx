@@ -10,9 +10,7 @@ export default function HomeLayout() {
       <SidebarProvider defaultOpen={false}>
         <AppSidebar />
         <SidebarInset className="bg-neutral-50 dark:bg-neutral-900 min-h-screen border-none outline-none ring-0">
-          <TopBar>
-            
-          </TopBar>
+          <TopBar/>
           <Outlet />
         </SidebarInset>
       </SidebarProvider>

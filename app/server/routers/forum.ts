@@ -16,24 +16,30 @@ export const forumRouter = {
       category: z.enum(CATEGORIES).optional(),
       authorId: z.string().min(1).optional(),
     }))
-    .query(async ({ input, ctx }) => {
-      const { cursor, limit, category, authorId } = input
-      const posts = await ctx.prisma.forumPost.findMany({
-        where: {
-          category: category ?? undefined,
-          authorId: authorId ?? undefined,
-          deleted: false,
-        },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: limit + 1,
-        cursor: cursor ? { id: cursor } : undefined,
-        skip: cursor ? 1 : 0,
-      })
-      const hasNextPage = posts.length > limit
-      const nextCursor = hasNextPage ? posts.pop()!.id : null
+   .query(async ({ input, ctx }) => {
+     const { cursor, limit, category, authorId } = input
+     const posts = await ctx.prisma.forumPost.findMany({
+       where: {
+         category: category ?? undefined,
+         authorId: authorId ?? undefined,
+         deleted: false,
+       },
+       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+       take: limit + 1,
+       cursor: cursor ? { id: cursor } : undefined,
+       skip: cursor ? 1 : 0,
+     })
+     const hasNextPage = posts.length > limit
+     let nextCursor: string | null = null
+     if (hasNextPage) {
+       const lastPost = posts.pop()
+       if (lastPost) {
+         nextCursor = lastPost.id
+       }
+     }
 
-      return { posts, nextCursor }
-    }),
+     return { posts, nextCursor }
+   }),
   createPost: protectedProcedure
     .input(z.object({
       title: z.string().min(1).max(255),
@@ -54,7 +60,7 @@ export const forumRouter = {
           cachedTotalVotes: 0,
           author: {
             connect: {
-              id: ctx.user!.id
+              id: ctx.user.id
             }
           },
         },
@@ -76,7 +82,7 @@ export const forumRouter = {
         select: { authorId: true },
       })
       if (!post) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
-      if (post.authorId !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only edit your own posts' })
+      if (post.authorId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only edit your own posts' })
 
       const updatedPost = await ctx.prisma.forumPost.update({
         where: { id },
@@ -100,7 +106,7 @@ export const forumRouter = {
         select: { authorId: true },
       })
       if (!post) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
-      if (post.authorId !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only delete your own posts' })
+      if (post.authorId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only delete your own posts' })
 
       await ctx.prisma.forumPost.update({
         where: { id },
@@ -122,13 +128,16 @@ export const forumRouter = {
       if (!post || post.deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
 
       const parsedVoters = votersSchema.safeParse(post.voters)
-      const voters = parsedVoters.success ? parsedVoters.data : {}
-      const currentVote = voters[ctx.user!.id]
+      let voters = parsedVoters.success ? parsedVoters.data : {}
+      const userId = ctx.user.id
+      const currentVote = voters[userId]
 
       if (currentVote === vote) {
-        delete voters[ctx.user!.id]
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [userId]: _, ...restVoters } = voters
+        voters = restVoters
       } else {
-        voters[ctx.user!.id] = vote
+        voters = { ...voters, [userId]: vote }
       }
 
       const voteValues = Object.values(voters)
@@ -163,7 +172,7 @@ export const forumRouter = {
           content,
           author: {
             connect: {
-              id: ctx.user!.id
+              id: ctx.user.id
             }
           },
           category: parentPost.category,

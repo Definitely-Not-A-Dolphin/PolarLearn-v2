@@ -5,7 +5,8 @@ import { Image, type ImageProps } from "@unpic/react"
 
 export type SubjectIconProps = Omit<ImageProps, "src" | "alt" | "layout" | "aspectRatio">
 
-interface SubjectMetadata {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type SubjectMetadata = {
   icon: string
   labelKey: string
   defaultLabel: string
@@ -92,11 +93,16 @@ export const subjects: Record<SubjectNames, SubjectMetadata> = {
     labelKey: "subjects.physics",
     defaultLabel: "Physics",
   },
+  chemistry: {
+    icon: subjectIcons.chemistry,
+    labelKey: "subjects.chemistry",
+    defaultLabel: "Chemistry",
+  },
   spanish: {
     icon: subjectIcons.spanish,
     labelKey: "subjects.spanish",
     defaultLabel: "Spanish",
-  },
+  }
 }
 
 export class Subject {

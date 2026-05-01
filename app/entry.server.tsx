@@ -8,6 +8,10 @@ export default async function handleRequest(
   responseHeaders: Headers,
   routerContext: EntryContext,
 ) {
+  if (responseStatusCode === 401) {
+    return Response.redirect(new URL("/auth/sign-in", request.url).toString(), 302);
+  }
+
   const body = await renderToReadableStream(
     <ServerRouter context={routerContext} url={request.url} />,
     {

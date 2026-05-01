@@ -1,5 +1,11 @@
+// If anyone changes the provider back to "prisma-client-js"
+// I will find you and take away your computer because
+// it seems like you do not deserve one.
+// Regards, andrei1010
+
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../app/prisma"
 }
 
 datasource db {
@@ -35,6 +41,7 @@ model User {
   collaboratingLists   List[]      @relation("ListCollaborators")
   quizzes              Quiz[]      @relation("QuizOwnership")
   collaboratingQuizzes Quiz[]      @relation("QuizCollaborators")
+  listSessions ListSession[]
 
   ssoproviders SsoProvider[]
 
@@ -249,18 +256,27 @@ model List {
   items         Json
   versionData   Json     @default("{}")
   collaborators User[]   @relation("ListCollaborators")
+  sessions ListSession[]
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
 }
 
-enum quizQuestionType {
-  select
-  input
-  text
-  multiple_choice
-  mind
+// NOTE: This schema has to be **IDENTICAL** to the Zustand store for seamless resuning of sessions.
+model ListSession {
+  id            String   @id
+  listId        String
+  list          List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queue         Json[]
+  answerLog     Json[]
+  requiresSync  Boolean  @default(false) // If a list gets updated then the session list is incoherent, will work as a user nudge to sync and get the new version of the list (aka delete the session)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Quiz {
@@ -279,11 +295,6 @@ model Quiz {
   @@index([userId])
 }
 
-enum VoteDirection {
-  up
-  down
-}
-
 model ForumPost {
   id        String      @id
   title     String? // not obligated for replies
@@ -291,6 +302,7 @@ model ForumPost {
   category  String
   subject   String? // only if category == "school-related"
   votes     Int         @default(0)
+  pinned    Boolean     @default(false)
   authorId  String
   author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   cachedTotalVotes Int         @default(0)

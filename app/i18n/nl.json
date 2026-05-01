@@ -2,7 +2,13 @@
   "home": {
     "title": "Welkom bij PolarLearn!",
     "description": "PolarLearn is een gratis en open-source leerplatform.",
-    "welcomeText": "Welkom terug, {{username}}!"
+    "welcomeText": "Welkom terug, {{username}}!",
+    "subject": "Vak",
+    "subjects": "Vakken",
+    "quickstart": "Quick-start",
+    "recentSubjects": "Recente vakken",
+    "noRecentSubjects": "Je hebt nog geen vakken bekeken. Begin met het verkennen van onze vakken en ze zullen hier verschijnen!",
+    "recentLists": "Recente lijsten"
   },
   "sidebar": {
     "expandSidebar": "Zijbalk uitklappen",
@@ -11,17 +17,16 @@
   "navigation": {
     "home": "Thuis",
     "forum": "Forum",
-    "quickstart": "Quick-start",
-    "settings": "Instellingen"
+    "list": "Lijst",
+    "settings": "Instellingen",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen"
   },
   "userMenu": {
     "guest": "Gast",
     "logout": "Uitloggen",
     "admin": "Admin",
     "settings": "Instellingen"
-  },
-  "learning": {
-    "initialCommit": "Initieel commit"
   },
   "lists": {
     "branches": {
@@ -35,7 +40,7 @@
     },
     "commits": {
       "notFound": "Commit {{commitId}} is niet gevonden",
-      "initial": "Initieel commit",
+      "initial": "Eerste commit",
       "merge": "Branch {{branch}} samenvoegen met main"
     },
     "merge": {
@@ -46,7 +51,55 @@
     },
     "diff": {
       "cannotApply": "Kan verschil niet toepassen op lijst"
-    }
+    },
+    "edit": {
+      "title": "Lijst bewerken",
+      "nameLabel": "Naam",
+      "addPair": "Voeg een paar toe",
+      "save": "Wijzigingen opslaan",
+      "almostDone": "Bijna klaar!",
+      "giveDiffAName": "Beschrijf je wijziging(en) voordat je ze opslaat",
+      "importDraft": {
+        "title": "Lokale wijzigingen importeren?",
+        "description": "Wij hebben een lokaal opgeslagen concept gevonden voor deze lijst. Deze is voor het laatst opgeslagen op {{savedAtLabel}}. Bekijk de verschillen voordat je de lokale versie met de huidige lijst vervangt.",
+        "currentVersion": "Huidige versie",
+        "localDraft": "Lokale conceptversie",
+        "keepServerVersion": "Serverversie behouden",
+        "importLocalChanges": "Lokale wijzigingen importeren",
+        "change": "Wijziging",
+        "pairNumber": "Paar {number}",
+        "itemAdded": "{itemLabel} toegevoegd",
+        "itemRemoved": "{itemLabel} verwijderd",
+        "itemUpdated": "{itemLabel} aangepast",
+        "fieldUpdated": "{itemLabel}: {field} aangepast",
+        "unknownValue": "Onbekende waarde",
+        "path": "Pad",
+        "newValue": "Nieuwe waarde",
+        "added": "Toegevoegd",
+        "modified": "Bewerkt",
+        "removed": "Verwijderd",
+        "question": "Vraag",
+        "answer": "Antwoord",
+        "questionCurrent": "Vraag (huidig)",
+        "questionLocal": "Vraag (lokaal)",
+        "answerCurrent": "Antwoord (huidig)",
+        "answerLocal": "Antwoord (lokaal)",
+        "unchanged": "Onveranderd"
+      }
+    },
+    "namePlaceholder": "Naamloze lijst",
+    "nameInputPlaceholder": "Voer een naam in voor je lijst",
+    "create": {
+      "createList": "Lijst aanmaken",
+      "error": "Er is een fout opgetreden bij het aanmaken van de lijst. Probeer het later opnieuw.",
+      "keyInputPlaceholder": "Woord",
+      "valueInputPlaceholder": "Uitleg/vertaling"
+    },
+    "madeBy": "Gemaakt door: ",
+    "lastUpdated": "Laatst bijgewerkt om:",
+    "stats": "Statistieken",
+    "words": "Woorden",
+    "unknownAuthor": "Onbekende auteur"
   },
   "subjects": {
     "art": "Kunst",
@@ -136,7 +189,7 @@
     },
     "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
     "page": {
-      "unavailableTitle": "Deze service is momenteel onbeschikbaar",
+      "unavailableTitle": "Deze service is momenteel niet beschikbaar",
       "reloadAction": "Herlaad de pagina",
       "reloadHint": "om het opnieuw te proberen. Als het probleem aanhoudt, neem contact op met support.",
       "moreInfo": "Meer informatie"

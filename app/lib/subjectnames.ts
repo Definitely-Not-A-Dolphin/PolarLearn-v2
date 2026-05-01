@@ -18,6 +18,7 @@ export const SubjectNamesArray = [
   "dutch",
   "french",
   "spanish",
+  "chemistry"
 ] as const
 
 export type SubjectNames = (typeof SubjectNamesArray)[number]

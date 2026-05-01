@@ -75,7 +75,8 @@ function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
 }
 
 export function AppSidebar() {
-  const { toggleSidebar, state } = useSidebar()
+  const { toggleSidebar, state, isMobile } = useSidebar()
+  const showLabels = isMobile || state === "expanded"
   const isCollapsed = state === "collapsed"
   const navigate = useNavigate()
   const location = useLocation()
@@ -99,14 +100,14 @@ export function AppSidebar() {
   const theme = rootData.theme
 
   const navItems = [
-    { title: "navigation.home", icon: Home, url: "/home" },
+    { title: "navigation.home", icon: Home, url: "/app" },
     { title: "navigation.forum", icon: MessageCircle, url: "/app/forum" },
   ]
 
   const isActiveNavItem = (itemUrl: string) => {
     const normalizedItemUrl = normalizePath(itemUrl)
 
-    if (normalizedItemUrl === "/home") {
+    if (normalizedItemUrl === "/app") {
       return currentPath === normalizedItemUrl
     }
 
@@ -117,6 +118,10 @@ export function AppSidebar() {
     void authClient.signOut().then(() => {
       void navigate("/auth/sign-in");
     });
+  }
+
+  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/learn/")) {
+    return null;
   }
 
   return (
@@ -136,14 +141,14 @@ export function AppSidebar() {
                 scheme={theme}
                 className={cn(
                   "group flex h-10 w-full items-center rounded-xl p-2",
-                  isCollapsed ? "justify-center p-0!" : "justify-start"
+                  showLabels ? "justify-start" : "justify-center p-0!"
                 )}
                 onClick={toggleSidebar}
               >
                 <SidebarToggleIcon isCollapsed={isCollapsed} />
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left leading-none ml-2">
-                    <span className="truncate text-xl font-bold font-heading flex-row flex">
+                    <span className="truncate text-xl font-bold font-heading flex-row flex text-neutral-700 dark:text-white">
                       <p className=" bg-linear-to-r from-sky-400 to-sky-100 bg-clip-text text-transparent">Polar</p>
                       Learn
                     </span>
@@ -180,7 +185,7 @@ export function AppSidebar() {
                     >
                       <item.icon className="relative z-10 size-5 shrink-0" />
                     </div>
-                    {!isCollapsed && <span className="truncate ml-2">{i18n.t(item.title)}</span>}
+                    {showLabels && <span className="truncate ml-2">{i18n.t(item.title)}</span>}
                   </Button>
                 </SidebarTooltip>
               </SidebarMenuItem>

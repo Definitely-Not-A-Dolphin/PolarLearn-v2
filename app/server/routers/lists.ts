@@ -1,10 +1,15 @@
 import z from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import crypto from "crypto";
-import * as jsonpatch from "fast-json-patch";
-import { SubjectNamesArray } from "~/lib/subjects";
+import jsonpatch, { type Operation } from "fast-json-patch";
+import { SubjectNamesArray } from "~/lib/subjectnames";
+import { listSnapshot, type ListItem, type ListSnapshot } from "~/lib/list";
+import { listDiffSchema, listPatchOperationSchema, type ListDiff } from "~/lib/list-diff";
 import { TRPCError } from "@trpc/server";
 import { t } from "~/i18n";
+import { RecentListsSchema, extractRecentItems, RecentSubjectsSchema } from "~/lib/list";
+
+export { listPatchOperationSchema };
 
 function generateCommitHash(diff: Diff): string {
   return crypto.createHash("sha256")
@@ -14,50 +19,11 @@ function generateCommitHash(diff: Diff): string {
     .digest("hex");
 }
 
-export const RecentItemsSchema = z.array(z.object({
-  type: z.enum(['list', 'quiz']),
-  itemId: z.string(),
-  name: z.string(),
-  subject: z.enum(SubjectNamesArray),
-  added: z.date(),
-}))
-
-const jsonPointerSchema = z.string().trim().min(1).refine((value) => value.startsWith('/'), {
-  message: 'Path must start with /'
-})
-
-export const listPatchOperationSchema = z.discriminatedUnion('op', [
-  z.object({
-    op: z.literal('add'),
-    path: jsonPointerSchema,
-    value: z.json()
-  }),
-  z.object({
-    op: z.literal('replace'),
-    path: jsonPointerSchema,
-    value: z.json()
-  }),
-  z.object({
-    op: z.literal('remove'),
-    path: jsonPointerSchema
-  })
-])
-
-export const listItem = z.object({
-  id: z.string(),
-  question: z.string(),
-  answer: z.string(),
-})
-
-const listSnapshotSchema = z.array(listItem)
-
 const pullRequestSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   status: z.enum(['open', 'closed', 'merged'])
 })
-
-type ListSnapshot = z.infer<typeof listSnapshotSchema>
 
 const branchRecordSchema = z.object({
   owner: z.string(),
@@ -66,16 +32,16 @@ const branchRecordSchema = z.object({
   parentBranch: z.string().optional(),
   isPR: z.boolean().optional(),
   PR: pullRequestSchema.optional(),
-  cachedSnapshot: listSnapshotSchema,
+  cachedSnapshot: listSnapshot,
 })
 
 export const branch = z.record(z.string(), branchRecordSchema)
 
 export const diff = z.object({
-  changes: z.array(listPatchOperationSchema).min(1),
+  changes: listDiffSchema.shape.changes.min(1),
 })
 
-export type Diff = z.infer<typeof diff>
+export type Diff = ListDiff
 
 const versionCommitSchema = z.object({
   parentId: z.string().nullish(),
@@ -96,7 +62,7 @@ const listRecordSchema = z.object({
   description: z.string().nullable(),
   subject: z.enum(SubjectNamesArray),
   userId: z.string(),
-  items: listSnapshotSchema,
+  items: listSnapshot,
   versionData,
   collaborators: z.array(z.object({ id: z.string() })),
 }).catchall(z.any())
@@ -105,7 +71,6 @@ type VersionCommit = z.infer<typeof versionCommitSchema>
 type VersionData = z.infer<typeof versionData>
 type BranchRecord = z.infer<typeof branchRecordSchema>
 type ListRecord = z.infer<typeof listRecordSchema>
-type ListItem = z.infer<typeof listItem>
 
 function areListItemsEqual(left: ListItem, right: ListItem): boolean {
   return left.id === right.id
@@ -119,7 +84,7 @@ function hasBranchAccess(list: ListRecord, branch: BranchRecord, userId: string)
     || branch.owner === userId
 }
 
-function getBranchOrThrow(versioning: VersionData, branchName: string): BranchRecord {
+function getBranch(versioning: VersionData, branchName: string): BranchRecord {
   const selectedBranch = versioning.branches[branchName]
 
   if (!(branchName in versioning.branches)) {
@@ -295,12 +260,29 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
   return mergedSnapshot
 }
 
+function constructNewRecentLists(
+  existing: z.infer<typeof RecentListsSchema>,
+  newEntry: z.infer<typeof RecentListsSchema>[number]
+): z.infer<typeof RecentListsSchema> {
+  const filtered = existing.filter((item) => item.id !== newEntry.id)
+  return [newEntry, ...filtered]
+}
+
+function constructNewRecentSubjects(
+  existing: z.infer<typeof RecentSubjectsSchema>,
+  newEntry: z.infer<typeof RecentSubjectsSchema>[number]
+): z.infer<typeof RecentSubjectsSchema> {
+  const filtered = existing.filter((subject) => subject !== newEntry)
+  return [newEntry, ...filtered]
+}
+
 function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSnapshot {
   try {
-    return jsonpatch.applyPatch(
+    const result = jsonpatch.applyPatch(
       structuredClone(snapshot),
-      listDiff.changes as jsonpatch.Operation[],
-    ).newDocument;
+      listDiff.changes as Operation[],
+    );
+    return result.newDocument;
   } catch {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -332,10 +314,6 @@ export const ListRouter = createTRPCRouter({
 
       const list = listRecordSchema.parse(rawList)
 
-      if (!(list.userId === ctx.user.id || list.collaborators.some((collaborator) => collaborator.id === ctx.user.id))) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-
       const versioning = list.versionData
       const resolvedBranchName = input.branch ?? 'main'
       const selectedBranch = versioning.branches[resolvedBranchName]
@@ -345,6 +323,28 @@ export const ListRouter = createTRPCRouter({
           code: 'NOT_FOUND',
         })
       }
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
+      })
+
+      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+      const newRecentLists = constructNewRecentLists(existingRecentLists, {
+        id: list.id,
+        updatedAt: new Date().toISOString(),
+      })
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          recentItems: {
+            recent_subjects: constructNewRecentSubjects(existingRecentSubjects, list.subject),
+            recent_lists: newRecentLists,
+          },
+        },
+      })
 
       return {
         ...list,
@@ -449,8 +449,44 @@ export const ListRouter = createTRPCRouter({
       const user = await ctx.prisma.user.findFirst({
         where: { id: ctx.user.id }
       })
-      const recentItems = user?.recentItems as z.infer<typeof RecentItemsSchema> | undefined;
-      return recentItems?.filter(item => item.type === "list") ?? [];
+
+      const lists = RecentListsSchema.parse(
+        (user?.recentItems as { recent_lists?: z.infer<typeof RecentListsSchema> }).recent_lists ?? []
+      )
+
+      const seen = new Set<string>()
+      const deduped = [...lists].reverse().filter((item) => {
+        if (seen.has(item.id)) return false
+        seen.add(item.id)
+        return true
+      })
+
+      return deduped
+    }),
+  rmListFromRecent: protectedProcedure
+    .input(z.object({
+      listId: z.string()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
+      })
+
+      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+      const newRecentLists = existingRecentLists.filter((list) => list.id !== input.listId)
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          recentItems: {
+            recent_subjects: existingRecentSubjects,
+            recent_lists: newRecentLists,
+          },
+        },
+      })
+      return 'OK'
     }),
   commitToList: protectedProcedure
     .input(z.object({
@@ -476,7 +512,7 @@ export const ListRouter = createTRPCRouter({
       const list = listRecordSchema.parse(rawList)
 
       const versioning = list.versionData
-      const currentBranch = getBranchOrThrow(versioning, input.branch)
+      const currentBranch = getBranch(versioning, input.branch)
 
       if (!hasBranchAccess(list, currentBranch, ctx.user.id)) {
         throw new TRPCError({ code: 'FORBIDDEN' })
@@ -539,6 +575,28 @@ export const ListRouter = createTRPCRouter({
           items: updatedItems,
         }
       })
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
+      })
+
+      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+      const newRecentLists = constructNewRecentLists(existingRecentLists, {
+        id: list.id,
+        updatedAt: new Date().toISOString(),
+      })
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          recentItems: {
+            recent_subjects: [...existingRecentSubjects, list.subject],
+            recent_lists: newRecentLists,
+          },
+        },
+      })
       return 'OK'
     }),
   createBranch: protectedProcedure
@@ -563,7 +621,7 @@ export const ListRouter = createTRPCRouter({
       const list = listRecordSchema.parse(rawList)
 
       const versioning = list.versionData
-      const baseBranch = getBranchOrThrow(versioning, input.baseBranchName)
+      const baseBranch = getBranch(versioning, input.baseBranchName)
 
       // PS: no auth checks, anyone should be able to create a pr / suggest new items
 
@@ -602,11 +660,23 @@ export const ListRouter = createTRPCRouter({
     .input(z.object({
       name: z.string(),
       subject: z.enum(SubjectNamesArray),
-      diff
     }))
     .mutation(async ({ ctx, input }) => {
-      const initialItems = applyListDiffToSnapshot([], input.diff)
-      const initialCommitId = generateCommitHash(input.diff)
+      const diff = {
+        changes: [
+          {
+            op: 'add',
+            path: '/0',
+            value: {
+              id: crypto.randomUUID(),
+              question: '',
+              answer: '',
+            }
+          }
+        ],
+      } as Diff
+      const initialItems = applyListDiffToSnapshot([], diff)
+      const initialCommitId = generateCommitHash(diff)
       const newList = await ctx.prisma.list.create({
         data: {
           id: crypto.randomUUID(),
@@ -630,9 +700,12 @@ export const ListRouter = createTRPCRouter({
                 author: ctx.user.id,
                 message: t('lists.commits.initial'),
                 createdAt: new Date().toISOString(),
-                diff: input.diff
+                diff: diff
               }
             }
+          },
+          collaborators: {
+            connect: { id: ctx.user.id }
           }
         }
         ,
@@ -640,7 +713,31 @@ export const ListRouter = createTRPCRouter({
           collaborators: true,
         }
       })
-      return listRecordSchema.parse(newList)
+
+      const parsedList = listRecordSchema.parse(newList)
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
+      })
+
+      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+      const newRecentLists = constructNewRecentLists(existingRecentLists, {
+        id: parsedList.id,
+        updatedAt: new Date().toISOString(),
+      })
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          recentItems: {
+            recent_subjects: [...existingRecentSubjects, parsedList.subject],
+            recent_lists: newRecentLists,
+          },
+        },
+      })
+      return parsedList
     }),
   createPullRequest: protectedProcedure
     .input(z.object({
@@ -665,7 +762,7 @@ export const ListRouter = createTRPCRouter({
       const list = listRecordSchema.parse(rawList)
 
       const versioning = list.versionData
-      const currentBranch = getBranchOrThrow(versioning, input.branch)
+      const currentBranch = getBranch(versioning, input.branch)
 
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
@@ -731,7 +828,7 @@ export const ListRouter = createTRPCRouter({
       const list = listRecordSchema.parse(rawList)
 
       const versioning = list.versionData
-      const currentBranch = getBranchOrThrow(versioning, input.branch)
+      const currentBranch = getBranch(versioning, input.branch)
 
       if (currentBranch.parentBranch !== 'main') {
         throw new TRPCError({
@@ -796,7 +893,7 @@ export const ListRouter = createTRPCRouter({
       const list = listRecordSchema.parse(rawList)
 
       const versioning = list.versionData
-      const currentBranch = getBranchOrThrow(versioning, input.branch)
+      const currentBranch = getBranch(versioning, input.branch)
 
       if (!hasBranchAccess(list, currentBranch, ctx.user.id)) {
         throw new TRPCError({ code: 'FORBIDDEN' })
@@ -866,8 +963,8 @@ export const ListRouter = createTRPCRouter({
       }
 
       const versioning = list.versionData
-      const currentBranch = getBranchOrThrow(versioning, input.branch)
-      const mainBranch = getBranchOrThrow(versioning, 'main')
+      const currentBranch = getBranch(versioning, input.branch)
+      const mainBranch = getBranch(versioning, 'main')
 
       if (input.branch === 'main') {
         throw new TRPCError({

@@ -17,6 +17,7 @@ import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
 import { auth } from "./lib/auth/server";
+import { TRPCReactProvider } from "./server/react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -66,7 +67,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans">
         <Toaster richColors position="top-center" theme={theme as "dark" | "light"} />
-        {children}
+        <TRPCReactProvider>
+          {children}
+        </TRPCReactProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
