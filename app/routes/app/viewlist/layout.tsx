@@ -1,20 +1,25 @@
-// import { useTRPC } from "~/server/react";
+import { useTRPC } from "~/server/react";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useState } from "react";
 
-import type { Route } from "./+types/words";
+import type { Route } from "./+types/layout";
 import { appRouter } from "~/server/main";
-import { Outlet, useLoaderData, useLocation, useNavigate, useRouteLoaderData } from "react-router";
+import { Outlet, useLoaderData, useLocation, useNavigate, useRouteLoaderData, useRevalidator } from "react-router";
 import { Button, Tabs } from "@polarnl/polarui-react";
 import { Subject } from "~/lib/subjects";
 import i18n from "~/i18n";
 import { prisma } from "~/lib/db";
-import { Pencil } from "lucide-react";
+import { Loader2, Pencil, BookOpen, Trash, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import type { LoaderData, ListData } from "~/lib/viewlist";
 
 interface RootData {
   theme: "light" | "dark";
 }
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs): Promise<LoaderData> {
   const id = params.id as string | undefined;
   if (!id) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
@@ -24,12 +29,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const context = await createTRPCContext({ headers });
 
   if (!context.user) {
-    return new Response("", { status: 401 });
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw new Response("", { status: 401 });
   }
   const userId = context.user.id;
   const caller = createCallerFactory(appRouter)(context);
   try {
-    const list = await caller.list.getLatestListData({ listId: id });
+    const list: ListData = await caller.list.getLatestListData({ listId: id });
     const canEdit = list.userId === userId || list.collaborators.some((collaborator) => collaborator.id === userId);
 
     const collaborators = []
@@ -45,7 +51,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       }
     }
 
-    return { list, collaborators, canEdit };
+    return {
+      list,
+      collaborators,
+      canEdit,
+      canDelete: list.userId === userId,
+      user_liked: list.favoritedBy.some((fav) => fav.id === userId)
+    };
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw new Response(error as string, { status: 500 });
@@ -53,15 +65,48 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export default function Layout() {
-  const data = useLoaderData<typeof loader>();
+  const data = useLoaderData<LoaderData>();
   const rootData = useRouteLoaderData<RootData>("root");
   const subjects = new Subject();
   const icon = subjects.getIcon(data.list.subject, { width: 50, height: 50 })
   const t = i18n.t
   const location = useLocation();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   const theme: "light" | "dark" = rootData?.theme ?? "dark";
-   
+  const rpc = useTRPC();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const generateSessionMutation = useMutation({
+    ...rpc.learning.generateLearnSession.mutationOptions(),
+    onSuccess: (data: { id: string }) => {
+      void navigate(`/app/session/${data.id}`)
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"))
+    }
+  })
+  const deleteListMutation = useMutation({
+    ...rpc.list.deleteList.mutationOptions({
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        toast.success(t("lists.delete.success"));
+        void navigate("/app");
+      },
+      onError: () => {
+        toast.error(t("errors.unknown"));
+      },
+    }),
+  })
+  const likeListMutation = useMutation({
+    ...rpc.list.starList.mutationOptions({
+      onSuccess: () => {
+        revalidator.revalidate();
+      },
+      onError: () => {
+        toast.error(t("errors.unknown"));
+      },
+    }),
+  })
   return (
     <div className="p-4">
       <div className="flex flex-row items-center gap-3">
@@ -91,7 +136,7 @@ export default function Layout() {
           tabs={[t("lists.words") || "Words", t("lists.stats") || "Stats"]}
           activeIndex={(() => {
             const p = location.pathname.replace(/\/+$/, "");
-            if (p.endsWith(`/app/viewlist/${data.list.id}/stats`)) return 1;
+            if (p.includes(`/app/viewlist/${data.list.id}/stats`)) return 1;
             return 0;
           })()}
           onActiveIndexChange={(idx: number) => {
@@ -104,6 +149,16 @@ export default function Layout() {
         />
       </div>
       <div className="py-4 flex flex-row gap-4">
+        <Button
+          scheme={theme}
+          variant="transparent"
+          icon={<BookOpen />}
+          onClick={() => {
+            generateSessionMutation.mutate({ listId: data.list.id })
+          }}
+        >
+          {t("home.learn")}
+        </Button>
         {data.canEdit && (
           <Button
             scheme={theme}
@@ -115,6 +170,64 @@ export default function Layout() {
           >
             {t("lists.edit.title")}
           </Button>
+        )}
+        <Button
+          scheme={theme}
+          variant="transparent"
+          icon={<Star className={data.user_liked ? "text-amber-300" : ""} />}
+          onClick={() => {
+            likeListMutation.mutate({ id: data.list.id });
+          }}
+        >
+          {data.user_liked ? t("lists.favourites.unlike") : t("lists.favourites.like")}
+        </Button>
+        {data.canDelete && (
+          <>
+            <Button
+              scheme={theme}
+              variant="transparent"
+              icon={<Trash />}
+              onClick={() => {
+                setIsDeleteDialogOpen(true);
+              }}
+            >
+              {t("lists.delete.title")}
+            </Button>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="font-bold text-2xl">{t("lists.delete.title")}</DialogTitle>
+                  <DialogDescription>
+                    {t("lists.delete.description")}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="transparent"
+                    scheme={theme}
+                    onClick={() => {
+                      setIsDeleteDialogOpen(false);
+                    }}
+                    disabled={deleteListMutation.isPending}
+                  >
+                    {t("lists.delete.cancel") || "Cancel"}
+                  </Button>
+                  <Button
+                    variant="transparent"
+                    scheme={theme}
+                    onClick={() => {
+                      deleteListMutation.mutate({ id: data.list.id });
+                    }}
+                    disabled={deleteListMutation.isPending}
+                    icon={deleteListMutation.isPending ? <Loader2 className="animate-spin text-red-500" /> : <Trash className="text-red-500" />}
+                  >
+                    <span className="text-red-500">{t("lists.delete.title") || "Delete"}</span>
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </div>
       <hr className="mb-4" />

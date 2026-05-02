@@ -8,7 +8,49 @@
     "quickstart": "Quick-start",
     "recentSubjects": "Recente vakken",
     "noRecentSubjects": "Je hebt nog geen vakken bekeken. Begin met het verkennen van onze vakken en ze zullen hier verschijnen!",
-    "recentLists": "Recente lijsten"
+    "recentLists": "Recente lijsten",
+    "learn": "Leren"
+  },
+  "favorites": {
+    "title": "Mijn favorieten",
+    "empty": "Je hebt nog geen favorieten. Klik op het sterretje bij een lijst om deze toe te voegen aan je favorieten!"
+  },
+  "mylists": {
+    "title": "Mijn lijsten",
+    "empty": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!"
+  },
+  "learn": {
+    "session": {
+      "failedToSave": "Je sessie kon niet opgeslagen worden.",
+      "answerPlaceholder": "Jouw antwoord",
+      "submit": "Versturen",
+      "progress": "{{completed}}/{{total}} beantwoord",
+      "percentage": "{{percentage}}% klaar",
+      "complete": "Leren voltooid! Goed gedaan!",
+      "correct": "Correct!",
+      "wrong": "Fout",
+      "answerWas": "Het antwoord was: {{answer}}",
+      "considerRight": "Goed rekenen",
+      "backToList": "Terug naar lijst",
+      "viewResults": "Resultaten bekijken"
+    },
+    "stats": {
+      "noFinishedSessions": "Je hebt nog geen voltooide sessies voor deze lijst.",
+      "sessionTitle": "Sessie {{id}}",
+      "sessionOverview": "Overzicht van sessie {{id}}",
+      "finishedAt": "Voltooid om {{date}}",
+      "finished": "Voltooid",
+      "grade": "Cijfer",
+      "score": "Score",
+      "correct": "Goed",
+      "incorrect": "Fout",
+      "backToSessions": "Terug naar sessies",
+      "oftenMistakenWords": "Vaak fout beantwoorde woorden",
+      "noMistakes": "Geen fouten in deze sessie. Lekker bezig!",
+      "word": "Woord",
+      "timesWrong": "Aantal fout",
+      "lastAnswer": "Laatste antwoord"
+    }
   },
   "sidebar": {
     "expandSidebar": "Zijbalk uitklappen",
@@ -29,6 +71,10 @@
     "settings": "Instellingen"
   },
   "lists": {
+    "favourites": {
+      "like": "Vind ik leuk",
+      "unlike": "Vind ik niet meer leuk"
+    },
     "branches": {
       "notFound": "Branch {{branchName}} is niet gevonden",
       "cannotMergeMainIntoItself": "De main branch kan niet in zichzelf worden samengevoegd",
@@ -99,7 +145,14 @@
     "lastUpdated": "Laatst bijgewerkt om:",
     "stats": "Statistieken",
     "words": "Woorden",
-    "unknownAuthor": "Onbekende auteur"
+    "unknownAuthor": "Onbekende auteur",
+    "delete": {
+      "title": "Lijst verwijderen",
+      "description": "Weet je 100% zeker dat je deze lijst wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "confirm": "Ja, verwijder deze lijst",
+      "cancel": "Toch behouden",
+      "success": "Lijst succesvol verwijderd."
+    }
   },
   "subjects": {
     "art": "Kunst",
@@ -193,6 +246,33 @@
       "reloadAction": "Herlaad de pagina",
       "reloadHint": "om het opnieuw te proberen. Als het probleem aanhoudt, neem contact op met support.",
       "moreInfo": "Meer informatie"
+    }
+  },
+  "forum": {
+    "posts": {
+      "loading": "Posts laden...",
+      "loadingMore": "Meer laden...",
+      "failedToLoad": "Kon de posts niet laden",
+      "noMore": "Geen posts meer om te laden",
+      "empty": "Nog geen posts",
+      "beFirst": "Wees de eerste om een post te plaatsen!",
+      "time": {
+        "justNow": "zojuist",
+        "minutesAgo": "{{count}}m geleden",
+        "hoursAgo": "{{count}}u geleden",
+        "daysAgo": "{{count}}d geleden"
+      }
+    },
+    "post": {
+      "created": "Post geplaatst!",
+      "error": "Kon de post niet plaatsen",
+      "titleRequired": "Een titel is verplicht",
+      "contentRequired": "Inhoud is verplicht"
+    },
+    "categories": {
+      "schoolRelated": "School",
+      "nonSchoolRelated": "Persoonlijk",
+      "announcement": "Aankondiging"
     }
   }
 }

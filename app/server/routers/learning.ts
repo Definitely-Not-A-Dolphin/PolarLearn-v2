@@ -1,98 +1,126 @@
- 
-import type { TRPCRouterRecord } from '@trpc/server'
+import { TRPCError } from '@trpc/server'
 
-import { protectedProcedure } from '~/server/trpc'
+import { createTRPCRouter, protectedProcedure } from '~/server/trpc'
 import { z } from 'zod'
-import { listItem } from '~/lib/list'
+import { answerLogSchema, createLearningQueue, modes, queueSchema } from '~/lib/learn'
+import { listSnapshot } from '~/lib/list'
 import { prisma } from '~/lib/db'
 
-export const queueQuestion = z.object({
-  type: z.enum(["test", "hint", "multiplechoice"]),
-  question: z.string(),
-  answer: z.array(z.string()), // one answer for test/hints, multiple for multiple choice
-})
-
-export const queueSchema = z.array(queueQuestion)
-
-export const greetingRouter = {
-  createLearningQueue: protectedProcedure
-    .input(z.object({
-      mode: z.enum(["test", "hint", "multiplechoice", "quiz"]),
-      items: z.array(listItem)
-    }))
-    .query(({ input }) => {
-      const queue: z.infer<typeof queueSchema> = []
-      for (const item of input.items) {
-        if (input.mode === "quiz") {
-          queue.push({
-            type: "test",
-            question: item.question,
-            answer: [item.answer],
-          })
-          queue.push({
-            type: "hint",
-            question: item.question,
-            answer: [item.answer],
-          })
-
-          const otherAnswers = input.items
-            .filter(i => i.id !== item.id) // exclude current item
-            .map(i => i.answer)
-
-          const distractors = otherAnswers
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 3)
-
-          const allOptions = [...distractors, item.answer]
-            .sort(() => Math.random() - 0.5)
-
-          queue.push({
-            type: "multiplechoice",
-            question: item.question,
-            answer: allOptions,
-          })
-        }
-        if (input.mode === "test" || input.mode === "hint") {
-          queue.push({
-            type: input.mode,
-            question: item.question,
-            answer: [item.answer],
-          })
-        }
-
-        if (input.mode === "multiplechoice") {
-          const otherAnswers = input.items
-            .filter(i => i.id !== item.id) // exclude current item
-            .map(i => i.answer)
-          const distractors = otherAnswers
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 3)
-          const allOptions = [...distractors, item.answer]
-            .sort(() => Math.random() - 0.5)
-          queue.push({
-            type: "multiplechoice",
-            question: item.question,
-            answer: allOptions,
-          })
-        }
-      }
-      return queue
-    }),
-  initSession: protectedProcedure
+export const learningRouter = createTRPCRouter({
+  generateLearnSession: protectedProcedure
     .input(z.object({
       listId: z.string(),
-      queue: queueSchema,
+      mode: modes.optional().default('quiz'),
     }))
     .mutation(async ({ input, ctx }) => {
-      const session = await prisma.listSession.create({
+      const existingSession = await prisma.learnSession.findFirst({
+        where: {
+          listId: input.listId,
+          userId: ctx.user.id,
+          isComplete: false,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+
+      if (existingSession) {
+        return { id: existingSession.id }
+      }
+
+      const list = await prisma.list.findFirst({
+        where: {
+          id: input.listId,
+        },
+        select: {
+          id: true,
+          items: true,
+        },
+      })
+
+      if (!list) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'List not found' })
+      }
+
+      const parsedItems = listSnapshot.parse(list.items)
+      const queue = createLearningQueue(parsedItems, input.mode)
+
+      const session = await prisma.learnSession.create({
         data: {
           id: crypto.randomUUID(),
           listId: input.listId,
           userId: ctx.user.id,
-          queue: input.queue,
+          queue,
           answerLog: [],
-        }
+          isComplete: false,
+        },
       })
-      return session.id
-    })
-} satisfies TRPCRouterRecord
+
+      return { id: session.id }
+    }),
+  getLearnSession: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const session = await prisma.learnSession.findFirst({
+        where: {
+          id: input.sessionId,
+          userId: ctx.user.id,
+        },
+        select: {
+          id: true,
+          listId: true,
+          queue: true,
+          answerLog: true,
+          isComplete: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+
+      if (!session) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Session not found' })
+      }
+
+      return {
+        id: session.id,
+        listId: session.listId,
+        queue: queueSchema.parse(session.queue),
+        answerLog: answerLogSchema.parse(session.answerLog),
+        isComplete: session.isComplete,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      }
+    }),
+  updateSession: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      answerLog: answerLogSchema,
+      queue: queueSchema,
+      isComplete: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await prisma.learnSession.findFirst({
+        where: {
+          id: input.sessionId,
+          userId: ctx.user.id,
+        },
+      })
+
+      if (!session) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Session not found' })
+      }
+
+      await prisma.learnSession.update({
+        where: {
+          id: input.sessionId,
+        },
+        data: {
+          answerLog: input.answerLog,
+          queue: input.queue,
+          isComplete: input.isComplete,
+        },
+      })
+    }),
+})

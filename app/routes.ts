@@ -8,12 +8,22 @@ export default [
   route("auth/sign-up", "routes/auth/sign-up.tsx"),
   layout("routes/app/layout.tsx", [
     route("app", "routes/app/_index.tsx"),
-    route("app/forum", "routes/app/forum/_index.tsx"),
+    layout("routes/app/forum/layout.tsx", [
+      route("app/forum/posts", "routes/app/forum/posts.tsx"),
+      route("app/forum/myPosts", "routes/app/forum/myPosts.tsx"),
+      route("app/forum/myReplies", "routes/app/forum/myReplies.tsx"),
+      route("app/forum", "routes/app/forum/_index.tsx"),
+    ]),
+    route("app/forum/posts/:postid", "routes/app/forum/[postid].tsx"),  
     route("app/editlist/:id", "routes/app/editlist/[id].tsx"),
     layout("routes/app/viewlist/layout.tsx", [
       route("app/viewlist/:id/words", "routes/app/viewlist/words.tsx"),
       route("app/viewlist/:id", "routes/app/viewlist/main.tsx"),
       route("app/viewlist/:id/stats", "routes/app/viewlist/stats.tsx"),
-    ])
+      route("app/viewlist/:id/stats/:sessionId", "routes/app/viewlist/stats-session.tsx"),
+    ]),
+    route("app/favorites", "routes/app/favorites.tsx"),
+    route("app/mylists", "routes/app/mylists.tsx"),
   ]),
+  route("app/session/:id", "routes/app/session/[id].tsx")
 ] satisfies RouteConfig;

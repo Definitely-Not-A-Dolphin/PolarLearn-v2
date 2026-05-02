@@ -4,7 +4,7 @@ import { useLoaderData, useRouteLoaderData, useNavigate } from "react-router";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { Check, ChevronDown, Grip, Plus, Trash, Save, X } from "lucide-react";
+import { Grip, Loader2, Plus, Trash, Save, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import z from "zod";
 import {
@@ -16,8 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
-import { cn } from "~/lib/utils";
+import SubjectSelector from "~/components/subject-selector";
 import { listItem } from "~/lib/list";
 import { buildListDiff, snapshotFromEditableItems } from "~/lib/list-diff";
 import { Subject } from "~/lib/subjects";
@@ -474,8 +473,15 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         }}
         onSave={() => { void handleCommit(); }}
       />
-      <div className="flex flex-row">
-        <h1 className="text-3xl font-bold">{t("lists.edit.title")}</h1>
+      <div className="relative flex flex-row items-center">
+        <Button variant="transparent" scheme={theme} icon={<X />} onClick={() => {
+          void navigate(`/app`);
+        }}>
+          Sluiten
+        </Button>
+        <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
+          {t("lists.edit.title")}
+        </h1>
         <div className="grow" />
         <Button variant="transparent" scheme={theme} icon={<Save />} onClick={() => {
           setIsSaveDialogOpen(true);
@@ -499,61 +505,19 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         />
         <div className="mt-4">
           <p className="font-bold">{t("home.subject")}</p>
-          <Popover
+          <SubjectSelector
+            selected={draft.subject}
+            onSelect={(subjectId) => {
+              setDraft((currentDraft) => ({
+                ...currentDraft,
+                subject: subjectId,
+              }));
+              setIsSubjectSelectorOpen(false);
+            }}
             open={isSubjectSelectorOpen}
             onOpenChange={setIsSubjectSelectorOpen}
-          >
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-muted"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0">
-                    {subjects.getIcon(draft.subject, { width: 20, height: 20, className: "size-5 rounded-sm" })}
-                  </span>
-                  <span className="truncate">{subjects.getSubjectNameById(draft.subject)}</span>
-                </span>
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-2" align="start">
-              <div className="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Kies een vak
-              </div>
-              <div className="grid max-h-80 gap-1 overflow-y-auto">
-                {SubjectNamesArray.map((subjectId) => {
-                  const isSelected = subjectId === draft.subject;
-
-                  return (
-                    <button
-                      key={subjectId}
-                      type="button"
-                      className={cn(
-                        "flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition hover:bg-muted",
-                        isSelected && "bg-muted font-medium",
-                      )}
-                      onClick={() => {
-                        setDraft((currentDraft) => ({
-                          ...currentDraft,
-                          subject: subjectId,
-                        }));
-                        setIsSubjectSelectorOpen(false);
-                      }}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="shrink-0">
-                          {subjects.getIcon(subjectId, { width: 20, height: 20, className: "size-5 rounded-sm" })}
-                        </span>
-                        <span className="truncate">{subjects.getSubjectNameById(subjectId)}</span>
-                      </span>
-                      {isSelected ? <Check className="size-4 shrink-0 text-primary" /> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
+            subjects={subjects}
+          />
         </div>
         <DragDropContext
           onDragEnd={(result) => {
@@ -586,7 +550,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className={`mt-4 flex min-h-24 flex-col gap-3 rounded-lg border p-3 transition-colors ${snapshot.isDraggingOver ? "border-sky-500/60 bg-neutral-700/70" : "border-transparent bg-neutral-800/60"}`}
+                className={`mt-4 flex min-h-24 flex-col gap-3 rounded-lg border p-3 transition-colors ${snapshot.isDraggingOver ? "border-sky-500/60 bg-muted/60" : "border-border bg-muted/30"}`}
               >
                 {draft.items.map((item, index) => (
                   <Draggable
@@ -611,7 +575,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                         className={`overflow-hidden ${removingDraftItemIds.includes(item.id) ? "pointer-events-none" : ""}`}
                       >
                         <div
-                          className={`flex min-h-20 items-center rounded-lg bg-neutral-800 px-2 py-4 transition-shadow ${draggableSnapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
+                          className={`flex min-h-20 items-center rounded-lg border border-border bg-card px-2 py-4 transition-shadow ${draggableSnapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
                         >
                           <p className="pr-2 font-bold">{index + 1}</p>
                           <Input
@@ -717,7 +681,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                             disabled={draft.items.length === 1 || removingDraftItemIds.includes(item.id)}
                             variant="transparent"
                             scheme={theme}
-                            className="mx-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mx-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <span className="flex items-center justify-center leading-none">
                               <Trash className="h-5 w-5" tabIndex={-1} />
@@ -729,7 +693,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                             tabIndex={-1}
                             variant="transparent"
                             scheme={theme}
-                            className="mr-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 cursor-grab items-center justify-center rounded-md p-0 leading-none transition hover:bg-neutral-700 active:cursor-grabbing"
+                            className="mr-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 cursor-grab items-center justify-center rounded-md p-0 leading-none transition hover:bg-muted active:cursor-grabbing"
                           >
                             <span className="flex items-center justify-center leading-none">
                               <Grip className="h-5 w-5" tabIndex={-1} />
@@ -753,7 +717,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
           }}
           variant="transparent"
           scheme={theme}
-          className="mt-4 flex h-24 w-full items-center justify-center gap-3 rounded-xl bg-neutral-800 p-0 transition hover:bg-neutral-700 cursor-pointer"
+          className="mt-4 flex h-24 w-full items-center justify-center gap-3 rounded-xl border border-border bg-muted/30 p-0 transition hover:bg-muted cursor-pointer"
           icon={<Plus className="h-6 w-6" />}
         >
           <span className="text-xl font-semibold">{t("lists.edit.addPair")}</span>
@@ -805,7 +769,13 @@ function SaveDialog({
               {t("navigation.cancel")}
             </Button>
           </DialogClose>
-          <Button color="sky" textColor="white" onClick={() => { onSave(); }} disabled={isSaving}>
+          <Button
+            color="sky"
+            textColor="white"
+            onClick={() => { onSave(); }}
+            disabled={isSaving}
+            icon={isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+          >
             {t("lists.edit.save")}
           </Button>
         </DialogFooter>
@@ -869,34 +839,34 @@ function DraftImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[14px] border border-white/10 bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]">
-          <div className="grid grid-cols-2 border-b border-white/10 bg-[#111111] text-sm text-zinc-300">
+        <div className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
+          <div className="grid grid-cols-2 border-b border-border bg-muted/40 text-sm text-muted-foreground">
             <div className="px-4 py-3">Huidige versie</div>
-            <div className="border-l border-white/10 px-4 py-3">Lokale conceptversie</div>
+            <div className="border-l border-border px-4 py-3">Lokale conceptversie</div>
           </div>
           <div className="max-h-[62vh] overflow-auto">
             {rawPatchOperations.map((row, index) => {
               const isEqual = row.status === "equal";
               const leftTone = row.status === "removed"
-                ? "bg-red-950/35 text-red-100"
+                ? "bg-destructive/15 text-destructive"
                 : isEqual
                   ? ""
-                  : "bg-red-950/50";
+                  : "bg-destructive/10";
               const rightTone = row.status === "added"
-                ? "bg-emerald-950/35 text-emerald-100"
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-200"
                 : isEqual
                   ? ""
-                  : "bg-emerald-950/50";
+                  : "bg-emerald-500/10";
 
               return (
                 <div
                   key={String(index) + "-" + row.leftText}
-                  className="grid grid-cols-2 border-b border-white/5 font-mono text-[13px] leading-6 last:border-b-0"
+                  className="grid grid-cols-2 border-b border-border/60 font-mono text-[13px] leading-6 text-foreground last:border-b-0"
                 >
                   <div className={`px-4 py-3 ${leftTone}`}>
                     {row.leftText}
                   </div>
-                  <div className={`border-l border-white/10 px-4 py-3 ${rightTone}`}>
+                  <div className={`border-l border-border px-4 py-3 ${rightTone}`}>
                     {row.rightText}
                   </div>
                 </div>

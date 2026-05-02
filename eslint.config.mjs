@@ -41,6 +41,7 @@ export default [
       ...reactPlugin.configs['jsx-runtime'].rules,
       ...hooksPlugin.configs.recommended.rules,
       ...a11yPlugin.configs.recommended.rules,
+      '@typescript-eslint/consistent-type-definitions': 'off',
     },
     settings: {
       react: {

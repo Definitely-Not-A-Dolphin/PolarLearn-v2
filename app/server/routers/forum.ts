@@ -1,54 +1,87 @@
-import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
+import { TRPCError } from '@trpc/server'
 import crypto from 'crypto'
-import z from 'zod'
-import { CATEGORIES } from '~/lib/forum'
+import {
+  getPostsInputSchema,
+  getPostInputSchema,
+  createPostInputSchema,
+  editPostInputSchema,
+  deletePostInputSchema,
+  votersSchema,
+  replyToPostInputSchema,
+  votePostInputSchema,
+  getPostRepliesInputSchema,
+} from '~/lib/forum'
 
-import { protectedProcedure, publicProcedure } from '~/server/trpc'
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/trpc'
 
-const voteSchema = z.enum(['up', 'down'])
-const votersSchema = z.record(z.string().min(1) /* user id */, voteSchema)
-
-export const forumRouter = {
+export const forumRouter = createTRPCRouter({
   getPosts: publicProcedure
-    .input(z.object({
-      cursor: z.string().min(1).optional(),
-      limit: z.number().int().min(1).max(50).default(10),
-      category: z.enum(CATEGORIES).optional(),
-      authorId: z.string().min(1).optional(),
-    }))
-   .query(async ({ input, ctx }) => {
-     const { cursor, limit, category, authorId } = input
-     const posts = await ctx.prisma.forumPost.findMany({
-       where: {
-         category: category ?? undefined,
-         authorId: authorId ?? undefined,
-         deleted: false,
-       },
-       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-       take: limit + 1,
-       cursor: cursor ? { id: cursor } : undefined,
-       skip: cursor ? 1 : 0,
-     })
-     const hasNextPage = posts.length > limit
-     let nextCursor: string | null = null
-     if (hasNextPage) {
-       const lastPost = posts.pop()
-       if (lastPost) {
-         nextCursor = lastPost.id
-       }
-     }
+    .input(getPostsInputSchema)
+    .query(async ({ input, ctx }) => {
+      const { cursor, limit, category, authorId } = input
+      const posts = await ctx.prisma.forumPost.findMany({
+        where: {
+          category: category ?? undefined,
+          authorId: authorId ?? undefined,
+          deleted: false,
+          NOT: {
+            category: 'pr-discussion',
+          },
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              displayUsername: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        cursor: cursor ? { id: cursor } : undefined,
+      })
+      const hasNextPage = posts.length > limit
+      let nextCursor: string | null = null
+      if (hasNextPage) {
+        const lastPost = posts.pop()
+        if (lastPost) {
+          nextCursor = lastPost.id
+        }
+      }
 
-     return { posts, nextCursor }
-   }),
+      return { posts, nextCursor }
+    }),
+  getPost: publicProcedure
+    .input(getPostInputSchema)
+    .query(async ({ input, ctx }) => {
+      const { id } = input
+      const post = await ctx.prisma.forumPost.findUnique({
+        where: { id },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              displayUsername: true,
+              image: true,
+            },
+          },
+        },
+      })
+      if (!post || post.deleted) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
+      }
+      return post
+    }),
   createPost: protectedProcedure
-    .input(z.object({
-      title: z.string().min(1).max(255),
-      content: z.string().min(1),
-      subject: z.string().min(1).max(255).optional(),
-      category: z.enum(CATEGORIES),
-    }))
+    .input(createPostInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { title, content, subject, category } = input
+      if (category === "announcement" && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: 'FORBIDDEN' })
+      }
       const post = await ctx.prisma.forumPost.create({
         data: {
           id: crypto.randomUUID(),
@@ -68,13 +101,7 @@ export const forumRouter = {
       return post
     }),
   editPost: protectedProcedure
-    .input(z.object({
-      id: z.string().min(1),
-      title: z.string().min(1).max(255).optional(),
-      content: z.string().min(1).optional(),
-      subject: z.string().min(1).max(255).optional(),
-      category: z.enum(CATEGORIES).optional(),
-    }))
+    .input(editPostInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id, title, content, subject, category } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -96,9 +123,7 @@ export const forumRouter = {
       return updatedPost
     }),
   deletePost: protectedProcedure
-    .input(z.object({
-      id: z.string().min(1),
-    }))
+    .input(deletePostInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -115,10 +140,7 @@ export const forumRouter = {
       return 'OK'
     }),
   votePost: protectedProcedure
-    .input(z.object({
-      id: z.string().min(1),
-      vote: voteSchema,
-    }))
+    .input(votePostInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id, vote } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -154,10 +176,7 @@ export const forumRouter = {
       })
     }),
   replyToPost: protectedProcedure
-    .input(z.object({
-      postId: z.string().min(1),
-      content: z.string().min(1),
-    }))
+    .input(replyToPostInputSchema)
     .mutation(async ({ input, ctx }) => {
       const { postId, content } = input
       const parentPost = await ctx.prisma.forumPost.findUnique({
@@ -170,17 +189,86 @@ export const forumRouter = {
         data: {
           id: crypto.randomUUID(),
           content,
-          author: {
-            connect: {
-              id: ctx.user.id
-            }
-          },
+          isReply: true,
+          replyToId: postId,
+          authorId: ctx.user.id,
           category: parentPost.category,
           subject: parentPost.subject,
           voters: {},
           cachedTotalVotes: 0,
-        }
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              displayUsername: true,
+              image: true,
+            },
+          },
+        },
       })
       return reply
     }),
-} satisfies TRPCRouterRecord
+  pinPost: protectedProcedure
+    .input(deletePostInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can pin posts' })
+      const { id } = input
+      const post = await ctx.prisma.forumPost.findUnique({
+        where: { id },
+        select: { pinned: true, deleted: true },
+      })
+      if (!post || post.deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' });
+      await ctx.prisma.forumPost.update({
+        where: { id },
+        data: { pinned: !post.pinned },
+      })
+      return 'OK'
+    }),
+  getPostReplies: publicProcedure
+    .input(getPostRepliesInputSchema)
+    .query(async ({ input, ctx }) => {
+      const { postId, cursor, limit } = input
+
+      // First verify the parent post exists and is not deleted
+      const parentPost = await ctx.prisma.forumPost.findUnique({
+        where: { id: postId },
+        select: { id: true, deleted: true },
+      })
+      if (!parentPost || parentPost.deleted) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
+      }
+
+      const replies = await ctx.prisma.forumPost.findMany({
+        where: {
+          replyToId: postId,
+          deleted: false,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              displayUsername: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        cursor: cursor ? { id: cursor } : undefined,
+      })
+
+      const hasNextPage = replies.length > limit
+      let nextCursor: string | null = null
+      if (hasNextPage) {
+        const lastReply = replies.pop()
+        if (lastReply) {
+          nextCursor = lastReply.id
+        }
+      }
+
+      return { replies, nextCursor }
+    }),
+})

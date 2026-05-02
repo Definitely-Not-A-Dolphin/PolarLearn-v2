@@ -31,11 +31,21 @@ export const listDiffSchema = z.object({
 export type ListDiff = z.infer<typeof listDiffSchema>;
 
 export function snapshotFromEditableItems(items: ListItem[]): ListSnapshot {
-  if (items.length === 1 && items[0].question.trim() === "" && items[0].answer.trim() === "") {
+  let lastNonEmptyIndex = -1;
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (item.question.trim() !== "" || item.answer.trim() !== "") {
+      lastNonEmptyIndex = i;
+      break;
+    }
+  }
+
+  if (lastNonEmptyIndex === -1) {
     return [];
   }
 
-  return items;
+  return items.slice(0, lastNonEmptyIndex + 1);
 }
 
 export function buildListDiff(beforeSnapshot: ListSnapshot, afterSnapshot: ListSnapshot): ListDiff {

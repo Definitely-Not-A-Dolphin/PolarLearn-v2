@@ -65,7 +65,8 @@ const listRecordSchema = z.object({
   items: listSnapshot,
   versionData,
   collaborators: z.array(z.object({ id: z.string() })),
-}).catchall(z.any())
+  favoritedBy: z.array(z.object({ id: z.string() })),
+}).loose()
 
 type VersionCommit = z.infer<typeof versionCommitSchema>
 type VersionData = z.infer<typeof versionData>
@@ -305,6 +306,9 @@ export const ListRouter = createTRPCRouter({
         include: {
           user: true,
           collaborators: true,
+          favoritedBy: {
+            select: { id: true },
+          },
         }
       })
 
@@ -486,6 +490,53 @@ export const ListRouter = createTRPCRouter({
           },
         },
       })
+      return 'OK'
+    }),
+  deleteList: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const rawList = await ctx.prisma.list.findFirst({
+        where: {
+          id: input.id,
+        },
+        select: {
+          userId: true,
+        },
+      })
+
+      if (!rawList) {
+        throw new TRPCError({ code: 'NOT_FOUND' })
+      }
+
+      if (rawList.userId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' })
+      }
+
+      await ctx.prisma.list.delete({
+        where: {
+          id: input.id,
+        },
+      })
+
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
+      })
+
+      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          recentItems: {
+            recent_subjects: existingRecentSubjects,
+            recent_lists: existingRecentLists.filter((list) => list.id !== input.id),
+          },
+        },
+      })
+
       return 'OK'
     }),
   commitToList: protectedProcedure
@@ -1130,5 +1181,37 @@ export const ListRouter = createTRPCRouter({
         }
       })
       return listRecordSchema.parse(updatedList)
-    })
+    }),
+  starList: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const rawList = await ctx.prisma.list.findFirst({
+        where: {
+          id: input.id,
+        },
+        include: {
+          favoritedBy: {
+            select: { id: true },
+          },
+        }
+      })
+      if (!rawList) {
+        throw new TRPCError({ code: 'NOT_FOUND' })
+      }
+      const hasFavorited = rawList.favoritedBy.some((user) => user.id === ctx.user.id)
+
+      await ctx.prisma.list.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          favoritedBy: {
+            [hasFavorited ? 'disconnect' : 'connect']: { id: ctx.user.id },
+          },
+        }
+      })
+      return 'OK'
+    }),
 })

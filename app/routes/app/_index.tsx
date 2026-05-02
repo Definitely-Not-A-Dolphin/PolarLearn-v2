@@ -2,7 +2,7 @@
 import { auth } from "~/lib/auth/server";
 import { redirect, useLoaderData, useNavigate } from "react-router";
 import i18n from "~/i18n";
-import { Folder, List, Star, ListX } from "lucide-react";
+import { List, Star, ListX } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area"
 import { prisma } from "~/lib/db";
 import { RecentListsSchema, RecentSubjectsSchema, extractRecentItems } from "~/lib/list";
@@ -29,7 +29,6 @@ export async function loader(loaderArgs: { request: Request }) {
     return redirect('/app')
   }
 
-  // Load recent subjects lists and sessions
   const rawUser = await prisma.user.findUnique({
     where: { id: user.id },
   })
@@ -92,28 +91,28 @@ export default function HomePage() {
         <div className="flex w-max flex-row gap-x-4">
           <button
             type="button"
-            className="flex flex-col gap-y-2 p-2 h-50 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/lists"); }}
+            className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
+            onClick={() => { void navigate("/app/favorites"); }}
           >
             <Star size={48} />
-            <h1 className="font-bold">Mijn favorieten</h1>
+            <h1 className="font-bold">{t("favorites.title")}</h1>
           </button>
           <button
             type="button"
-            className="flex flex-col gap-y-2 p-2 h-50 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/lists"); }}
+            className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
+            onClick={() => { void navigate("/app/mylists"); }}
           >
             <List size={48} />
-            <h1 className="font-bold">Mijn lijsten</h1>
+            <h1 className="font-bold">{t("mylists.title")}</h1>
           </button>
-          <button
+          {/* <button
             type="button"
-            className="flex flex-col gap-y-2 p-2 h-50 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/lists"); }}
+            className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
+            onClick={() => { void navigate("/app/mylists"); }}
           >
             <Folder size={48} />
             <h1 className="font-bold">Mijn mappen</h1>
-          </button>
+          </button> */}
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -138,7 +137,7 @@ export default function HomePage() {
                 const subject = subjectsList[subjectName];
                 if (subjectName === "other") return null
                 return (
-                  <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-200 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-all cursor-pointer dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl">
+                  <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center">
                     <img src={subject.icon} alt={subject.defaultLabel} className="h-8 w-8 relative z-10" />
                     <h2 className="font-bold relative z-10">{t(subject.labelKey, { defaultValue: subject.defaultLabel })}</h2>
                   </div>
@@ -153,7 +152,7 @@ export default function HomePage() {
         <div className="mt-4 flex w-full flex-col gap-y-3">
           {recentItems.recent_lists.length === 0 ? (
             <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-              {t("home.noRecentLists", { defaultValue: "Je hebt nog geen lijsten bekeken. Open een lijst en deze verschijnt hier." })}
+              {t("home.noRecentLists")}
             </div>
           ) : (
             recentItems.recent_lists.map((list) => {
@@ -165,16 +164,11 @@ export default function HomePage() {
               const authorId = list.authorId
 
               return (
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                 <div
                   key={list.id}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      void navigate(`/app/viewlist/${list.id}`);
-                    }
-                  }}
                   className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
                   onClick={() => { void navigate(`/app/viewlist/${list.id}`); }}
                 >

@@ -5,7 +5,6 @@ import { Image, type ImageProps } from "@unpic/react"
 
 export type SubjectIconProps = Omit<ImageProps, "src" | "alt" | "layout" | "aspectRatio">
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SubjectMetadata = {
   icon: string
   labelKey: string

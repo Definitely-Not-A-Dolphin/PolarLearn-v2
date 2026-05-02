@@ -30,7 +30,7 @@ export function TopBar() {
     }
   })
 
-  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/learn/")) {
+  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/session/")) {
     return null;
   }
 
@@ -48,6 +48,15 @@ export function TopBar() {
       )}
       {location.pathname.startsWith("/app/viewlist/") && (
         <h1 className="text-2xl font-bold">{t("navigation.list")}</h1>
+      )}
+      {location.pathname === "/app/favorites" && (
+        <h1 className="text-2xl font-bold">{t("favorites.title")}</h1>
+      )}
+      {location.pathname === "/app/mylists" && (
+        <h1 className="text-2xl font-bold">{t("mylists.title")}</h1>
+      )}
+      {location.pathname.startsWith("/app/forum") && (
+        <h1 className="text-2xl font-bold">{t("navigation.forum")}</h1>
       )}
       <div className="grow"></div>
       <Popover>

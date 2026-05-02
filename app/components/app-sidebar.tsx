@@ -28,6 +28,7 @@ import {
 import i18n from "~/i18n"
 import { Button } from "@polarnl/polarui-react"
 import { cn } from "~/lib/utils"
+import { UserAvatar } from "~/components/user-avatar"
 
 import { authClient } from "~/lib/auth/client"
 import { Image } from "@unpic/react"
@@ -120,7 +121,7 @@ export function AppSidebar() {
     });
   }
 
-  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/learn/")) {
+  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/session/")) {
     return null;
   }
 
@@ -207,19 +208,11 @@ export function AppSidebar() {
                     isCollapsed ? "justify-center" : "justify-start px-2"
                   )}
                 >
-                  <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-full overflow-hidden">
-                    {rootData.user?.image ? (
-                      <Image
-                        src={rootData.user.image}
-                        alt={rootData.user.name ?? "User"}
-                        width={40}
-                        height={40}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xs font-medium uppercase">{rootData.user?.name?.charAt(0) ?? "U"}</span>
-                    )}
-                  </div>
+                  <UserAvatar
+                    name={rootData.user?.name}
+                    image={rootData.user?.image}
+                    className="shrink-0"
+                  />
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
@@ -236,23 +229,16 @@ export function AppSidebar() {
                 align="end"
                 sideOffset={8}
                 avoidCollisions={false}
-                className={`w-64 ml-2 rounded-lg border p-1 dark:bg-neutral-800`}
+                className="w-64 ml-2 rounded-lg border p-1 dark:bg-neutral-800"
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-3 px-2 py-1.5 text-left">
-                    <div className="flex aspect-square size-10 shrink-0 items-center justify-center rounded-full overflow-hidden">
-                      {rootData.user?.image ? (
-                        <Image
-                          src={rootData.user.image}
-                          alt={rootData.user.name ?? "User"}
-                          width={40}
-                          height={40}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-medium uppercase">{rootData.user?.name?.charAt(0) ?? "U"}</span>
-                      )}
-                    </div>
+                    <UserAvatar
+                      name={rootData.user?.name}
+                      image={rootData.user?.image}
+                      size="lg"
+                      className="shrink-0"
+                    />
                     <div className="grid flex-1 text-sm leading-tight">
                       <span className="truncate font-medium">{rootData.user?.name ?? i18n.t("userMenu.guest")}</span>
                       {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}

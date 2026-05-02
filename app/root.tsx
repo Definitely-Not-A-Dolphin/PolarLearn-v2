@@ -36,10 +36,10 @@ export async function loader(loaderArgs: { request: Request }) {
   const headers = new Headers(loaderArgs.request.headers)
   const result = await auth.api.getSession({ headers })
   const user = result?.user
-  const fetchedTheme = "dark" //placeholder
+  const theme = "dark"
 
   return {
-    theme: fetchedTheme,
+    theme,
     lang: process.env.APP_LANG ?? "nl",
     user: {
       name: user?.name ?? null,
