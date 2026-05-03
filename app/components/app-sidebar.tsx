@@ -30,7 +30,6 @@ import { Button } from "@polarnl/polarui-react"
 import { cn } from "~/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { authClient } from "~/lib/auth/client"
-import { Image } from "@unpic/react"
 import pl_logo from "~/img/polarlearn.svg"
 import { ChevronsUpDown, LogOut } from "lucide-react"
 import type { RootLoaderData } from "~/lib/root-data"
@@ -62,13 +61,11 @@ function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
   const Icon = isCollapsed ? PanelLeftOpen : PanelLeftClose
 
   return (
-    <div className="relative flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg text-sidebar-primary-foreground">
-      <Image
+    <div className="relative flex size-9 shrink-0 items-center justify-center text-sidebar-primary-foreground">
+      <img
         src={pl_logo}
         alt="PolarLearn"
-        width={24}
-        height={24}
-        className="h-5.5 w-5.5 object-contain transition-opacity duration-200 group-hover:opacity-0"
+        className="size-5 object-contain transition-opacity duration-200 group-hover:opacity-0"
       />
       <Icon className="absolute inset-0 m-auto size-5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-black dark:text-white " />
     </div>
@@ -130,7 +127,7 @@ export function AppSidebar() {
                 variant="transparent"
                 scheme={theme}
                 className={cn(
-                  "group flex h-10 w-full items-center rounded-xl p-2",
+                  "group flex h-9 w-full items-center rounded-xl",
                   showLabels ? "justify-start" : "justify-center p-0!"
                 )}
                 onClick={toggleSidebar}

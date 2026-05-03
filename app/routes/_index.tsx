@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import pl_logo from "~/img/polarlearn.svg";
 import pnl_logo from "~/img/pnl.svg";
 import { Button } from "@polarnl/polarui-react";
-import { useRouteLoaderData } from "react-router";
+import { useNavigate, useRouteLoaderData } from "react-router";
 import type { RootLoaderData } from "~/lib/root-data";
 import i18n from "~/i18n";
 
@@ -275,10 +275,13 @@ function AnimatedButton() {
       tlRef.current?.kill?.();
     };
   }, []);
+  const nav = useNavigate()
 
   return (
     <div ref={buttonRef} className="opacity-0">
-      <Button>
+      <Button onClick={() => {
+        nav("/auth/sign-in")
+      }}>
         Start met leren
       </Button>
     </div>

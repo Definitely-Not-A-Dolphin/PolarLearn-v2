@@ -30,22 +30,12 @@ export const listDiffSchema = z.object({
 
 export type ListDiff = z.infer<typeof listDiffSchema>;
 
+export function isEmptyListItem(item: ListItem): boolean {
+  return item.question.trim() === "" && item.answer.trim() === "";
+}
+
 export function snapshotFromEditableItems(items: ListItem[]): ListSnapshot {
-  let lastNonEmptyIndex = -1;
-
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    if (item.question.trim() !== "" || item.answer.trim() !== "") {
-      lastNonEmptyIndex = i;
-      break;
-    }
-  }
-
-  if (lastNonEmptyIndex === -1) {
-    return [];
-  }
-
-  return items.slice(0, lastNonEmptyIndex + 1);
+  return items.filter((item) => !isEmptyListItem(item));
 }
 
 export function buildListDiff(beforeSnapshot: ListSnapshot, afterSnapshot: ListSnapshot): ListDiff {

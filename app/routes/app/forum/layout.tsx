@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate, useRouteLoaderData } from "react-router";
 import { Tabs } from "@polarnl/polarui-react";
-import { Plus } from "lucide-react";
+import { MessageCirclePlus, Plus } from "lucide-react";
 import { useState } from "react";
 import { CreatePostDialog } from "./CreatePostDialog";
 import { t } from "~/i18n";
@@ -53,7 +53,7 @@ export default function Layout() {
           }}
           title={t("forum.createPost.title")}
         >
-          <Plus />
+          <MessageCirclePlus/>
         </button>
       </div>
       <hr />

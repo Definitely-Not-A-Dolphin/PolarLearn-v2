@@ -186,7 +186,7 @@ export default function PostPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-border bg-card p-6">
+      <div className="rounded-lg border border-border p-6"> 
         <div className="mb-4 flex items-center gap-3">
           <Avatar>
             <AvatarImage src={author?.image ?? undefined} />
@@ -206,13 +206,15 @@ export default function PostPage() {
                 >
                   {authorLabel}
                 </button>
-                <Badge
-                  variant="outline"
-                  className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
-                >
-                  <ShieldUser />
-                  {t("userMenu.admin")}
-                </Badge>
+                {author.role === "admin" && (
+                  <Badge
+                    variant="outline"
+                    className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
+                  >
+                    <ShieldUser />
+                    {t("userMenu.admin")}
+                  </Badge>
+                )}
               </div>
             ) : (
               <span className="font-medium">
@@ -267,8 +269,44 @@ export default function PostPage() {
 
         <MarkdownRenderer content={currentPost.content} />
       </div>
-
       <div className="flex flex-wrap items-center gap-2 ml-4">
+        {canVote && (
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={pendingVote === "up"
+                ? <Loader2 className="animate-spin" />
+                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
+              onClick={() => {
+                handleVote("up");
+              }}
+              disabled={voteMutation.isPending}
+              title={t("forum.vote.up")}
+              className="border-none shadow-none"
+            >
+              {""}
+            </Button>
+            <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
+              {typeof currentPost.votes === 'number' ? currentPost.votes : currentPost.cachedTotalVotes}
+            </span>
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={pendingVote === "down"
+                ? <Loader2 className="animate-spin" />
+                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
+              onClick={() => {
+                handleVote("down");
+              }}
+              disabled={voteMutation.isPending}
+              title={t("forum.vote.down")}
+              className="border-none shadow-none"
+            >
+              {""}
+            </Button>
+          </div>
+        )}
         <Button
           scheme={theme}
           variant="transparent"
@@ -341,44 +379,6 @@ export default function PostPage() {
                 ? t("forum.post.unpin")
                 : t("forum.post.pin")}
             </Button>
-          )}
-
-          {canVote && (
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="transparent"
-                scheme={theme}
-                icon={pendingVote === "up"
-                  ? <Loader2 className="animate-spin" />
-                  : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
-                onClick={() => {
-                  handleVote("up");
-                }}
-                disabled={voteMutation.isPending}
-                title={t("forum.vote.up")}
-                className="border-none shadow-none"
-              >
-                {""}
-              </Button>
-              <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
-                {typeof currentPost.votes === 'number' ? currentPost.votes : currentPost.cachedTotalVotes}
-              </span>
-              <Button
-                variant="transparent"
-                scheme={theme}
-                icon={pendingVote === "down"
-                  ? <Loader2 className="animate-spin" />
-                  : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
-                onClick={() => {
-                  handleVote("down");
-                }}
-                disabled={voteMutation.isPending}
-                title={t("forum.vote.down")}
-                className="border-none shadow-none"
-              >
-                {""}
-              </Button>
-            </div>
           )}
         </div>
       </div>
@@ -553,7 +553,7 @@ function ReplyCard({ reply }: { reply: Post }) {
   const navigate = useNavigate();
 
   return (
-    <article className="rounded-lg border border-border bg-background/60 p-4">
+    <article className="rounded-lg border border-border bg-neutral-800 p-4">
       <div className="mb-3 flex items-center gap-3">
         <Avatar>
           <AvatarImage src={author?.image ?? undefined} />
@@ -561,7 +561,7 @@ function ReplyCard({ reply }: { reply: Post }) {
             {author?.name ? author.name.charAt(0).toUpperCase() : "?"}
           </AvatarFallback>
         </Avatar>
-        <div className="flex flex-col">
+        <div className="flex flex-col items-start justify-start">
           {authorId ? (
             <button
               type="button"

@@ -155,6 +155,7 @@ export const postAuthorSchema = z.object({
   id: z.string(),
   name: z.string(),
   displayUsername: z.string().nullable(),
+  role: z.string(),
   image: z.string().nullable(),
 });
 

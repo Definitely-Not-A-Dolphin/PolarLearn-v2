@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from "react-router"
+import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router"
 import { MoveLeft } from "lucide-react"
 import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
@@ -99,6 +99,7 @@ export default function StatsSessionPage() {
   const t = i18n.t
   const navigate = useNavigate()
   const { listId, session } = useLoaderData<typeof loader>()
+  const rootData = useRouteLoaderData("root")
 
   return (
     <div className="space-y-4">
@@ -107,7 +108,8 @@ export default function StatsSessionPage() {
         onClick={() => {
           void navigate(`/app/viewlist/${listId}/stats`)
         }}
-        icon={<MoveLeft/>}
+        icon={<MoveLeft />}
+        scheme={rootData.theme as "light" | "dark"}
       >
         {t("learn.stats.backToSessions")}
       </Button>

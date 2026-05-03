@@ -4,7 +4,7 @@ import crypto from "crypto";
 import jsonpatch, { type Operation } from "fast-json-patch";
 import { SubjectNamesArray } from "~/lib/subjectnames";
 import { listSnapshot, type ListItem, type ListSnapshot } from "~/lib/list";
-import { listDiffSchema, listPatchOperationSchema, type ListDiff } from "~/lib/list-diff";
+import { buildListDiff, listDiffSchema, listPatchOperationSchema, snapshotFromEditableItems, type ListDiff } from "~/lib/list-diff";
 import { TRPCError } from "@trpc/server";
 import { t } from "~/i18n";
 import { RecentListsSchema, extractRecentItems, RecentSubjectsSchema } from "~/lib/list";
@@ -290,7 +290,7 @@ function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSn
       structuredClone(snapshot),
       listDiff.changes as Operation[],
     );
-    return result.newDocument;
+    return snapshotFromEditableItems(listSnapshot.parse(result.newDocument));
   } catch {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -590,9 +590,16 @@ export const ListRouter = createTRPCRouter({
         })
       }
 
-      const branchSnapshot = currentBranch.cachedSnapshot
+      const branchSnapshot = snapshotFromEditableItems(currentBranch.cachedSnapshot)
       const nextSnapshot = applyListDiffToSnapshot(branchSnapshot, input.diff)
-      const newCommitId = generateCommitHash(input.diff)
+      const sanitizedDiff = buildListDiff(branchSnapshot, nextSnapshot)
+
+      if (sanitizedDiff.changes.length === 0) {
+        return 'OK'
+      }
+
+      const commitDiff = diff.parse(sanitizedDiff)
+      const newCommitId = generateCommitHash(commitDiff)
 
       const updatedItems = !currentBranch.parentBranch ? structuredClone(nextSnapshot) : list.items
       const newHistory = {
@@ -612,7 +619,7 @@ export const ListRouter = createTRPCRouter({
             author: ctx.user.id,
             message: input.commitMessage,
             createdAt: new Date().toISOString(),
-            diff: input.diff
+            diff: commitDiff
           }
         }
       }
@@ -721,6 +728,10 @@ export const ListRouter = createTRPCRouter({
               question: '',
               answer: '',
             }
+          },
+          {
+            op: 'remove',
+            path: '/0',
           }
         ],
       } as Diff
