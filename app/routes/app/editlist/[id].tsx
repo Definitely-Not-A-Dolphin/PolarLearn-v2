@@ -28,13 +28,10 @@ import { appRouter } from "~/server/main";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { RootLoaderData, Theme } from "~/lib/root-data";
 
 
 import type { Route } from "./+types/[id]";
-
-const rootDataSchema = z.object({
-  theme: z.enum(["light", "dark"]),
-});
 
 const editableListDraftSchema = z.object({
   name: z.string(),
@@ -221,8 +218,8 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
   gsap.registerPlugin(useGSAP);
 
   const t = i18n.t;
-  const rootData = rootDataSchema.parse(useRouteLoaderData("root"));
-  const theme = rootData.theme;
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "dark";
   const listName = list.name;
   const listSubject = list.subject;
   const initialDraft = useMemo(() => normalizeEditableListDraft({
@@ -477,7 +474,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         <Button variant="transparent" scheme={theme} icon={<X />} onClick={() => {
           void navigate(`/app`);
         }}>
-          Sluiten
+          {t("common.close")}
         </Button>
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
           {t("lists.edit.title")}
@@ -738,7 +735,7 @@ function SaveDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  theme: "light" | "dark";
+  theme: Theme;
   commitMessage: string;
   isSaving: boolean;
   onCommitMessageChange: (value: string) => void;
@@ -795,10 +792,11 @@ function DraftImportDialog({
   open: boolean;
   baseDraft: EditableListDraft;
   importedDraft: EditableListDraft | null;
-  theme: "light" | "dark";
+  theme: Theme;
   onDiscardLocalDraft: () => void;
   onApplyLocalDraft: () => void;
 }) {
+  const t = i18n.t;
   const rawPatchOperations = useMemo(() => {
     if (!importedDraft) {
       return [];
@@ -833,16 +831,16 @@ function DraftImportDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle className="font-bold text-xl">Lokale wijzigingen importeren?</DialogTitle>
+          <DialogTitle className="font-bold text-xl">{t("lists.edit.importDraft.title")}</DialogTitle>
           <DialogDescription>
-            Wij hebben een lokaal opgeslagen concept gevonden voor deze lijst. Deze is voor het laatst opgeslagen op {savedAtLabel}. Bekijk de verschillen voordat je de lokale versie met de huidige lijst vervangt.
+            {t("lists.edit.importDraft.description", { savedAtLabel })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
           <div className="grid grid-cols-2 border-b border-border bg-muted/40 text-sm text-muted-foreground">
-            <div className="px-4 py-3">Huidige versie</div>
-            <div className="border-l border-border px-4 py-3">Lokale conceptversie</div>
+            <div className="px-4 py-3">{t("lists.edit.importDraft.currentVersion")}</div>
+            <div className="border-l border-border px-4 py-3">{t("lists.edit.importDraft.localDraft")}</div>
           </div>
           <div className="max-h-[62vh] overflow-auto">
             {rawPatchOperations.map((row, index) => {
@@ -877,10 +875,10 @@ function DraftImportDialog({
 
         <DialogFooter>
           <Button variant="transparent" scheme={theme} onClick={onDiscardLocalDraft}>
-            Serverversie behouden
+            {t("lists.edit.importDraft.keepServerVersion")}
           </Button>
           <Button color="sky" textColor="white" onClick={onApplyLocalDraft}>
-            Lokale wijzigingen importeren
+            {t("lists.edit.importDraft.importLocalChanges")}
           </Button>
         </DialogFooter>
       </DialogContent>

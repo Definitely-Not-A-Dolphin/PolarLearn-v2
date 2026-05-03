@@ -18,6 +18,7 @@ import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
 import { auth } from "./lib/auth/server";
 import { TRPCReactProvider } from "./server/react";
+import type { RootLoaderData, Theme } from "./lib/root-data";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -32,16 +33,17 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export async function loader(loaderArgs: { request: Request }) {
+export async function loader(loaderArgs: { request: Request }): Promise<RootLoaderData> {
   const headers = new Headers(loaderArgs.request.headers)
   const result = await auth.api.getSession({ headers })
   const user = result?.user
-  const theme = "dark"
+  const theme: Theme = "dark"
 
   return {
     theme,
     lang: process.env.APP_LANG ?? "nl",
     user: {
+      id: user?.id ?? null,
       name: user?.name ?? null,
       image: user?.image ?? null,
       email: user?.email ?? null,
@@ -66,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="font-sans">
-        <Toaster richColors position="top-center" theme={theme as "dark" | "light"} />
+        <Toaster richColors position="top-center" theme={theme} />
         <TRPCReactProvider>
           {children}
         </TRPCReactProvider>

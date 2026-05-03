@@ -26,12 +26,21 @@ describe('createLearningQueue', () => {
 
     const queue = createLearningQueue(items, 'multiplechoice')
     const firstQuestion = queue[0]
-    const sourceItem = items.find((item) => item.question === firstQuestion?.question)
+    const sourceItem = items.find((item) => item.question === firstQuestion.question)
 
-    expect(firstQuestion?.type).toBe('multiplechoice')
-    expect(firstQuestion?.decoys).toHaveLength(3)
-    expect(firstQuestion?.decoys).not.toContain(sourceItem?.answer)
-    expect([...firstQuestion!.decoys!].sort()).toEqual(
+    expect(firstQuestion.type).toBe('multiplechoice')
+    if (firstQuestion.type !== 'multiplechoice') {
+      throw new Error('Expected a multiple choice question')
+    }
+
+    const decoys = firstQuestion.decoys
+    if (!decoys) {
+      throw new Error('Expected multiple choice decoys')
+    }
+
+    expect(decoys).toHaveLength(3)
+    expect(decoys).not.toContain(sourceItem?.answer)
+    expect([...decoys].sort()).toEqual(
       items
         .filter((item) => item.id !== sourceItem?.id)
         .map((item) => item.answer)

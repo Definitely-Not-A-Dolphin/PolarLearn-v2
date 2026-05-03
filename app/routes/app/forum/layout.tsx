@@ -3,23 +3,20 @@ import { Tabs } from "@polarnl/polarui-react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { CreatePostDialog } from "./CreatePostDialog";
-
-interface RootData {
-  theme: "light" | "dark";
-}
+import { t } from "~/i18n";
+import type { RootLoaderData } from "~/lib/root-data";
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const rootData = useRouteLoaderData<RootData>("root");
-  const theme: "light" | "dark" = rootData?.theme ?? "dark";
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "dark";
 
-  // Determine active tab based on current path
   const getActiveIndex = () => {
     const path = location.pathname.replace(/\/+$/, "");
     if (path.includes("/myPosts")) return 1;
     if (path.includes("/myReplies")) return 2;
-    return 0; // Default to "All Posts" (posts page)
+    return 0; // defaults to all posts page
   };
 
   const handleTabChange = (idx: number) => {
@@ -40,7 +37,11 @@ export default function Layout() {
         <CreatePostDialog open={createPostDialogOpen} onOpenChange={setCreatePostDialogOpen} />
         <Tabs
           scheme={theme}
-          tabs={["All Posts", "My Posts", "My Replies"]}
+          tabs={[
+            t("forum.tabs.allPosts"),
+            t("forum.tabs.myPosts"),
+            t("forum.tabs.myReplies"),
+          ]}
           activeIndex={getActiveIndex()}
           onActiveIndexChange={handleTabChange}
         />
@@ -50,6 +51,7 @@ export default function Layout() {
           onClick={() => {
             setCreatePostDialogOpen(true)
           }}
+          title={t("forum.createPost.title")}
         >
           <Plus />
         </button>

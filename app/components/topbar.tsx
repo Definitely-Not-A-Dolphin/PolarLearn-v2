@@ -1,4 +1,6 @@
-import { List, Loader, Plus } from "lucide-react";
+import { List, Loader2, Plus, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { CreatePostDialog } from "~/routes/app/forum/CreatePostDialog";
 import { useLocation, useNavigate, useRouteLoaderData } from "react-router";
 
 import { SidebarTrigger } from "~/components/ui/sidebar";
@@ -8,16 +10,14 @@ import { Button } from "@polarnl/polarui-react";
 import { useTRPC } from '~/server/react';
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { RootLoaderData } from "~/lib/root-data";
 
 export function TopBar() {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-non-null-assertion
-  const rootData = useRouteLoaderData("root")! as {
-    theme: string
-    user: { name: string; image: string; email: string; role: string }
-  }
+  const rootData = useRouteLoaderData<RootLoaderData>("root")
   const location = useLocation()
-  const theme = rootData.theme || "dark"
+  const theme = rootData?.theme ?? "dark"
   const t = i18n.t;
+  const userName = rootData?.user.name ?? t("userMenu.guest")
   const rpc = useTRPC()
   const navigate = useNavigate()
   const createList = useMutation({
@@ -30,6 +30,8 @@ export function TopBar() {
     }
   })
 
+  const [isCreatePostDialogOpen, setIsCreatePostDialogOpen] = useState(false);
+
   if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/session/")) {
     return null;
   }
@@ -38,10 +40,10 @@ export function TopBar() {
     <div className="border-b dark:border-neutral-700 border-neutral-300 min-h-16 w-full flex items-center gap-3 px-4 top-0 z-10 bg-neutral-50 dark:bg-neutral-900 ">
       <SidebarTrigger
         className="md:hidden shrink-0"
-        scheme={theme as "dark" | "light"}
+        scheme={theme}
       />
       {location.pathname === "/app" && (
-        <h1 className="text-2xl font-bold">👋 {t("home.welcomeText", { username: rootData.user.name })}</h1>
+        <h1 className="text-2xl font-bold">👋 {t("home.welcomeText", { username: userName })}</h1>
       )}
       {location.pathname === "/app/forum" && (
         <h1 className="text-2xl font-bold">{t("navigation.forum")}</h1>
@@ -68,7 +70,7 @@ export function TopBar() {
         <PopoverContent className="w-auto" align="center">
           <PopoverHeader>
             <h1 className="font-bold text-xl">
-              Nieuw
+              {t("topbar.new")}
             </h1>
           </PopoverHeader>
           <Button
@@ -79,16 +81,27 @@ export function TopBar() {
                 subject: "other"
               })
             }}
-            scheme={theme as "light" | "dark"}
+            scheme={theme}
             disabled={createList.isPending}
           >
             {createList.isPending ? (
-              <Loader className="animate-spin" />
+              <Loader2 className="animate-spin" />
             ) : (
               <List />
             )}
-            <span className="ml-2">Lijst aanmaken</span>
+            <span className="ml-2">{t("lists.create.createList")}</span>
           </Button>
+          <Button
+            variant="transparent"
+            scheme={theme}
+            onClick={() => {
+              setIsCreatePostDialogOpen(true);
+            }}
+          >
+            <MessageCircle className="size-4" />
+            <span className="ml-2">{t("forum.createPost.title")}</span>
+          </Button>
+          <CreatePostDialog open={isCreatePostDialogOpen} onOpenChange={setIsCreatePostDialogOpen} />
         </PopoverContent>
       </Popover>
     </div>

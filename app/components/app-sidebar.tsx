@@ -28,12 +28,12 @@ import {
 import i18n from "~/i18n"
 import { Button } from "@polarnl/polarui-react"
 import { cn } from "~/lib/utils"
-import { UserAvatar } from "~/components/user-avatar"
-
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { authClient } from "~/lib/auth/client"
 import { Image } from "@unpic/react"
 import pl_logo from "~/img/polarlearn.svg"
 import { ChevronsUpDown, LogOut } from "lucide-react"
+import type { RootLoaderData } from "~/lib/root-data"
 
 function SidebarTooltip({
   label,
@@ -85,20 +85,9 @@ export function AppSidebar() {
   const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/"
   const currentPath = normalizePath(location.pathname)
 
-  interface RootData {
-    theme: "light" | "dark";
-    lang: string;
-    user: {
-      name: string | null;
-      image: string | null;
-      email: string | null;
-      role: string | null;
-    } | null;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
-  const rootData = useRouteLoaderData("root") as RootData;
-  const theme = rootData.theme
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "dark"
+  const user = rootData?.user
 
   const navItems = [
     { title: "navigation.home", icon: Home, url: "/app" },
@@ -208,15 +197,16 @@ export function AppSidebar() {
                     isCollapsed ? "justify-center" : "justify-start px-2"
                   )}
                 >
-                  <UserAvatar
-                    name={rootData.user?.name}
-                    image={rootData.user?.image}
-                    className="shrink-0"
-                  />
+                  <Avatar>
+                    <AvatarImage src={user?.image ?? undefined} />
+                    <AvatarFallback>
+                      {user?.name ? user.name.charAt(0).toUpperCase() : "?"}
+                    </AvatarFallback>
+                  </Avatar>
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 truncate text-left font-medium ml-2">
-                        {rootData.user?.name ?? i18n.t("userMenu.guest")}
+                        {user?.name ?? i18n.t("userMenu.guest")}
                       </span>
                       <ChevronsUpDown className="size-4 shrink-0 opacity-70" />
                     </>
@@ -233,22 +223,22 @@ export function AppSidebar() {
               >
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-3 px-2 py-1.5 text-left">
-                    <UserAvatar
-                      name={rootData.user?.name}
-                      image={rootData.user?.image}
-                      size="lg"
-                      className="shrink-0"
-                    />
+                    <Avatar>
+                      <AvatarImage src={user?.image ?? undefined} />
+                      <AvatarFallback>
+                        {user?.name ? user.name.charAt(0).toUpperCase() : "?"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{rootData.user?.name ?? i18n.t("userMenu.guest")}</span>
-                      {rootData.user?.email ? <span className="truncate text-xs text-muted-foreground">{rootData.user.email}</span> : null}
+                      <span className="truncate font-medium">{user?.name ?? i18n.t("userMenu.guest")}</span>
+                      {user?.email ? <span className="truncate text-xs text-muted-foreground">{user.email}</span> : null}
                     </div>
                   </div>
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
 
-                {rootData.user?.role === "admin" && (
+                {user?.role === "admin" && (
                   <DropdownMenuGroup>
                     <Button
                       variant="transparent"

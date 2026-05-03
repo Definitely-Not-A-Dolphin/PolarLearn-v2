@@ -16,7 +16,7 @@ export const listDataSchema = z.object({
   ),
   collaborators: z.array(z.object({ id: z.string() })),
   favoritedBy: z.array(z.object({ id: z.string() })),
-  versionData: z.record(z.unknown()),
+  versionData: z.record(z.string(), z.unknown()),
 });
 
 export type ListData = z.infer<typeof listDataSchema>;

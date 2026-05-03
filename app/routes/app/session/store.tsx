@@ -45,7 +45,6 @@ const normalizeAnswer = (answer: string) => answer.trim().toLowerCase()
 
 export const createLearnStore = (initData: LearnStoreInitData) => {
   const initialAnswerLog = initData.answerLog ?? []
-  const totalQuestions = initData.queue.length + initialAnswerLog.length
 
   return createStore<LearnStoreState>((set, get) => ({
     listId: initData.listId,

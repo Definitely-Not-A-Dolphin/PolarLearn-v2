@@ -16,6 +16,7 @@ import { Progress } from "~/components/ui/progress";
 import i18n from "~/i18n";
 import { z } from "zod";
 import { answerLogSchema, queueSchema } from "~/lib/learn";
+import type { RootLoaderData } from "~/lib/root-data";
 
 type SessionLoaderData = Awaited<ReturnType<typeof loader>>
 interface LearnSessionData {
@@ -50,10 +51,8 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<{ s
 
 export default function LearnPage() {
   const { session } = useLoaderData<SessionLoaderData>()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const rootData = useRouteLoaderData("root")
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const theme: "light" | "dark" = rootData?.theme === "dark" ? "dark" : "light"
+  const rootData = useRouteLoaderData<RootLoaderData>("root")
+  const theme = rootData?.theme === "dark" ? "dark" : "light"
 
   return (
     <LearnStoreProvider

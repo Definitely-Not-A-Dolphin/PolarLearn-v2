@@ -13,6 +13,7 @@ import i18n from "~/i18n";
 import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
 import type { Route } from "./+types/sign-in";
 import { auth } from "~/lib/auth/server";
+import type { RootLoaderData } from "~/lib/root-data";
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
@@ -31,21 +32,9 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 }
 
 export default function SignInPage() {
-  interface RootData {
-    theme: "light" | "dark";
-    lang: string;
-    user: {
-      name: string | null;
-      image: string | null;
-      email: string | null;
-      role: string | null;
-    } | null;
-  }
-
   const { quote, enableEntreeFederatedSignIn } = useLoaderData<typeof loader>();
-  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
-  const rootData = useRouteLoaderData("root") as RootData;
-  const theme = rootData.theme;
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
   const navigate = useNavigate();
 
@@ -174,7 +163,7 @@ export default function SignInPage() {
             </Link>
           </div>
           <div className="flex flex-col gap-4">
-            {rootData.lang === "nl" && enableEntreeFederatedSignIn ? (
+            {rootData?.lang === "nl" && enableEntreeFederatedSignIn ? (
               <>
                 <div className="flex items-center my-4">
                   <hr className="grow border-neutral-600" />

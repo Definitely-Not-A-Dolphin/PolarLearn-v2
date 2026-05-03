@@ -2,14 +2,22 @@ import { TRPCError } from '@trpc/server'
 import crypto from 'crypto'
 import {
   getPostsInputSchema,
+  getPostsOutputSchema,
   getPostInputSchema,
+  postSchema,
   createPostInputSchema,
+  createPostOutputSchema,
   editPostInputSchema,
+  editPostOutputSchema,
   deletePostInputSchema,
   votersSchema,
+  calculateVoteTotals,
+  getUserVote,
   replyToPostInputSchema,
   votePostInputSchema,
+  votePostOutputSchema,
   getPostRepliesInputSchema,
+  getPostRepliesOutputSchema,
 } from '~/lib/forum'
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/trpc'
@@ -17,12 +25,14 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/
 export const forumRouter = createTRPCRouter({
   getPosts: publicProcedure
     .input(getPostsInputSchema)
+    .output(getPostsOutputSchema)
     .query(async ({ input, ctx }) => {
       const { cursor, limit, category, authorId } = input
       const posts = await ctx.prisma.forumPost.findMany({
         where: {
           category: category ?? undefined,
           authorId: authorId ?? undefined,
+          isReply: false,
           deleted: false,
           NOT: {
             category: 'pr-discussion',
@@ -38,7 +48,7 @@ export const forumRouter = createTRPCRouter({
             },
           },
         },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
         take: limit + 1,
         cursor: cursor ? { id: cursor } : undefined,
       })
@@ -51,10 +61,17 @@ export const forumRouter = createTRPCRouter({
         }
       }
 
-      return { posts, nextCursor }
+      const currentUserId = ctx.user?.id ?? null
+      const postsWithVote = posts.map((post) => ({
+        ...post,
+        currentUserVote: getUserVote(post.voters, currentUserId),
+      }))
+
+      return getPostsOutputSchema.parse({ posts: postsWithVote, nextCursor })
     }),
   getPost: publicProcedure
     .input(getPostInputSchema)
+    .output(postSchema)
     .query(async ({ input, ctx }) => {
       const { id } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -73,10 +90,15 @@ export const forumRouter = createTRPCRouter({
       if (!post || post.deleted) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
       }
-      return post
+
+      return postSchema.parse({
+        ...post,
+        currentUserVote: getUserVote(post.voters, ctx.user?.id),
+      })
     }),
   createPost: protectedProcedure
     .input(createPostInputSchema)
+    .output(createPostOutputSchema)
     .mutation(async ({ input, ctx }) => {
       const { title, content, subject, category } = input
       if (category === "announcement" && ctx.user.role !== "admin") {
@@ -98,10 +120,11 @@ export const forumRouter = createTRPCRouter({
           },
         },
       })
-      return post
+      return createPostOutputSchema.parse(post)
     }),
   editPost: protectedProcedure
     .input(editPostInputSchema)
+    .output(editPostOutputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id, title, content, subject, category } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -109,7 +132,7 @@ export const forumRouter = createTRPCRouter({
         select: { authorId: true },
       })
       if (!post) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
-      if (post.authorId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only edit your own posts' })
+      if (post.authorId !== ctx.user.id && ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only edit your own posts' })
 
       const updatedPost = await ctx.prisma.forumPost.update({
         where: { id },
@@ -120,7 +143,7 @@ export const forumRouter = createTRPCRouter({
           category: category ?? undefined,
         },
       })
-      return updatedPost
+      return editPostOutputSchema.parse(updatedPost)
     }),
   deletePost: protectedProcedure
     .input(deletePostInputSchema)
@@ -131,7 +154,7 @@ export const forumRouter = createTRPCRouter({
         select: { authorId: true },
       })
       if (!post) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' })
-      if (post.authorId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only delete your own posts' })
+      if (post.authorId !== ctx.user.id && ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only delete your own posts' })
 
       await ctx.prisma.forumPost.update({
         where: { id },
@@ -141,6 +164,7 @@ export const forumRouter = createTRPCRouter({
     }),
   votePost: protectedProcedure
     .input(votePostInputSchema)
+    .output(votePostOutputSchema)
     .mutation(async ({ input, ctx }) => {
       const { id, vote } = input
       const post = await ctx.prisma.forumPost.findUnique({
@@ -162,11 +186,9 @@ export const forumRouter = createTRPCRouter({
         voters = { ...voters, [userId]: vote }
       }
 
-      const voteValues = Object.values(voters)
-      const votes = voteValues.reduce((total, currentVote) => total + (currentVote === 'up' ? 1 : -1), 0)
-      const cachedTotalVotes = voteValues.length
+      const { votes, cachedTotalVotes } = calculateVoteTotals(voters)
 
-      return await ctx.prisma.forumPost.update({
+      await ctx.prisma.forumPost.update({
         where: { id },
         data: {
           voters,
@@ -174,9 +196,12 @@ export const forumRouter = createTRPCRouter({
           cachedTotalVotes,
         },
       })
+
+      return { votes, cachedTotalVotes }
     }),
   replyToPost: protectedProcedure
     .input(replyToPostInputSchema)
+    .output(postSchema)
     .mutation(async ({ input, ctx }) => {
       const { postId, content } = input
       const parentPost = await ctx.prisma.forumPost.findUnique({
@@ -208,7 +233,7 @@ export const forumRouter = createTRPCRouter({
           },
         },
       })
-      return reply
+      return postSchema.parse(reply)
     }),
   pinPost: protectedProcedure
     .input(deletePostInputSchema)
@@ -228,6 +253,7 @@ export const forumRouter = createTRPCRouter({
     }),
   getPostReplies: publicProcedure
     .input(getPostRepliesInputSchema)
+    .output(getPostRepliesOutputSchema)
     .query(async ({ input, ctx }) => {
       const { postId, cursor, limit } = input
 
@@ -269,6 +295,12 @@ export const forumRouter = createTRPCRouter({
         }
       }
 
-      return { replies, nextCursor }
+      const currentUserId = ctx.user?.id ?? null
+      const repliesWithVote = replies.map((reply) => ({
+        ...reply,
+        currentUserVote: getUserVote(reply.voters, currentUserId),
+      }))
+
+      return getPostRepliesOutputSchema.parse({ replies: repliesWithVote, nextCursor })
     }),
 })

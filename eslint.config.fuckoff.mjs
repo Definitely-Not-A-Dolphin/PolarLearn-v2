@@ -1,3 +1,5 @@
+// For now I have disabled eslint since it is way too strict and annoying
+
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';

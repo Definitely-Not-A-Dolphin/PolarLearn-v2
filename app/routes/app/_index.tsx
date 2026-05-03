@@ -105,14 +105,6 @@ export default function HomePage() {
             <List size={48} />
             <h1 className="font-bold">{t("mylists.title")}</h1>
           </button>
-          {/* <button
-            type="button"
-            className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/mylists"); }}
-          >
-            <Folder size={48} />
-            <h1 className="font-bold">Mijn mappen</h1>
-          </button> */}
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -126,20 +118,25 @@ export default function HomePage() {
           )}
           <div className="flex w-max flex-row gap-x-4">
             {recentItems.recent_subjects.length === 0 ? (
-              Object.entries(subjectsList).map(([subjectName, subject]) => (
-                <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl">
-                  <img src={subject.icon} alt={subject.defaultLabel} className="h-8 w-8 relative z-10" />
-                  <h2 className="font-bold relative z-10">{t(subject.labelKey, { defaultValue: subject.defaultLabel })}</h2>
-                </div>
-              ))
+              Object.entries(subjectsList).map(([subjectName, subject]) => {
+                const subjectLabel = t(subject.labelKey);
+
+                return (
+                  <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl">
+                    <img src={subject.icon} alt={subjectLabel} className="h-8 w-8 relative z-10" />
+                    <h2 className="font-bold relative z-10">{subjectLabel}</h2>
+                  </div>
+                );
+              })
             ) : (
               recentItems.recent_subjects.map((subjectName) => {
                 const subject = subjectsList[subjectName];
                 if (subjectName === "other") return null
+                const subjectLabel = t(subject.labelKey);
                 return (
                   <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center">
-                    <img src={subject.icon} alt={subject.defaultLabel} className="h-8 w-8 relative z-10" />
-                    <h2 className="font-bold relative z-10">{t(subject.labelKey, { defaultValue: subject.defaultLabel })}</h2>
+                    <img src={subject.icon} alt={subjectLabel} className="h-8 w-8 relative z-10" />
+                    <h2 className="font-bold relative z-10">{subjectLabel}</h2>
                   </div>
                 );
               })
@@ -161,6 +158,7 @@ export default function HomePage() {
               const subject = hasSubject
                 ? subjectsList[list.subject as keyof typeof subjectsList]
                 : null
+              const subjectLabel = subject ? t(subject.labelKey) : null
               const authorId = list.authorId
 
               return (
@@ -177,7 +175,7 @@ export default function HomePage() {
                     className="flex min-w-0 items-center gap-x-3 text-left"
                   >
                     {subject ? (
-                      <img src={subject.icon} alt={subject.defaultLabel} className="h-6 w-6 shrink-0" />
+                      <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
                     ) : (
                       <List size={20} className="shrink-0" />
                     )}
@@ -196,7 +194,7 @@ export default function HomePage() {
                     </button>
                   ) : (
                     <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
-                      {t("list.unknownAuthor")}
+                      {t("lists.unknownAuthor")}
                     </span>
                   )}
 

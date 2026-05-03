@@ -14,10 +14,7 @@ import { prisma } from "~/lib/db";
 import { Loader2, Pencil, BookOpen, Trash, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import type { LoaderData, ListData } from "~/lib/viewlist";
-
-interface RootData {
-  theme: "light" | "dark";
-}
+import type { RootLoaderData } from "~/lib/root-data";
 
 export async function loader({ params, request }: Route.LoaderArgs): Promise<LoaderData> {
   const id = params.id as string | undefined;
@@ -66,14 +63,14 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Loa
 
 export default function Layout() {
   const data = useLoaderData<LoaderData>();
-  const rootData = useRouteLoaderData<RootData>("root");
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
   const subjects = new Subject();
   const icon = subjects.getIcon(data.list.subject, { width: 50, height: 50 })
   const t = i18n.t
   const location = useLocation();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
-  const theme: "light" | "dark" = rootData?.theme ?? "dark";
+  const theme = rootData?.theme ?? "dark";
   const rpc = useTRPC();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const generateSessionMutation = useMutation({
@@ -100,7 +97,7 @@ export default function Layout() {
   const likeListMutation = useMutation({
     ...rpc.list.starList.mutationOptions({
       onSuccess: () => {
-        revalidator.revalidate();
+        void revalidator.revalidate();
       },
       onError: () => {
         toast.error(t("errors.unknown"));
@@ -152,10 +149,11 @@ export default function Layout() {
         <Button
           scheme={theme}
           variant="transparent"
-          icon={<BookOpen />}
+          icon={generateSessionMutation.isPending ? <Loader2 className="animate-spin" /> : <BookOpen />}
           onClick={() => {
             generateSessionMutation.mutate({ listId: data.list.id })
           }}
+          disabled={generateSessionMutation.isPending}
         >
           {t("home.learn")}
         </Button>
@@ -174,10 +172,13 @@ export default function Layout() {
         <Button
           scheme={theme}
           variant="transparent"
-          icon={<Star className={data.user_liked ? "text-amber-300" : ""} />}
+          icon={likeListMutation.isPending
+            ? <Loader2 className="animate-spin" />
+            : <Star className={data.user_liked ? "text-amber-300" : ""} />}
           onClick={() => {
             likeListMutation.mutate({ id: data.list.id });
           }}
+          disabled={likeListMutation.isPending}
         >
           {data.user_liked ? t("lists.favourites.unlike") : t("lists.favourites.like")}
         </Button>
@@ -186,10 +187,11 @@ export default function Layout() {
             <Button
               scheme={theme}
               variant="transparent"
-              icon={<Trash />}
+              icon={deleteListMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
               onClick={() => {
                 setIsDeleteDialogOpen(true);
               }}
+              disabled={deleteListMutation.isPending}
             >
               {t("lists.delete.title")}
             </Button>

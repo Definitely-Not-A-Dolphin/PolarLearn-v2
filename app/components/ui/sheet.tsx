@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Dialog as SheetPrimitive } from "radix-ui"
+import i18n from "~/i18n";
 
 import { cn } from "~/lib/utils"
 import { Button } from "@polarnl/polarui-react"
@@ -73,7 +74,7 @@ function SheetContent({
             >
               <XIcon
               />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{i18n.t("common.close")}</span>
             </Button>
           </SheetPrimitive.Close>
         )}

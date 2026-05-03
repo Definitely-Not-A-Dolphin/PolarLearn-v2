@@ -1,16 +1,28 @@
 import { z } from "zod";
 import { Globe, GraduationCap, Megaphone, type LucideIcon } from "lucide-react";
 
-
 export type CategoryInfo = {
   label: string
   color: string
   icon: LucideIcon
 }
 
-export const categories = ["school-related", "non-school-related", "announcement"] as const
+export const forumCategories = ["school-related", "non-school-related", "announcement"] as const
+export type ForumCategory = (typeof forumCategories)[number]
 
-export const fullCategories = {
+export const userForumCategories = ["school-related", "non-school-related"] as const satisfies readonly ForumCategory[]
+export const forumCategorySchema = z.enum(forumCategories)
+export const defaultForumCategory: ForumCategory = "school-related"
+
+export function getAvailableForumCategories(isAdmin: boolean): readonly ForumCategory[] {
+  return isAdmin ? forumCategories : userForumCategories
+}
+
+export function forumCategoryRequiresSubject(category: ForumCategory): boolean {
+  return category === "school-related"
+}
+
+export const forumCategoryInfo = {
   "school-related": {
     label: "forum.categories.schoolRelated",
     color: "#3b82f6",
@@ -26,25 +38,16 @@ export const fullCategories = {
     color: "#ef4444",
     icon: Megaphone,
   },
-} satisfies Record<(typeof categories)[number], CategoryInfo>
+} satisfies Record<ForumCategory, CategoryInfo>
 
-export function getCategoryInfo(category: string): CategoryInfo {
-  switch (category) {
-    case "school-related":
-      return fullCategories["school-related"]
-    case "non-school-related":
-      return fullCategories["non-school-related"]
-    case "announcement":
-      return fullCategories.announcement
-    default:
-      throw new Error(`Unknown category: ${category}`)
-  }
+export function getCategoryInfo(category: ForumCategory): CategoryInfo {
+  return forumCategoryInfo[category]
 }
 
 export const getPostsInputSchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.number().int().min(1).max(50).default(10),
-  category: z.enum(categories).optional(),
+  category: forumCategorySchema.optional(),
   authorId: z.string().min(1).optional(),
 });
 
@@ -60,20 +63,37 @@ export const createPostInputSchema = z.object({
   title: z.string().min(1).max(255),
   content: z.string().min(1),
   subject: z.string().min(1).max(255).optional(),
-  category: z.enum(categories),
+  category: forumCategorySchema,
 });
 
 export type CreatePostInput = z.infer<typeof createPostInputSchema>;
+
+export const createPostOutputSchema = z.object({
+  id: z.string(),
+});
+
+export type CreatePostOutput = z.infer<typeof createPostOutputSchema>;
 
 export const editPostInputSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).max(255).optional(),
   content: z.string().min(1).optional(),
   subject: z.string().min(1).max(255).optional(),
-  category: z.enum(categories).optional(),
+  category: forumCategorySchema.optional(),
 });
 
 export type EditPostInput = z.infer<typeof editPostInputSchema>;
+
+export const editPostOutputSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  content: z.string(),
+  subject: z.string().nullable(),
+  category: forumCategorySchema,
+  updatedAt: z.date(),
+});
+
+export type EditPostOutput = z.infer<typeof editPostOutputSchema>;
 
 export const deletePostInputSchema = z.object({
   id: z.string().min(1),
@@ -87,12 +107,42 @@ export type Vote = z.infer<typeof voteSchema>;
 export const votersSchema = z.record(z.string().min(1), voteSchema);
 export type Voters = z.infer<typeof votersSchema>;
 
+export function getUserVote(voters: unknown, userId: string | null | undefined): Vote | null {
+  if (!userId) {
+    return null
+  }
+
+  const parsedVoters = votersSchema.safeParse(voters)
+  if (!parsedVoters.success) {
+    return null
+  }
+
+  return parsedVoters.data[userId] ?? null
+}
+
+export function calculateVoteTotals(voters: Voters) {
+  const voteValues = Object.values(voters)
+  const votes = voteValues.reduce((total, currentVote) => total + (currentVote === "up" ? 1 : -1), 0)
+
+  return {
+    votes,
+    cachedTotalVotes: voteValues.length,
+  }
+}
+
 export const votePostInputSchema = z.object({
   id: z.string().min(1),
   vote: voteSchema,
 });
 
 export type VotePostInput = z.infer<typeof votePostInputSchema>;
+
+export const votePostOutputSchema = z.object({
+  votes: z.number(),
+  cachedTotalVotes: z.number(),
+});
+
+export type VotePostOutput = z.infer<typeof votePostOutputSchema>;
 
 export const replyToPostInputSchema = z.object({
   postId: z.string().min(1),
@@ -114,9 +164,12 @@ export const postSchema = z.object({
   id: z.string(),
   title: z.string().nullable(),
   content: z.string(),
-  category: z.string(),
+  category: forumCategorySchema,
   subject: z.string().nullable(),
+  pinned: z.boolean(),
+  votes: z.number(),
   cachedTotalVotes: z.number(),
+  currentUserVote: voteSchema.nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   author: postAuthorSchema.nullable(),

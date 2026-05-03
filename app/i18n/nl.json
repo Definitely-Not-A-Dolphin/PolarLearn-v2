@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "Welkom bij PolarLearn!",
-    "description": "PolarLearn is een gratis en open-source leerplatform.",
+    "description": "De gratis en open-source manier om te leren.",
     "welcomeText": "Welkom terug, {{username}}!",
     "subject": "Vak",
     "subjects": "Vakken",
@@ -9,6 +9,7 @@
     "recentSubjects": "Recente vakken",
     "noRecentSubjects": "Je hebt nog geen vakken bekeken. Begin met het verkennen van onze vakken en ze zullen hier verschijnen!",
     "recentLists": "Recente lijsten",
+    "noRecentLists": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!",
     "learn": "Leren"
   },
   "favorites": {
@@ -53,6 +54,8 @@
     }
   },
   "sidebar": {
+    "title": "Zijbalk",
+    "description": "Toont de mobiele zijbalk.",
     "expandSidebar": "Zijbalk uitklappen",
     "collapseSidebar": "Zijbalk inklappen"
   },
@@ -63,6 +66,18 @@
     "settings": "Instellingen",
     "cancel": "Annuleren",
     "confirm": "Bevestigen"
+  },
+  "topbar": {
+    "new": "Nieuw"
+  },
+  "common": {
+    "close": "Sluiten",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "deleting": "Bezig met verwijderen...",
+    "save": "Opslaan",
+    "saving": "Bezig...",
+    "edit": "Bewerken"
   },
   "userMenu": {
     "guest": "Gast",
@@ -102,6 +117,7 @@
       "title": "Lijst bewerken",
       "nameLabel": "Naam",
       "addPair": "Voeg een paar toe",
+      "removeItem": "Paar verwijderen",
       "save": "Wijzigingen opslaan",
       "almostDone": "Bijna klaar!",
       "giveDiffAName": "Beschrijf je wijziging(en) voordat je ze opslaat",
@@ -113,11 +129,11 @@
         "keepServerVersion": "Serverversie behouden",
         "importLocalChanges": "Lokale wijzigingen importeren",
         "change": "Wijziging",
-        "pairNumber": "Paar {number}",
-        "itemAdded": "{itemLabel} toegevoegd",
-        "itemRemoved": "{itemLabel} verwijderd",
-        "itemUpdated": "{itemLabel} aangepast",
-        "fieldUpdated": "{itemLabel}: {field} aangepast",
+        "pairNumber": "Paar {{number}}",
+        "itemAdded": "{{itemLabel}} toegevoegd",
+        "itemRemoved": "{{itemLabel}} verwijderd",
+        "itemUpdated": "{{itemLabel}} aangepast",
+        "fieldUpdated": "{{itemLabel}}: {{field}} aangepast",
         "unknownValue": "Onbekende waarde",
         "path": "Pad",
         "newValue": "Nieuwe waarde",
@@ -142,6 +158,7 @@
       "valueInputPlaceholder": "Uitleg/vertaling"
     },
     "madeBy": "Gemaakt door: ",
+    "authorPrefix": "Door: {{author}}",
     "lastUpdated": "Laatst bijgewerkt om:",
     "stats": "Statistieken",
     "words": "Woorden",
@@ -249,7 +266,13 @@
     }
   },
   "forum": {
+    "tabs": {
+      "allPosts": "Alle posts",
+      "myPosts": "Mijn posts",
+      "myReplies": "Mijn reacties"
+    },
     "posts": {
+      "pinned": "Vastgezet",
       "loading": "Posts laden...",
       "loadingMore": "Meer laden...",
       "failedToLoad": "Kon de posts niet laden",
@@ -267,12 +290,64 @@
       "created": "Post geplaatst!",
       "error": "Kon de post niet plaatsen",
       "titleRequired": "Een titel is verplicht",
-      "contentRequired": "Inhoud is verplicht"
+      "contentRequired": "Inhoud is verplicht",
+      "updated": "Post bijgewerkt!",
+      "editTitle": "Post bewerken",
+      "deleteTitle": "Post verwijderen",
+      "deleteConfirm": "Hiermee verwijder je de post en de reacties. Dit kan niet ongedaan worden gemaakt.",
+      "unpin": "Losmaken",
+      "pinnedUpdated": "Post is met succes {{action}}!",
+      "pin": "Vastzetten",
+      "deleted": "Post verwijderd!"
+    },
+    "createPost": {
+      "title": "Nieuwe post",
+      "titleLabel": "Titel",
+      "titlePlaceholder": "Titel",
+      "categoryLabel": "Categorie",
+      "chooseCategory": "Kies een categorie",
+      "subjectLabel": "Vak",
+      "contentLabel": "Inhoud",
+      "contentPlaceholder": "Schrijf je post...",
+      "cancel": "Annuleren",
+      "posting": "Bezig...",
+      "post": "Posten"
+    },
+    "replies": {
+      "title": "Reacties",
+      "loadingMore": "Meer reacties laden...",
+      "noMore": "Je hebt het einde bereikt.",
+      "empty": "Nog geen reacties."
+    },
+    "reply": {
+      "created": "Reactie geplaatst!",
+      "error": "Kon de reactie niet plaatsen",
+      "contentRequired": "Reactie kan niet leeg zijn",
+      "title": "Reageer op post",
+      "content": "Uw reactie",
+      "placeholder": "Schrijf je reactie...",
+      "posting": "Bezig...",
+      "submit": "Reactie plaatsen",
+      "buttonLabel": "Reageren"
+    },
+    "vote": {
+      "up": "Upvoten",
+      "down": "Downvoten"
     },
     "categories": {
       "schoolRelated": "School",
       "nonSchoolRelated": "Persoonlijk",
       "announcement": "Aankondiging"
+    },
+    "unknownAuthor": "Onbekend"
+  },
+  "markdown": {
+    "alerts": {
+      "note": "Info",
+      "tip": "Tip",
+      "important": "Belangrijk",
+      "warning": "Waarschuwing",
+      "caution": "Wees voorzichtig!"
     }
   }
 }

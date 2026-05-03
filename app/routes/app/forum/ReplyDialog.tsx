@@ -14,20 +14,23 @@ import { useTRPC } from "~/server/react";
 import { useState } from "react";
 import { t } from "~/i18n";
 import type { Post } from "~/lib/forum";
+import type { RootLoaderData } from "~/lib/root-data";
+import { Loader2, MessageSquareReply } from "lucide-react";
+
+type ReplyDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  postId: string;
+  onReplySuccess: (reply: Post) => void;
+};
 
 export function ReplyDialog({
   open,
   onOpenChange,
   postId,
   onReplySuccess,
-  ...props
-}: React.ComponentProps<typeof Dialog> & {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  postId: string;
-  onReplySuccess: (reply: Post) => void;
-}) {
-  const rootData = useRouteLoaderData<{ theme: "light" | "dark" }>("root");
+}: ReplyDialogProps) {
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "light";
   const rpc = useTRPC();
 
@@ -36,19 +39,20 @@ export function ReplyDialog({
   const replyMutation = useMutation({
     ...rpc.forum.replyToPost.mutationOptions(),
     onSuccess: (reply) => {
-      toast.success(t("forum.reply.created", { defaultValue: "Reply posted!" }));
+      toast.success(t("forum.reply.created"));
       setContent("");
       onReplySuccess(reply);
       onOpenChange(false);
     },
     onError: () => {
-      toast.error(t("forum.reply.error", { defaultValue: "Failed to post reply" }));
+      toast.error(t("forum.reply.error"));
     },
   });
+  const isPostingReply = replyMutation.isPending;
 
   const handleSubmit = () => {
     if (!content.trim()) {
-      toast.error(t("forum.reply.contentRequired", { defaultValue: "Reply cannot be empty" }));
+      toast.error(t("forum.reply.contentRequired"));
       return;
     }
 
@@ -59,43 +63,47 @@ export function ReplyDialog({
   };
 
   return (
-    <Dialog {...props} open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-            {t("forum.reply.title", { defaultValue: "Reply to post" })}
+            {t("forum.reply.title")}
           </DialogTitle>
         </DialogHeader>
 
         <div>
           <label htmlFor="reply-content" className="font-medium">
-            {t("forum.reply.content", { defaultValue: "Your reply" })}
+            {t("forum.reply.content")}
           </label>
           <textarea
             id="reply-content"
-            placeholder={t("forum.reply.placeholder", { defaultValue: "Write your reply..." })}
+            placeholder={t("forum.reply.placeholder")}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+            }}
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium placeholder-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             rows={6}
+            disabled={isPostingReply}
           />
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" scheme={theme}>
-              {t("common.cancel", { defaultValue: "Cancel" })}
+            <Button variant="transparent" scheme={theme} disabled={isPostingReply}>
+              {t("common.cancel")}
             </Button>
           </DialogClose>
           <Button
             onClick={handleSubmit}
             scheme={theme}
-            disabled={replyMutation.isPending || !content.trim()}
+            disabled={isPostingReply || !content.trim()}
             color="dark"
+            icon={isPostingReply ? <Loader2 className="animate-spin" /> : <MessageSquareReply />}
           >
-            {replyMutation.isPending
-              ? t("forum.reply.posting", { defaultValue: "Posting..." })
-              : t("forum.reply.submit", { defaultValue: "Post reply" })}
+            {isPostingReply
+              ? t("forum.reply.posting")
+              : t("forum.reply.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

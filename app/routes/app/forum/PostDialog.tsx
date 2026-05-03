@@ -1,0 +1,212 @@
+import { Button, Input } from "@polarnl/polarui-react";
+import { Check, ChevronDown, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { forumCategoryInfo, forumCategoryRequiresSubject, getAvailableForumCategories, type ForumCategory } from "~/lib/forum";
+import SubjectSelector from "~/components/subject-selector";
+import { Subject } from "~/lib/subjects";
+import type { SubjectNames } from "~/lib/subjectnames";
+import { t } from "~/i18n";
+import type { Theme } from "~/lib/root-data";
+import { cn } from "~/lib/utils";
+
+type PostDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isEdit?: boolean;
+  theme: Theme;
+  title: string;
+  content: string;
+  setTitle: (value: string) => void;
+  setContent: (value: string) => void;
+  category: ForumCategory;
+  setCategory: (value: ForumCategory) => void;
+  subject: SubjectNames;
+  setSubject: (value: SubjectNames) => void;
+  isSubjectSelectorOpen: boolean;
+  setIsSubjectSelectorOpen: (value: boolean) => void;
+  isCategoryPopoverOpen: boolean;
+  setIsCategoryPopoverOpen: (value: boolean) => void;
+  isPending: boolean;
+  onSubmit: () => void;
+  subjects: Subject;
+  isAdmin: boolean;
+};
+
+export function PostDialog({
+  open,
+  onOpenChange,
+  isEdit = false,
+  theme,
+  title,
+  content,
+  setTitle,
+  setContent,
+  category,
+  setCategory,
+  subject,
+  setSubject,
+  isSubjectSelectorOpen,
+  setIsSubjectSelectorOpen,
+  isCategoryPopoverOpen,
+  setIsCategoryPopoverOpen,
+  isPending,
+  onSubmit,
+  subjects,
+  isAdmin,
+}: PostDialogProps) {
+  const availableCategories = getAvailableForumCategories(isAdmin);
+
+  const SelectedCategoryIcon = forumCategoryInfo[category].icon;
+
+  const dialogTitle = isEdit
+    ? t("forum.post.editTitle")
+    : t("forum.createPost.title");
+
+  const submitButtonLabel = isPending
+    ? isEdit
+      ? t("common.saving")
+      : t("forum.createPost.posting")
+    : isEdit
+      ? t("common.save")
+      : t("forum.createPost.post");
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] w-full flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">{dialogTitle}</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div>
+            <label htmlFor="post-title" className="font-medium">
+              {t("forum.createPost.titleLabel")}
+            </label>
+            <Input
+              id="post-title"
+              placeholder={!isEdit ? t("forum.createPost.titlePlaceholder") : undefined}
+              scheme={theme}
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+              }}
+              className="mt-2"
+              disabled={isPending}
+            />
+          </div>
+
+          <div className="mt-4">
+            <p className="font-medium">{t("forum.createPost.categoryLabel")}</p>
+            <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
+                  disabled={isPending}
+                >
+                  <span className="flex items-center gap-2">
+                    <SelectedCategoryIcon className="size-4" />
+                    {t(forumCategoryInfo[category].label)}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-2" align="start" portalled={false}>
+                <div className="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("forum.createPost.chooseCategory")}
+                </div>
+                <div className="grid gap-1">
+                  {availableCategories.map((categoryId) => {
+                    const isSelected = categoryId === category;
+                    const CategoryIcon = forumCategoryInfo[categoryId].icon;
+
+                    return (
+                      <button
+                        key={categoryId}
+                        type="button"
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition hover:bg-muted",
+                          isSelected && "bg-muted font-medium",
+                        )}
+                        onClick={() => {
+                          setCategory(categoryId);
+                          setIsCategoryPopoverOpen(false);
+                        }}
+                        disabled={isPending}
+                      >
+                        <span className="flex items-center gap-2">
+                          <CategoryIcon className="size-4" />
+                          {t(forumCategoryInfo[categoryId].label)}
+                        </span>
+                        {isSelected ? <Check className="size-4 shrink-0 text-primary" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {forumCategoryRequiresSubject(category) && (
+            <div className="mt-4">
+              <p className="font-medium">{t("forum.createPost.subjectLabel")}</p>
+              <div className="mt-2">
+                <SubjectSelector
+                  selected={subject}
+                  onSelect={(id) => {
+                    setSubject(id);
+                  }}
+                  open={isSubjectSelectorOpen}
+                  onOpenChange={setIsSubjectSelectorOpen}
+                  subjects={subjects}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <label htmlFor="post-content" className="font-medium">
+              {t("forum.createPost.contentLabel")}
+            </label>
+            <textarea
+              id="post-content"
+              placeholder={!isEdit ? t("forum.createPost.contentPlaceholder") : undefined}
+              value={content}
+              onChange={(event) => {
+                setContent(event.target.value);
+              }}
+              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium placeholder-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              rows={8}
+              disabled={isPending}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4 shrink-0 border-t pt-4">
+          <DialogClose asChild>
+            <Button variant="transparent" scheme={theme} disabled={isPending}>
+              {t("common.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            color="sky"
+            textColor="white"
+            onClick={onSubmit}
+            disabled={isPending}
+            icon={isPending ? <Loader2 className="animate-spin" /> : undefined}
+          >
+            {submitButtonLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -73,6 +73,13 @@ type VersionData = z.infer<typeof versionData>
 type BranchRecord = z.infer<typeof branchRecordSchema>
 type ListRecord = z.infer<typeof listRecordSchema>
 
+const listRecordInclude = {
+  collaborators: true,
+  favoritedBy: {
+    select: { id: true },
+  },
+} as const
+
 function areListItemsEqual(left: ListItem, right: ListItem): boolean {
   return left.id === right.id
     && left.question === right.question
@@ -305,10 +312,7 @@ export const ListRouter = createTRPCRouter({
         },
         include: {
           user: true,
-          collaborators: true,
-          favoritedBy: {
-            select: { id: true },
-          },
+          ...listRecordInclude,
         }
       })
 
@@ -365,9 +369,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.listId,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
 
       if (!rawList) {
@@ -552,9 +554,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -661,9 +661,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -758,11 +756,8 @@ export const ListRouter = createTRPCRouter({
           collaborators: {
             connect: { id: ctx.user.id }
           }
-        }
-        ,
-        include: {
-          collaborators: true,
-        }
+        },
+        include: listRecordInclude,
       })
 
       const parsedList = listRecordSchema.parse(newList)
@@ -802,9 +797,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -868,9 +861,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -933,9 +924,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -999,9 +988,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -1154,9 +1141,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        }
+        include: listRecordInclude,
       })
       if (!rawList) {
         throw new TRPCError({ code: 'NOT_FOUND' })
@@ -1171,9 +1156,7 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.id,
         },
-        include: {
-          collaborators: true,
-        },
+        include: listRecordInclude,
         data: {
           name: input.name ?? list.name,
           description: input.description ?? list.description,

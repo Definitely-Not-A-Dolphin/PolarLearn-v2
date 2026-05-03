@@ -1,18 +1,19 @@
 import { useLoaderData, useNavigate } from "react-router";
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
-import { type GetPostsOutput, type Post, fullCategories } from "~/lib/forum";
+import { forumCategoryRequiresSubject, getCategoryInfo, type GetPostsOutput, type Post } from "~/lib/forum";
 import i18n from "~/i18n";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
 import type { Route } from "./+types/posts";
 import { Subject } from "~/lib/subjects";
 import type { SubjectNames } from "~/lib/subjectnames";
-import { UserAvatar } from "~/components/user-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
+import { cn } from "~/lib/utils";
 
 const POSTS_PER_PAGE = 10;
 
@@ -120,23 +121,28 @@ function PostCard({
   const author = post.author as { name: string; image: string | null } | null;
   const authorName = author?.name ?? null;
   const authorImage = author?.image ?? null;
-  const currentCategory = fullCategories[post.category];
-  const t = i18n.t
+  const currentCategory = getCategoryInfo(post.category);
+  const t = i18n.t;
 
   return (
     <button
       type="button"
-      className="w-full rounded-lg border border-border bg-card p-4 text-left transition hover:bg-muted"
+      className={cn(
+        "w-full rounded-lg border p-4 text-left transition cursor-pointer",
+        post.pinned
+          ? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/25 dark:hover:bg-green-950/35"
+          : "border-border bg-card hover:bg-muted"
+      )}
       onClick={handleClick}
     >
       <div className="flex gap-4">
         <div className="shrink-0">
-          <UserAvatar
-            name={authorName}
-            image={authorImage}
-            size="lg"
-            className="size-12 shrink-0"
-          />
+          <Avatar>
+            <AvatarImage src={authorImage ?? undefined} />
+            <AvatarFallback>
+              {authorName ? authorName.charAt(0).toUpperCase() : "?"}
+            </AvatarFallback>
+          </Avatar>
         </div>
 
         <div className="min-w-0 flex-1">
@@ -144,14 +150,21 @@ function PostCard({
             <Badge
               variant="outline"
               className="h-auto rounded px-2 py-1 text-xs font-semibold text-white"
-              style={{ backgroundColor: fullCategories[post.category]?.color }}
+              style={{ backgroundColor: currentCategory.color }}
             >
-              {currentCategory?.icon && (
-                <currentCategory.icon className="mr-1 h-3 w-3" />
-              )}
-              {t(currentCategory?.label)}
+              <currentCategory.icon className="mr-1 h-3 w-3" />
+              {t(currentCategory.label)}
             </Badge>
-            {post.category === "school-related" && post.subject && (
+            {post.pinned && (
+              <Badge
+                variant="outline"
+                className="h-auto rounded border-green-200 bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
+              >
+                <Pin className="mr-1 h-3 w-3" />
+                {t("forum.posts.pinned")}
+              </Badge>
+            )}
+            {forumCategoryRequiresSubject(post.category) && post.subject && (
               <>
                 <div className="flex items-center gap-1">
                   {subjects.getIcon(post.subject as SubjectNames, { width: 16, height: 16 })}
@@ -159,7 +172,7 @@ function PostCard({
                     {subjects.getSubjectNameById(post.subject as SubjectNames)}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">•</span>
+                <span className="text-xs text-muted-foreground" aria-hidden="true">{"\u00b7"}</span>
               </>
             )}
             <span className="text-xs text-muted-foreground">
@@ -178,10 +191,13 @@ function PostCard({
           )}
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Door: {post.author?.displayUsername ?? post.author?.name ?? "Unknown"}</span>
+            <span>
+              {t("lists.authorPrefix", {
+                author: post.author?.displayUsername ?? post.author?.name ?? t("forum.unknownAuthor"),
+              })}
+            </span>
           </div>
         </div>
-
       </div>
     </button>
   );
@@ -196,16 +212,16 @@ function formatDate(date: Date | string): string {
   const diffDays = Math.floor(diffMs / 86400000);
 
   if (diffMins < 1) {
-    return i18n.t("forum.posts.time.justNow", { defaultValue: "just now" });
+    return i18n.t("forum.posts.time.justNow");
   }
   if (diffMins < 60) {
-    return `${String(diffMins)}m geleden`;
+    return i18n.t("forum.posts.time.minutesAgo", { count: diffMins });
   }
   if (diffHours < 24) {
-    return `${String(diffHours)}u geleden`;
+    return i18n.t("forum.posts.time.hoursAgo", { count: diffHours });
   }
   if (diffDays < 7) {
-    return `${String(diffDays)}d geleden`;
+    return i18n.t("forum.posts.time.daysAgo", { count: diffDays });
   }
   return parsedDate.toLocaleDateString("nl-NL", {
     day: "numeric",

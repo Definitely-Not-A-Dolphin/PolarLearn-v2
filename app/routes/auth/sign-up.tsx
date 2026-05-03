@@ -1,5 +1,5 @@
 import { Button, Input } from "@polarnl/polarui-react";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { useState } from "react";
 import { zxcvbn } from "@zxcvbn-ts/core";
@@ -10,6 +10,7 @@ import { authClient } from "~/lib/auth/client";
 import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
 import type { Route } from "./+types/sign-up";
 import { auth } from "~/lib/auth/server";
+import type { RootLoaderData } from "~/lib/root-data";
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
@@ -27,26 +28,15 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 }
 
 export default function SignUpPage() {
-  interface RootData {
-    theme: "light" | "dark";
-    lang: string;
-    user: {
-      name: string | null;
-      image: string | null;
-      email: string | null;
-      role: string | null;
-    } | null;
-  }
-
   const { quote } = useLoaderData<typeof loader>();
-  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
-  const rootData = useRouteLoaderData("root") as RootData;
-  const theme = rootData.theme;
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const passResult = password ? zxcvbn(password) : null;
   const score = passResult ? passResult.score : 0;
 
@@ -73,6 +63,11 @@ export default function SignUpPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (isLoading) {
+              return;
+            }
+
+            setIsLoading(true);
             const formData = new FormData(e.currentTarget);
             const username = formData.get("username") as string;
             const email = formData.get("email") as string;
@@ -93,6 +88,8 @@ export default function SignUpPage() {
               void navigate("/auth/sign-in");
             }).catch((err: unknown) => {
               toast.error(getBetterAuthErrorMessage(err));
+            }).finally(() => {
+              setIsLoading(false);
             });
           }}
         >
@@ -187,6 +184,8 @@ export default function SignUpPage() {
             color="sky"
             className="w-full mt-6"
             type="submit"
+            disabled={isLoading}
+            icon={isLoading ? <Loader2 className="animate-spin" /> : undefined}
           >
             {t("auth:signUp.button")} →
           </Button>

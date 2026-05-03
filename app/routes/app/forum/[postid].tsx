@@ -1,29 +1,43 @@
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { useLoaderData, useRouteLoaderData } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
-import { getCategoryInfo, type GetPostRepliesOutput, type Post } from "~/lib/forum";
+import { forumCategoryRequiresSubject, getCategoryInfo, type ForumCategory, type Post, type Vote, type PostAuthor } from "~/lib/forum";
 import { Subject } from "~/lib/subjects";
 import type { SubjectNames } from "~/lib/subjectnames";
-import { UserAvatar } from "~/components/user-avatar";
+import { SubjectNamesArray } from "~/lib/subjectnames";
 import { Badge } from "~/components/ui/badge";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import i18n from "~/i18n";
 import { useTRPC } from "~/server/react";
 import type { Route } from "./+types/[postid]";
 import { Button } from "@polarnl/polarui-react";
+import { ArrowDown, ArrowUp, Loader2, MessageSquareReply, PencilLine, Pin, PinOff, Trash2 } from "lucide-react";
+import { t } from "~/i18n";
+import { Avatar, AvatarImage, AvatarFallback } from "~/components/ui/avatar";
+import { PostDialog } from "./PostDialog";
 import { ReplyDialog } from "./ReplyDialog";
-import { MessageSquareReply } from "lucide-react";
+import type { RootLoaderData, Theme } from "~/lib/root-data";
+import MarkdownRenderer from "~/lib/markdown";
+import { ShieldUser } from "lucide-react";
 
 const REPLIES_PER_PAGE = 10;
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const postId = params.postid;
   if (!postId) {
-    return (
-      <p>buddy how the fuck did you get this to appear you done something fucked up 🙏😭</p>
-    )
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw new Response(i18n.t("errors.404.message"), { status: 404 });
   }
 
   const headers = new Headers(request.headers);
@@ -40,24 +54,113 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 }
 
 export default function PostPage() {
-  const { post, initialReplies } = useLoaderData<typeof loader>() as {
-    post: Post;
-    initialReplies: GetPostRepliesOutput;
-  };
+  const { post, initialReplies } = useLoaderData<typeof loader>();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const author = post.author as { name: string; image: string | null; displayUsername: string | null } | null;
-  const authorName = author?.name ?? null;
-  const authorImage = author?.image ?? null;
-  const currentCategory = getCategoryInfo(post.category);
-  const CategoryIcon = currentCategory.icon;
-  const t = i18n.t;
+  const navigate = useNavigate();
+  const [currentPost, setCurrentPost] = useState(post);
+  const author = currentPost.author as PostAuthor | null;
+  const authorId = author?.id;
+  let authorLabel = t("forum.unknownAuthor");
+  if (author?.displayUsername) {
+    authorLabel = author.displayUsername;
+  } else if (author?.name) {
+    authorLabel = author.name;
+  }
+  const currentCategory = getCategoryInfo(currentPost.category);
   const subjects = new Subject();
   const [replies, setReplies] = useState(initialReplies.replies);
   const [nextCursor, setNextCursor] = useState<string | null>(initialReplies.nextCursor);
   const [isLoadingMoreReplies, setIsLoadingMoreReplies] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
-  const rootData = useRouteLoaderData("root") as { theme: "light" | "dark" };
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState(currentPost.title ?? "");
+  const [editContent, setEditContent] = useState(currentPost.content);
+  const [editCategory, setEditCategory] = useState<ForumCategory>(currentPost.category);
+  const [editSubject, setEditSubject] = useState<SubjectNames>(currentPost.subject ? (currentPost.subject as SubjectNames) : SubjectNamesArray[0]);
+  const [isEditSubjectSelectorOpen, setIsEditSubjectSelectorOpen] = useState(false);
+  const [isEditCategoryPopoverOpen, setIsEditCategoryPopoverOpen] = useState(false);
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const theme = rootData?.theme ?? "light";
+  const currentUserId = rootData?.user.id ?? null;
+  const currentUserRole = rootData?.user.role ?? null;
+  const isAdmin = currentUserRole === "admin";
+  const isOwner = Boolean(currentUserId && author?.id === currentUserId);
+  const canManagePost = isOwner || isAdmin;
+  const canVote = Boolean(currentUserId);
+  const currentUserVote = (currentPost.currentUserVote as Vote | null | undefined) ?? null;
+  const hasUpvoted = currentUserVote === "up";
+  const hasDownvoted = currentUserVote === "down";
+
+  const voteMutation = useMutation({
+    ...trpc.forum.votePost.mutationOptions(),
+    onSuccess: (updatedPost, variables) => {
+      setCurrentPost((current) => ({
+        ...current,
+        votes: updatedPost.votes,
+        cachedTotalVotes: updatedPost.cachedTotalVotes,
+        currentUserVote:
+          current.currentUserVote === variables.vote ? null : variables.vote,
+      }));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+  const pendingVote = voteMutation.isPending ? voteMutation.variables.vote : null;
+
+  const editMutation = useMutation({
+    ...trpc.forum.editPost.mutationOptions(),
+    onSuccess: (updatedPost) => {
+      setCurrentPost((current) => ({
+        ...current,
+        ...updatedPost,
+      }));
+      setEditDialogOpen(false);
+      toast.success(t("forum.post.updated"));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    ...trpc.forum.deletePost.mutationOptions(),
+    onSuccess: () => {
+      setDeleteDialogOpen(false);
+      toast.success(t("forum.post.deleted"));
+      void navigate("/app/forum/posts");
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+
+  const pinMutation = useMutation({
+    ...trpc.forum.pinPost.mutationOptions(),
+    onSuccess: () => {
+      setCurrentPost((current) => ({
+        ...current,
+        pinned: !current.pinned,
+      }));
+      toast.success(t("forum.post.pinnedUpdated", {
+        action: currentPost.pinned
+          ? t("forum.post.unpin")
+          : t("forum.post.pin"),
+      }));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+
+  const handleVote = (vote: Vote) => {
+    voteMutation.mutate({
+      id: currentPost.id,
+      vote,
+    });
+  };
 
   const fetchMoreReplies = async () => {
     if (!nextCursor || isLoadingMoreReplies) {
@@ -68,7 +171,7 @@ export default function PostPage() {
     try {
       const nextPage = await queryClient.fetchQuery(
         trpc.forum.getPostReplies.queryOptions({
-          postId: post.id,
+          postId: currentPost.id,
           cursor: nextCursor,
           limit: REPLIES_PER_PAGE,
         }),
@@ -81,72 +184,268 @@ export default function PostPage() {
     }
   };
 
-  const handleReplySuccess = (newReply: Post) => {
-    setReplies((currentReplies) => [newReply, ...currentReplies]);
-  };
-
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-6">
         <div className="mb-4 flex items-center gap-3">
-          <UserAvatar
-            name={authorName}
-            image={authorImage}
-            size="lg"
-            className="size-12"
-          />
-          <div className="flex flex-col">
-            <span className="font-medium">
-              {post.author?.displayUsername ?? post.author?.name ?? "Unknown"}
-            </span>
+          <Avatar>
+            <AvatarImage src={author?.image ?? undefined} />
+            <AvatarFallback>
+              {author?.name ? author.name.charAt(0).toUpperCase() : "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col items-start">
+            {authorId ? (
+              <div className="flex flex-row items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigate(`/app/viewuser/${authorId}`);
+                  }}
+                  className="cursor-pointer font-medium text-neutral-800 hover:underline dark:text-neutral-200"
+                >
+                  {authorLabel}
+                </button>
+                <Badge
+                  variant="outline"
+                  className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
+                >
+                  <ShieldUser />
+                  {t("userMenu.admin")}
+                </Badge>
+              </div>
+            ) : (
+              <span className="font-medium">
+                {authorLabel}
+              </span>
+            )}
             <span className="text-sm text-muted-foreground">
-              {formatDate(post.createdAt)}
+              {formatDate(currentPost.createdAt)}
             </span>
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="h-auto rounded px-2 py-1 text-xs font-semibold text-white"
-            style={{ backgroundColor: currentCategory.color }}
-          >
-            <CategoryIcon className="mr-1 h-3 w-3" />
-            {t(currentCategory.label)}
-          </Badge>
-          {post.category === "school-related" && post.subject && (
-            <div className="flex items-center gap-1">
-              {subjects.getIcon(post.subject as SubjectNames, { width: 16, height: 16 })}
-              <span className="text-xs text-muted-foreground">
-                {subjects.getSubjectNameById(post.subject as SubjectNames)}
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {currentPost.title && (
+                <h1 className="text-2xl font-bold leading-tight">{currentPost.title}</h1>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                {currentPost.pinned && (
+                  <Badge
+                    variant="outline"
+                    className="h-auto rounded border-green-200 bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
+                  >
+                    <Pin className="mr-1 h-3 w-3" />
+                    {t("forum.posts.pinned")}
+                  </Badge>
+                )}
+                <Badge
+                  variant="outline"
+                  className="h-auto rounded px-2 py-1 text-xs font-semibold text-white"
+                  style={{ backgroundColor: currentCategory.color }}
+                >
+                  <currentCategory.icon className="mr-1 h-3 w-3" />
+                  {t(currentCategory.label)}
+                </Badge>
+
+                {forumCategoryRequiresSubject(currentPost.category) && currentPost.subject && (
+                  <div className="flex items-center gap-1">
+                    {subjects.getIcon(currentPost.subject as SubjectNames, { width: 16, height: 16 })}
+                    <span className="text-xs text-muted-foreground">
+                      {subjects.getSubjectNameById(currentPost.subject as SubjectNames)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <MarkdownRenderer content={currentPost.content} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 ml-4">
+        <Button
+          scheme={theme}
+          variant="transparent"
+          icon={<MessageSquareReply />}
+          onClick={() => {
+            setReplyDialogOpen(true);
+          }}
+        >
+          {i18n.t("forum.reply.buttonLabel")}
+        </Button>
+
+        <div className="flex flex-wrap items-center gap-1">
+          {canManagePost && (
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={editMutation.isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+              onClick={() => {
+                setEditTitle(currentPost.title ?? "");
+                setEditContent(currentPost.content);
+                setEditCategory(currentPost.category);
+                setEditSubject(currentPost.subject ? (currentPost.subject as SubjectNames) : SubjectNamesArray[0]);
+                setEditDialogOpen(true);
+              }}
+              disabled={editMutation.isPending}
+              title={t("common.edit")}
+              className="border-none shadow-none"
+            >
+              {t("common.edit")}
+            </Button>
+          )}
+
+          {canManagePost && (
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={deleteMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              onClick={() => {
+                setDeleteDialogOpen(true);
+              }}
+              disabled={deleteMutation.isPending}
+              className="border-none shadow-none text-destructive"
+              title={t("common.delete")}
+            >
+              {t("common.delete")}
+            </Button>
+          )}
+
+          {isAdmin && (
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={pinMutation.isPending
+                ? <Loader2 className="animate-spin" />
+                : currentPost.pinned
+                  ? <PinOff />
+                  : <Pin />}
+              onClick={() => {
+                pinMutation.mutate({
+                  id: currentPost.id,
+                });
+              }}
+              disabled={pinMutation.isPending}
+              title={currentPost.pinned
+                ? t("forum.post.unpin")
+                : t("forum.post.pin")}
+              className="border-none shadow-none"
+            >
+              {currentPost.pinned
+                ? t("forum.post.unpin")
+                : t("forum.post.pin")}
+            </Button>
+          )}
+
+          {canVote && (
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="transparent"
+                scheme={theme}
+                icon={pendingVote === "up"
+                  ? <Loader2 className="animate-spin" />
+                  : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
+                onClick={() => {
+                  handleVote("up");
+                }}
+                disabled={voteMutation.isPending}
+                title={t("forum.vote.up")}
+                className="border-none shadow-none"
+              >
+                {""}
+              </Button>
+              <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
+                {typeof currentPost.votes === 'number' ? currentPost.votes : currentPost.cachedTotalVotes}
               </span>
+              <Button
+                variant="transparent"
+                scheme={theme}
+                icon={pendingVote === "down"
+                  ? <Loader2 className="animate-spin" />
+                  : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
+                onClick={() => {
+                  handleVote("down");
+                }}
+                disabled={voteMutation.isPending}
+                title={t("forum.vote.down")}
+                className="border-none shadow-none"
+              >
+                {""}
+              </Button>
             </div>
           )}
         </div>
-
-        {post.title && (
-          <h1 className="mb-4 text-2xl font-bold">{post.title}</h1>
-        )}
-
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <p className="whitespace-pre-wrap">{post.content}</p>
-        </div>
       </div>
-      <Button
-        scheme={rootData.theme}
-        variant="transparent"
-        icon={<MessageSquareReply />}
-        onClick={() => setReplyDialogOpen(true)}
-        className="ml-4"
-      >
-        {i18n.t("forum.reply.buttonLabel")}
-      </Button>
 
       <ReplyDialog
         open={replyDialogOpen}
         onOpenChange={setReplyDialogOpen}
-        postId={post.id}
-        onReplySuccess={handleReplySuccess}
+        postId={currentPost.id}
+        onReplySuccess={(newReply) => {
+          setReplies((currentReplies) => [newReply, ...currentReplies]);
+        }}
+      />
+
+      <PostDialog
+        isEdit={true}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        theme={theme}
+        title={editTitle}
+        content={editContent}
+        setTitle={setEditTitle}
+        setContent={setEditContent}
+        category={editCategory}
+        setCategory={setEditCategory}
+        subject={editSubject}
+        setSubject={setEditSubject}
+        isSubjectSelectorOpen={isEditSubjectSelectorOpen}
+        setIsSubjectSelectorOpen={setIsEditSubjectSelectorOpen}
+        isCategoryPopoverOpen={isEditCategoryPopoverOpen}
+        setIsCategoryPopoverOpen={setIsEditCategoryPopoverOpen}
+        isPending={editMutation.isPending}
+        onSubmit={() => {
+          const trimmedTitle = editTitle.trim();
+          const trimmedContent = editContent.trim();
+
+          if (!trimmedTitle) {
+            toast.error(t("forum.post.titleRequired"));
+            return;
+          }
+
+          if (!trimmedContent) {
+            toast.error(t("forum.post.contentRequired"));
+            return;
+          }
+
+          editMutation.mutate({
+            id: currentPost.id,
+            title: trimmedTitle,
+            content: trimmedContent,
+            category: editCategory,
+            subject: forumCategoryRequiresSubject(editCategory) ? editSubject : undefined,
+          });
+        }}
+        subjects={subjects}
+        isAdmin={isAdmin}
+      />
+
+      <DeletePostDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        theme={theme}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          deleteMutation.mutate({
+            id: currentPost.id,
+          });
+        }}
       />
 
       <div className="rounded-lg border border-border bg-card p-6">
@@ -162,14 +461,14 @@ export default function PostPage() {
           loader={
             <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
               {isLoadingMoreReplies
-                ? i18n.t("forum.replies.loadingMore", { defaultValue: "Loading more replies..." })
+                ? i18n.t("forum.replies.loadingMore")
                 : null}
             </div>
           }
           endMessage={
             replies.length > 0 ? (
               <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-                {i18n.t("forum.replies.noMore", { defaultValue: "You’ve reached the end." })}
+                {i18n.t("forum.replies.noMore")}
               </div>
             ) : null
           }
@@ -177,7 +476,7 @@ export default function PostPage() {
           <div className="space-y-3">
             {replies.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                {i18n.t("forum.replies.empty", { defaultValue: "No replies yet." })}
+                {i18n.t("forum.replies.empty")}
               </div>
             ) : (
               replies.map((reply) => <ReplyCard key={reply.id} reply={reply} />)
@@ -189,22 +488,95 @@ export default function PostPage() {
   );
 }
 
+
+function DeletePostDialog({
+  open,
+  onOpenChange,
+  theme,
+  isPending,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  theme: Theme;
+  isPending: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">
+            {t("forum.post.deleteTitle")}
+          </DialogTitle>
+        </DialogHeader>
+
+        <p className="text-sm text-muted-foreground">
+          {t("forum.post.deleteConfirm")}
+        </p>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="transparent" scheme={theme} disabled={isPending}>
+              {t("common.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            variant="transparent"
+            scheme={theme}
+            onClick={onConfirm}
+            disabled={isPending}
+            className="text-destructive"
+            icon={isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          >
+            {isPending
+              ? t("common.deleting")
+              : t("common.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ReplyCard({ reply }: { reply: Post }) {
-  const author = reply.author as { name: string; image: string | null; displayUsername: string | null } | null;
+  const author = reply.author;
+  const authorId = author?.id;
+  let authorLabel = t("forum.unknownAuthor");
+  if (author) {
+    if (author.displayUsername) {
+      authorLabel = author.displayUsername;
+    } else if (author.name) {
+      authorLabel = author.name;
+    }
+  }
+  const navigate = useNavigate();
 
   return (
     <article className="rounded-lg border border-border bg-background/60 p-4">
       <div className="mb-3 flex items-center gap-3">
-        <UserAvatar
-          name={author?.name ?? null}
-          image={author?.image ?? null}
-          size="sm"
-          className="size-10"
-        />
+        <Avatar>
+          <AvatarImage src={author?.image ?? undefined} />
+          <AvatarFallback>
+            {author?.name ? author.name.charAt(0).toUpperCase() : "?"}
+          </AvatarFallback>
+        </Avatar>
         <div className="flex flex-col">
-          <span className="font-medium">
-            {reply.author?.displayUsername ?? reply.author?.name ?? "Unknown"}
-          </span>
+          {authorId ? (
+            <button
+              type="button"
+              onClick={() => {
+                void navigate(`/app/viewuser/${authorId}`);
+              }}
+              className="font-medium text-neutral-800 underline-offset-2 hover:underline dark:text-neutral-200"
+            >
+              {authorLabel}
+            </button>
+          ) : (
+            <span className="font-medium">
+              {authorLabel}
+            </span>
+          )}
           <span className="text-sm text-muted-foreground">
             {formatDate(reply.createdAt)}
           </span>

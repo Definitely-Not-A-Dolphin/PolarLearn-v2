@@ -1,15 +1,18 @@
+// Copied/ported from PolarLearn V1 :), dont mind the shitty code :D
+
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
+import i18n from "~/i18n";
 
 const ALERT_LABELS: Record<string, string> = {
-  NOTE: 'Info',
-  TIP: 'Tip',
-  IMPORTANT: 'Belangrijk',
-  WARNING: 'Waarschuwing',
-  CAUTION: 'Wees voorzichtig!',
+  NOTE: i18n.t("markdown.alerts.note",),
+  TIP: i18n.t("markdown.alerts.tip"),
+  IMPORTANT: i18n.t("markdown.alerts.important"),
+  WARNING: i18n.t("markdown.alerts.warning"),
+  CAUTION: i18n.t("markdown.alerts.caution"),
 };
 
 const ALERT_MAP: Record<string, { color: string; icon: string }> = {

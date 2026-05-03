@@ -81,6 +81,7 @@ export default function FavoritesPage() {
               const subject = hasSubject
                 ? subjectsList[list.subject as keyof typeof subjectsList]
                 : null
+              const subjectLabel = subject ? t(subject.labelKey) : null
               const authorId = list.user?.id
 
               return (
@@ -97,7 +98,7 @@ export default function FavoritesPage() {
                     className="flex min-w-0 items-center gap-x-3 text-left"
                   >
                     {subject ? (
-                      <img src={subject.icon} alt={subject.defaultLabel} className="h-6 w-6 shrink-0" />
+                      <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
                     ) : (
                       <List size={20} className="shrink-0" />
                     )}
@@ -116,7 +117,7 @@ export default function FavoritesPage() {
                     </button>
                   ) : (
                     <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
-                      {t("list.unknownAuthor")}
+                      {t("lists.unknownAuthor")}
                     </span>
                   )}
 
