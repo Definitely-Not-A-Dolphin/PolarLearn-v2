@@ -18,7 +18,6 @@ function DescriptionReveal() {
   useEffect(() => {
     let mounted = true;
 
-    // Wait for the PolarLearn animation to complete (~3.3 seconds)
     const delayTimer = setTimeout(async () => {
       if (!mounted) return;
 
@@ -36,7 +35,6 @@ function DescriptionReveal() {
       const tl = gsap.timeline();
       tlRef.current = tl;
 
-      // Show the container
       tl.to(containerRef.current, { opacity: 1, duration: 0 }, 0);
 
       words.forEach((word, index) => {
@@ -53,7 +51,7 @@ function DescriptionReveal() {
       });
 
       return () => tl.kill();
-    }, 3300); // Wait for PolarLearn animation to complete
+    }, 3300);
 
     return () => {
       mounted = false;
@@ -144,7 +142,7 @@ function TextRevealInline() {
 
       const groupRect = group.getBoundingClientRect();
       const outerTextRect = outerText.getBoundingClientRect();
-      const finalLogoLeft = outerTextRect.left - groupRect.left - logoWidth - gap; // px relative to group
+      const finalLogoLeft = outerTextRect.left - groupRect.left - logoWidth - gap;
       const textShift = (logoWidth + gap) / 2;
 
       tl.to(logo, { left: finalLogoLeft, opacity: 1, duration: 0.6, ease: "power2.out" }, ">+0.15");
@@ -269,7 +267,7 @@ function AnimatedButton() {
         duration: 0.6,
         ease: "power2.out",
       });
-    }, 4200); // After all previous animations complete
+    }, 4200);
 
     return () => {
       mounted = false;

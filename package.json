@@ -1,7 +1,8 @@
 {
   "name": "polarlearn-v2",
-  "private": true,
+  "private": false,
   "type": "module",
+  "version": "v2.0-PRE-1",
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
