@@ -3,7 +3,7 @@ name: Build and push container
 on:
   push:
     branches:
-      - main
+      - v2
     tags:
       - "v*"
   workflow_dispatch:
