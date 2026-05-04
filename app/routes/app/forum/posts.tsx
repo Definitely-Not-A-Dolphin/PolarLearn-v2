@@ -130,7 +130,7 @@ function PostCard({
       className={cn(
         "w-full rounded-lg border p-4 text-left transition cursor-pointer",
         post.pinned
-          ? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-900/60 dark:bg-green-950/25 dark:hover:bg-green-950/35"
+          ? "border-sky-300/60 bg-sky-500/10 hover:bg-sky-500/15 dark:border-sky-400/30 dark:bg-sky-400/10 dark:hover:bg-sky-400/15"
           : "border-border bg-card hover:bg-muted"
       )}
       onClick={handleClick}
@@ -158,7 +158,7 @@ function PostCard({
             {post.pinned && (
               <Badge
                 variant="outline"
-                className="h-auto rounded border-green-200 bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
+                className="h-auto rounded border-sky-300/60 bg-sky-500/15 px-2 py-1 text-xs font-semibold text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/15 dark:text-sky-100"
               >
                 <Pin className="mr-1 h-3 w-3" />
                 {t("forum.posts.pinned")}

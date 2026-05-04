@@ -285,7 +285,7 @@ export const forumRouter = createTRPCRouter({
             },
           },
         },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
         take: limit + 1,
         cursor: cursor ? { id: cursor } : undefined,
       })

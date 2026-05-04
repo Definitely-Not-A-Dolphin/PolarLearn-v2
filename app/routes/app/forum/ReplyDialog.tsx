@@ -96,9 +96,9 @@ export function ReplyDialog({
           </DialogClose>
           <Button
             onClick={handleSubmit}
-            scheme={theme}
             disabled={isPostingReply || !content.trim()}
-            color="dark"
+            color="sky"
+            textColor="white"
             icon={isPostingReply ? <Loader2 className="animate-spin" /> : <MessageSquareReply />}
           >
             {isPostingReply

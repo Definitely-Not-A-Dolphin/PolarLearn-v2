@@ -80,7 +80,7 @@ export function PostDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-full flex flex-col">
+      <DialogContent className="max-h-[90vh] flex w-full sm:max-w-xl flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">{dialogTitle}</DialogTitle>
         </DialogHeader>

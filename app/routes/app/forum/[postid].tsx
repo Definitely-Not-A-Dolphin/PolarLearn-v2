@@ -238,7 +238,7 @@ export default function PostPage() {
                 {currentPost.pinned && (
                   <Badge
                     variant="outline"
-                    className="h-auto rounded border-green-200 bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:border-green-800 dark:bg-green-900/50 dark:text-green-100"
+                    className="h-auto rounded border-sky-300/60 bg-sky-500/15 px-2 py-1 text-xs font-semibold text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/15 dark:text-sky-100"
                   >
                     <Pin className="mr-1 h-3 w-3" />
                     {t("forum.posts.pinned")}
@@ -277,13 +277,13 @@ export default function PostPage() {
               scheme={theme}
               icon={pendingVote === "up"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
+                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
               onClick={() => {
                 handleVote("up");
               }}
               disabled={voteMutation.isPending}
               title={t("forum.vote.up")}
-              className="border-none shadow-none"
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
             >
               {""}
             </Button>
@@ -295,13 +295,13 @@ export default function PostPage() {
               scheme={theme}
               icon={pendingVote === "down"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
+                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
               onClick={() => {
                 handleVote("down");
               }}
               disabled={voteMutation.isPending}
               title={t("forum.vote.down")}
-              className="border-none shadow-none"
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
             >
               {""}
             </Button>
@@ -309,7 +309,8 @@ export default function PostPage() {
         )}
         <Button
           scheme={theme}
-          variant="transparent"
+          color="sky"
+          textColor="white"
           icon={<MessageSquareReply />}
           onClick={() => {
             setReplyDialogOpen(true);
@@ -333,7 +334,7 @@ export default function PostPage() {
               }}
               disabled={editMutation.isPending}
               title={t("common.edit")}
-              className="border-none shadow-none"
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
             >
               {t("common.edit")}
             </Button>
@@ -348,7 +349,7 @@ export default function PostPage() {
                 setDeleteDialogOpen(true);
               }}
               disabled={deleteMutation.isPending}
-              className="border-none shadow-none text-destructive"
+              className="border-none shadow-none text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
               title={t("common.delete")}
             >
               {t("common.delete")}
@@ -373,7 +374,7 @@ export default function PostPage() {
               title={currentPost.pinned
                 ? t("forum.post.unpin")
                 : t("forum.post.pin")}
-              className="border-none shadow-none"
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
             >
               {currentPost.pinned
                 ? t("forum.post.unpin")
@@ -440,6 +441,8 @@ export default function PostPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         theme={theme}
+        title={t("forum.post.deleteTitle")}
+        description={t("forum.post.deleteConfirm")}
         isPending={deleteMutation.isPending}
         onConfirm={() => {
           deleteMutation.mutate({
@@ -479,7 +482,54 @@ export default function PostPage() {
                 {i18n.t("forum.replies.empty")}
               </div>
             ) : (
-              replies.map((reply) => <ReplyCard key={reply.id} reply={reply} />)
+              replies.map((reply) => (
+                <ReplyCard
+                  key={reply.id}
+                  reply={reply}
+                  theme={theme}
+                  currentUserId={currentUserId}
+                  isAdmin={isAdmin}
+                  onReplyUpdated={(updatedReply) => {
+                    setReplies((currentReplies) => currentReplies.map((currentReply) => (
+                      currentReply.id === updatedReply.id
+                        ? { ...currentReply, ...updatedReply }
+                        : currentReply
+                    )));
+                  }}
+                  onReplyDeleted={(replyId) => {
+                    setReplies((currentReplies) => currentReplies.filter((currentReply) => currentReply.id !== replyId));
+                  }}
+                  onReplyPinned={(replyId) => {
+                    setReplies((currentReplies) => {
+                      const nextReplies = currentReplies.map((currentReply) => (
+                        currentReply.id === replyId
+                          ? { ...currentReply, pinned: !currentReply.pinned }
+                          : currentReply
+                      ));
+
+                      return nextReplies.sort((left, right) => {
+                        if (left.pinned !== right.pinned) {
+                          return left.pinned ? -1 : 1;
+                        }
+
+                        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+                      });
+                    });
+                  }}
+                  onReplyVoted={(replyId, vote, updatedVoteTotals) => {
+                    setReplies((currentReplies) => currentReplies.map((currentReply) => (
+                      currentReply.id === replyId
+                        ? {
+                          ...currentReply,
+                          votes: updatedVoteTotals.votes,
+                          cachedTotalVotes: updatedVoteTotals.cachedTotalVotes,
+                          currentUserVote: currentReply.currentUserVote === vote ? null : vote,
+                        }
+                        : currentReply
+                    )));
+                  }}
+                />
+              ))
             )}
           </div>
         </InfiniteScroll>
@@ -493,12 +543,16 @@ function DeletePostDialog({
   open,
   onOpenChange,
   theme,
+  title,
+  description,
   isPending,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   theme: Theme;
+  title: string;
+  description: string;
   isPending: boolean;
   onConfirm: () => void;
 }) {
@@ -507,12 +561,12 @@ function DeletePostDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-            {t("forum.post.deleteTitle")}
+            {title}
           </DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
-          {t("forum.post.deleteConfirm")}
+          {description}
         </p>
 
         <DialogFooter>
@@ -526,7 +580,7 @@ function DeletePostDialog({
             scheme={theme}
             onClick={onConfirm}
             disabled={isPending}
-            className="text-destructive"
+            className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
             icon={isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
           >
             {isPending
@@ -539,7 +593,25 @@ function DeletePostDialog({
   );
 }
 
-function ReplyCard({ reply }: { reply: Post }) {
+function ReplyCard({
+  reply,
+  theme,
+  currentUserId,
+  isAdmin,
+  onReplyUpdated,
+  onReplyDeleted,
+  onReplyPinned,
+  onReplyVoted,
+}: {
+  reply: Post;
+  theme: Theme;
+  currentUserId: string | null;
+  isAdmin: boolean;
+  onReplyUpdated: (reply: Partial<Post> & { id: string }) => void;
+  onReplyDeleted: (replyId: string) => void;
+  onReplyPinned: (replyId: string) => void;
+  onReplyVoted: (replyId: string, vote: Vote, updatedVoteTotals: { votes: number; cachedTotalVotes: number }) => void;
+}) {
   const author = reply.author;
   const authorId = author?.id;
   let authorLabel = t("forum.unknownAuthor");
@@ -551,9 +623,65 @@ function ReplyCard({ reply }: { reply: Post }) {
     }
   }
   const navigate = useNavigate();
+  const trpc = useTRPC();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editContent, setEditContent] = useState(reply.content);
+  const isOwner = Boolean(currentUserId && authorId === currentUserId);
+  const canManageReply = isOwner || isAdmin;
+  const canVote = Boolean(currentUserId);
+  const currentUserVote = (reply.currentUserVote as Vote | null | undefined) ?? null;
+  const hasUpvoted = currentUserVote === "up";
+  const hasDownvoted = currentUserVote === "down";
+
+  const voteMutation = useMutation({
+    ...trpc.forum.votePost.mutationOptions(),
+    onSuccess: (updatedVoteTotals, variables) => {
+      onReplyVoted(reply.id, variables.vote, updatedVoteTotals);
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+  const pendingVote = voteMutation.isPending ? voteMutation.variables.vote : null;
+
+  const editMutation = useMutation({
+    ...trpc.forum.editPost.mutationOptions(),
+    onSuccess: (updatedReply) => {
+      onReplyUpdated(updatedReply);
+      setEditDialogOpen(false);
+      toast.success(t("forum.reply.updated"));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    ...trpc.forum.deletePost.mutationOptions(),
+    onSuccess: () => {
+      onReplyDeleted(reply.id);
+      setDeleteDialogOpen(false);
+      toast.success(t("forum.reply.deleted"));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
+
+  const pinMutation = useMutation({
+    ...trpc.forum.pinPost.mutationOptions(),
+    onSuccess: () => {
+      onReplyPinned(reply.id);
+      toast.success(t("forum.reply.pinnedUpdated"));
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
 
   return (
-    <article className="rounded-lg border border-border bg-neutral-800 p-4">
+    <article className={`rounded-lg border bg-neutral-800 p-4 ${reply.pinned ? 'border-sky-300/60 bg-sky-500/10 dark:border-sky-400/30 dark:bg-sky-400/10' : 'border-border'}`}>
       <div className="mb-3 flex items-center gap-3">
         <Avatar>
           <AvatarImage src={author?.image ?? undefined} />
@@ -581,12 +709,204 @@ function ReplyCard({ reply }: { reply: Post }) {
             {formatDate(reply.createdAt)}
           </span>
         </div>
+        {reply.pinned && (
+          <Badge
+            variant="outline"
+            className="ml-auto h-auto rounded border-sky-300/60 bg-sky-500/15 px-2 py-1 text-xs font-semibold text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/15 dark:text-sky-100"
+          >
+            <Pin className="mr-1 h-3 w-3" />
+            {t("forum.posts.pinned")}
+          </Badge>
+        )}
       </div>
 
-      <div className="prose prose-sm dark:prose-invert max-w-none">
-        <p className="whitespace-pre-wrap">{reply.content}</p>
+      <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
+        <MarkdownRenderer content={reply.content} />
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {canVote && (
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={pendingVote === "up"
+                ? <Loader2 className="animate-spin" />
+                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
+              onClick={() => {
+                voteMutation.mutate({ id: reply.id, vote: "up" });
+              }}
+              disabled={voteMutation.isPending}
+              title={t("forum.vote.up")}
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
+            >
+              {""}
+            </Button>
+            <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
+              {typeof reply.votes === 'number' ? reply.votes : reply.cachedTotalVotes}
+            </span>
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={pendingVote === "down"
+                ? <Loader2 className="animate-spin" />
+                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
+              onClick={() => {
+                voteMutation.mutate({ id: reply.id, vote: "down" });
+              }}
+              disabled={voteMutation.isPending}
+              title={t("forum.vote.down")}
+              className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
+            >
+              {""}
+            </Button>
+          </div>
+        )}
+
+        {canManageReply && (
+          <Button
+            variant="transparent"
+            scheme={theme}
+            icon={editMutation.isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+            onClick={() => {
+              setEditContent(reply.content);
+              setEditDialogOpen(true);
+            }}
+            disabled={editMutation.isPending}
+            title={t("common.edit")}
+            className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
+          >
+            {t("common.edit")}
+          </Button>
+        )}
+
+        {canManageReply && (
+          <Button
+            variant="transparent"
+            scheme={theme}
+            icon={deleteMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            onClick={() => {
+              setDeleteDialogOpen(true);
+            }}
+            disabled={deleteMutation.isPending}
+            title={t("common.delete")}
+            className="border-none shadow-none text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
+          >
+            {t("common.delete")}
+          </Button>
+        )}
+
+        {isAdmin && (
+          <Button
+            variant="transparent"
+            scheme={theme}
+            icon={pinMutation.isPending
+              ? <Loader2 className="animate-spin" />
+              : reply.pinned
+                ? <PinOff />
+                : <Pin />}
+            onClick={() => {
+              pinMutation.mutate({ id: reply.id });
+            }}
+            disabled={pinMutation.isPending}
+            title={reply.pinned ? t("forum.reply.unpin") : t("forum.reply.pin")}
+            className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
+          >
+            {reply.pinned ? t("forum.reply.unpin") : t("forum.reply.pin")}
+          </Button>
+        )}
+      </div>
+
+      <EditReplyDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        theme={theme}
+        content={editContent}
+        isPending={editMutation.isPending}
+        onContentChange={setEditContent}
+        onSave={() => {
+          const trimmedContent = editContent.trim();
+
+          if (!trimmedContent) {
+            toast.error(t("forum.reply.contentRequired"));
+            return;
+          }
+
+          editMutation.mutate({
+            id: reply.id,
+            content: trimmedContent,
+          });
+        }}
+      />
+
+      <DeletePostDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        theme={theme}
+        title={t("forum.reply.deleteTitle")}
+        description={t("forum.reply.deleteConfirm")}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          deleteMutation.mutate({ id: reply.id });
+        }}
+      />
     </article>
+  );
+}
+
+function EditReplyDialog({
+  open,
+  onOpenChange,
+  theme,
+  content,
+  isPending,
+  onContentChange,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  theme: Theme;
+  content: string;
+  isPending: boolean;
+  onContentChange: (content: string) => void;
+  onSave: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">
+            {t("forum.reply.editTitle")}
+          </DialogTitle>
+        </DialogHeader>
+
+        <textarea
+          value={content}
+          onChange={(event) => {
+            onContentChange(event.target.value);
+          }}
+          className="min-h-36 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder={t("forum.reply.placeholder")}
+        />
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="transparent" scheme={theme} disabled={isPending}>
+              {t("common.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            color="sky"
+            textColor="white"
+            onClick={onSave}
+            disabled={isPending}
+            icon={isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+          >
+            {isPending ? t("common.saving") : t("common.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

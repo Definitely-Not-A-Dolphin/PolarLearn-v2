@@ -678,7 +678,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                             disabled={draft.items.length === 1 || removingDraftItemIds.includes(item.id)}
                             variant="transparent"
                             scheme={theme}
-                            className="mx-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mx-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15"
                           >
                             <span className="flex items-center justify-center leading-none">
                               <Trash className="h-5 w-5" tabIndex={-1} />

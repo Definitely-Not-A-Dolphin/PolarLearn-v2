@@ -148,7 +148,8 @@ export default function Layout() {
       <div className="py-4 flex flex-row gap-4">
         <Button
           scheme={theme}
-          variant="transparent"
+          color="sky"
+          textColor="white"
           icon={generateSessionMutation.isPending ? <Loader2 className="animate-spin" /> : <BookOpen />}
           onClick={() => {
             generateSessionMutation.mutate({ listId: data.list.id })
@@ -165,6 +166,7 @@ export default function Layout() {
             onClick={() => {
               void navigate(`/app/editlist/${data.list.id}`);
             }}
+            className="hover:bg-neutral-200/70 dark:hover:bg-white/10"
           >
             {t("lists.edit.title")}
           </Button>
@@ -179,6 +181,7 @@ export default function Layout() {
             likeListMutation.mutate({ id: data.list.id });
           }}
           disabled={likeListMutation.isPending}
+          className="hover:bg-neutral-200/70 dark:hover:bg-white/10"
         >
           {data.user_liked ? t("lists.favourites.unlike") : t("lists.favourites.like")}
         </Button>
@@ -192,6 +195,7 @@ export default function Layout() {
                 setIsDeleteDialogOpen(true);
               }}
               disabled={deleteListMutation.isPending}
+              className="text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
             >
               {t("lists.delete.title")}
             </Button>
@@ -216,15 +220,15 @@ export default function Layout() {
                     {t("lists.delete.cancel") || "Cancel"}
                   </Button>
                   <Button
-                    variant="transparent"
                     scheme={theme}
                     onClick={() => {
                       deleteListMutation.mutate({ id: data.list.id });
                     }}
                     disabled={deleteListMutation.isPending}
-                    icon={deleteListMutation.isPending ? <Loader2 className="animate-spin text-red-500" /> : <Trash className="text-red-500" />}
+                    className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                    icon={deleteListMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
                   >
-                    <span className="text-red-500">{t("lists.delete.title") || "Delete"}</span>
+                    {t("lists.delete.title") || "Delete"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
