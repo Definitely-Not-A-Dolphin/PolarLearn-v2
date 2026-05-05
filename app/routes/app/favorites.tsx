@@ -110,7 +110,10 @@ export default function FavoritesPage() {
                   {authorId ? (
                     <button
                       type="button"
-                      onClick={() => { void navigate(`/app/viewuser/${authorId}`); }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void navigate(`/app/viewuser/${authorId}`);
+                      }}
                       className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
                     >
                       {list.user?.name ?? list.user?.displayUsername ?? list.user?.username ?? authorId}
@@ -123,9 +126,17 @@ export default function FavoritesPage() {
 
                   <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
                     {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
-                    <div className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all">
+                    <button
+                      type="button"
+                      aria-label="Remove from recent lists"
+                      title="Remove from recent lists"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all"
+                    >
                       <ListX />
-                    </div>
+                    </button>
                   </span>
                 </div>
               )

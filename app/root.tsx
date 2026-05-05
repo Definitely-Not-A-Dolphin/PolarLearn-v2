@@ -3,7 +3,6 @@ import {
   Links,
   Meta,
   Outlet,
-  Scripts,
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
@@ -73,7 +72,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </TRPCReactProvider>
         <ScrollRestoration />
-        <Scripts />
       </body>
     </html>
   );

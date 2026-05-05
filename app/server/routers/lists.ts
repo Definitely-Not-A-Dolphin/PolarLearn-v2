@@ -594,11 +594,11 @@ export const ListRouter = createTRPCRouter({
       const nextSnapshot = applyListDiffToSnapshot(branchSnapshot, input.diff)
       const sanitizedDiff = buildListDiff(branchSnapshot, nextSnapshot)
 
-      if (sanitizedDiff.changes.length === 0) {
+      if (sanitizedDiff.changes.length === 0 && JSON.stringify(branchSnapshot) === JSON.stringify(nextSnapshot)) {
         return 'OK'
       }
 
-      const commitDiff = diff.parse(sanitizedDiff)
+      const commitDiff = diff.parse(sanitizedDiff.changes.length > 0 ? sanitizedDiff : input.diff)
       const newCommitId = generateCommitHash(commitDiff)
 
       const updatedItems = !currentBranch.parentBranch ? structuredClone(nextSnapshot) : list.items

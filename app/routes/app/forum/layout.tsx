@@ -1,10 +1,13 @@
 import { Outlet, useLocation, useNavigate, useRouteLoaderData } from "react-router";
 import { Tabs } from "@polarnl/polarui-react";
-import { MessageCirclePlus, Plus } from "lucide-react";
-import { useState } from "react";
-import { CreatePostDialog } from "./CreatePostDialog";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
+
+const tabs = [
+  { label: t("forum.tabs.allPosts"), path: "posts" },
+  { label: t("forum.tabs.myPosts"), path: "myPosts" },
+  { label: t("forum.tabs.myReplies"), path: "myReplies" },
+]
 
 export default function Layout() {
   const location = useLocation();
@@ -12,51 +15,30 @@ export default function Layout() {
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
 
-  const getActiveIndex = () => {
-    const path = location.pathname.replace(/\/+$/, "");
-    if (path.includes("/myPosts")) return 1;
-    if (path.includes("/myReplies")) return 2;
-    return 0; // defaults to all posts page
-  };
+  const normalizedPath = location.pathname.replace(/\/+$/, "");
+  const basePath = "/app/forum";
+  const activeIndex = tabs.findIndex(({ path }) => normalizedPath === `${basePath}/${path}` || normalizedPath.startsWith(`${basePath}/${path}/`));
 
   const handleTabChange = (idx: number) => {
-    if (idx === 0) {
-      void navigate("/app/forum/posts");
-    } else if (idx === 1) {
-      void navigate("/app/forum/myPosts");
-    } else if (idx === 2) {
-      void navigate("/app/forum/myReplies");
+    const tab = tabs[idx];
+    if (tab) {
+      void navigate(`${basePath}/${tab.path}`);
     }
   };
 
-  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
 
   return (
     <div className="p-4">
-      <div className="flex flex-row items-center">
-        <CreatePostDialog open={createPostDialogOpen} onOpenChange={setCreatePostDialogOpen} />
+      <h1 className="truncate text-3xl font-bold">{t("navigation.forum")}</h1>
+      <div className="mt-4 flex flex-row items-center gap-3">
         <Tabs
           scheme={theme}
-          tabs={[
-            t("forum.tabs.allPosts"),
-            t("forum.tabs.myPosts"),
-            t("forum.tabs.myReplies"),
-          ]}
-          activeIndex={getActiveIndex()}
+          tabs={tabs.map((tab) => tab.label)}
+          activeIndex={activeIndex === -1 ? 0 : activeIndex}
           onActiveIndexChange={handleTabChange}
         />
-        <div className="grow" />
-        <button
-          className="h-10 w-10 bg-neutral-800 hover:bg-neutral-700 rounded-full items-center justify-center flex cursor-pointer"
-          onClick={() => {
-            setCreatePostDialogOpen(true)
-          }}
-          title={t("forum.createPost.title")}
-        >
-          <MessageCirclePlus/>
-        </button>
       </div>
-      <hr />
+      <hr className="mt-4" />
       <div className="py-4">
         <Outlet />
       </div>

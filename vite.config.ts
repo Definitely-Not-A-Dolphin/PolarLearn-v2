@@ -1,10 +1,11 @@
-import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import type { Plugin } from "vite";
+import rsc from "@vitejs/plugin-rsc";
+import { unstable_reactRouterRSC as reactRouterRSC } from "@react-router/dev/vite";
 
 function prependBundleBanner() {
   return {
@@ -42,7 +43,13 @@ function prependBundleBanner() {
 }
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths(), prependBundleBanner()],
+  plugins: [
+    reactRouterRSC(),
+    rsc(),
+    tailwindcss(),
+    tsconfigPaths(),
+    prependBundleBanner(),
+  ],
   optimizeDeps: {
     exclude: [
       '@napi-rs/snappy-linux-x64-gnu',

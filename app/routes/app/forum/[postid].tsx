@@ -127,9 +127,11 @@ export default function PostPage() {
 
   const deleteMutation = useMutation({
     ...trpc.forum.deletePost.mutationOptions(),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(trpc.forum.getPosts.queryFilter());
       setDeleteDialogOpen(false);
       toast.success(t("forum.post.deleted"));
+
       void navigate("/app/forum/posts");
     },
     onError: () => {
@@ -186,7 +188,7 @@ export default function PostPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-border p-6"> 
+      <div className="rounded-lg border border-border p-6">
         <div className="mb-4 flex items-center gap-3">
           <Avatar>
             <AvatarImage src={author?.image ?? undefined} />
@@ -277,7 +279,7 @@ export default function PostPage() {
               scheme={theme}
               icon={pendingVote === "up"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
+                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
               onClick={() => {
                 handleVote("up");
               }}
@@ -295,7 +297,7 @@ export default function PostPage() {
               scheme={theme}
               icon={pendingVote === "down"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
+                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
               onClick={() => {
                 handleVote("down");
               }}
@@ -576,11 +578,11 @@ function DeletePostDialog({
             </Button>
           </DialogClose>
           <Button
-            variant="transparent"
             scheme={theme}
             onClick={onConfirm}
             disabled={isPending}
-            className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+            color="red"
+            textColor={theme === "dark" ? "white" : "black"}
             icon={isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
           >
             {isPending
@@ -663,6 +665,7 @@ function ReplyCard({
       onReplyDeleted(reply.id);
       setDeleteDialogOpen(false);
       toast.success(t("forum.reply.deleted"));
+
     },
     onError: () => {
       toast.error(t("errors.unknown"));
@@ -732,7 +735,7 @@ function ReplyCard({
               scheme={theme}
               icon={pendingVote === "up"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-muted-foreground"} />}
+                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
               onClick={() => {
                 voteMutation.mutate({ id: reply.id, vote: "up" });
               }}
@@ -750,7 +753,7 @@ function ReplyCard({
               scheme={theme}
               icon={pendingVote === "down"
                 ? <Loader2 className="animate-spin" />
-                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-muted-foreground"} />}
+                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
               onClick={() => {
                 voteMutation.mutate({ id: reply.id, vote: "down" });
               }}

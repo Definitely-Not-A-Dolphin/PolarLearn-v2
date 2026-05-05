@@ -1,6 +1,6 @@
 /* (accessibility) clickable container now has keyboard handlers */
 import { auth } from "~/lib/auth/server";
-import { redirect, useLoaderData, useNavigate } from "react-router";
+import { redirect, useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
 import { List, Star, ListX } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area"
@@ -8,6 +8,9 @@ import { prisma } from "~/lib/db";
 import { RecentListsSchema, RecentSubjectsSchema, extractRecentItems } from "~/lib/list";
 import z from "zod";
 import { subjects as subjectsList } from "~/lib/subjects";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useTRPC } from "~/server/react";
 
 interface LoaderData {
   recentItems: {
@@ -81,7 +84,18 @@ export async function loader(loaderArgs: { request: Request }) {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const revalidator = useRevalidator()
+  const trpc = useTRPC()
   const t = i18n.t;
+  const removeRecentListMutation = useMutation({
+    ...trpc.list.rmListFromRecent.mutationOptions(),
+    onSuccess: async () => {
+      await revalidator.revalidate()
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"))
+    },
+  })
 
   const { recentItems } = useLoaderData<LoaderData>()
   return (
@@ -187,7 +201,10 @@ export default function HomePage() {
                   {authorId ? (
                     <button
                       type="button"
-                      onClick={() => { void navigate(`/app/viewuser/${authorId}`); }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void navigate(`/app/viewuser/${authorId}`);
+                      }}
                       className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
                     >
                       {list.authorName ?? authorId}
@@ -200,9 +217,16 @@ export default function HomePage() {
 
                   <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
                     {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
-                    <div className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removeRecentListMutation.mutate({ listId: list.id })
+                      }}
+                      className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                       <ListX />
-                    </div>
+                    </button>
                   </span>
                 </div>
               )

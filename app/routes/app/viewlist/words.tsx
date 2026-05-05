@@ -1,21 +1,38 @@
-import { useRouteLoaderData } from "react-router";
+import { useLoaderData } from "react-router";
+import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import { appRouter } from "~/server/main";
 import i18n from "~/i18n";
+import type { Route } from "./+types/words";
 
-interface LayoutData {
+type LoaderData = {
   list: {
     items: { id: string; question: string; answer: string }[];
   };
 }
 
-export default function WordsPage() {
-  const t = i18n.t
-  const layoutData = useRouteLoaderData<LayoutData>("routes/app/viewlist/layout");
+export async function loader({ params, request }: Route.LoaderArgs): Promise<LoaderData> {
+  const id = params.id;
 
-  if (!layoutData) {
-    return null;
+  if (!id) {
+    throw new Response("", { status: 400 });
   }
 
-  const { list } = layoutData;
+  const headers = new Headers(request.headers);
+  const context = await createTRPCContext({ headers });
+
+  if (!context.user) {
+    throw new Response("", { status: 401 });
+  }
+
+  const caller = createCallerFactory(appRouter)(context);
+  const list = await caller.list.getLatestListData({ listId: id });
+
+  return { list };
+}
+
+export default function WordsPage() {
+  const t = i18n.t
+  const { list } = useLoaderData<typeof loader>();
 
   return (
     <div className="mt-8">

@@ -43,6 +43,10 @@ model User {
   collaboratingQuizzes Quiz[]         @relation("QuizCollaborators")
   learnSessions        LearnSession[]
   favoriteLists        List[]         @relation("FavoriteLists")
+  inGroups             Group[]        @relation("UserGroups")
+  applyingToGroups     Group[]        @relation("UserGroupApplications")
+  moderatingGroups     Group[]        @relation("UserGroupModerators")
+  createdGroups        Group[]
 
   ssoproviders SsoProvider[]
 
@@ -259,6 +263,7 @@ model List {
   collaborators User[]         @relation("ListCollaborators")
   favoritedBy   User[]         @relation("FavoriteLists")
   sessions      LearnSession[]
+  inGroups      Group[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,8 +278,8 @@ model LearnSession {
   list       List    @relation(fields: [listId], references: [id], onDelete: Cascade)
   userId     String
   user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queue      Json[] 
-  answerLog  Json[] 
+  queue      Json[]
+  answerLog  Json[]
   isComplete Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -328,4 +333,22 @@ model ForumPost {
 
   @@index([authorId])
   @@index([replyToId])
+}
+
+model Group {
+  id                  String  @id
+  name                String
+  description         String?
+  image               String?
+  members             User[]  @relation("UserGroups")
+  lists               List[]
+  creatorId           String
+  creator             User    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  approvalRequired    Boolean @default(false)
+  approvalQueue       User[]  @relation("UserGroupApplications")
+  moderators          User[]  @relation("UserGroupModerators")
+  onlyModsCanAddLists Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

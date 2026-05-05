@@ -195,7 +195,7 @@ export default function Layout() {
                 setIsDeleteDialogOpen(true);
               }}
               disabled={deleteListMutation.isPending}
-              className="text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
+              className="border-none shadow-none text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
             >
               {t("lists.delete.title")}
             </Button>
@@ -221,11 +221,12 @@ export default function Layout() {
                   </Button>
                   <Button
                     scheme={theme}
+                    color="red"
+                    textColor="white"
                     onClick={() => {
                       deleteListMutation.mutate({ id: data.list.id });
                     }}
                     disabled={deleteListMutation.isPending}
-                    className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
                     icon={deleteListMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
                   >
                     {t("lists.delete.title") || "Delete"}

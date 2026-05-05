@@ -15,15 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 
-const POSTS_PER_PAGE = 10;
-
 export async function loader({ request }: Route.LoaderArgs): Promise<{ initialPosts: GetPostsOutput }> {
   const headers = new Headers(request.headers);
   const context = await createTRPCContext({ headers });
   const caller = createCallerFactory(appRouter)(context);
 
   const initialPosts = await caller.forum.getPosts({
-    limit: POSTS_PER_PAGE,
+    limit: 10,
     cursor: undefined,
   });
 
@@ -36,7 +34,7 @@ export default function PostsPage() {
   const navigate = useNavigate();
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const postsQueryOptions = trpc.forum.getPosts.queryOptions({
-    limit: POSTS_PER_PAGE,
+    limit: 10,
     cursor: cursor ?? undefined,
   });
 

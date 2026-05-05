@@ -63,12 +63,39 @@
     "home": "Thuis",
     "forum": "Forum",
     "list": "Lijst",
+    "lists": "Lijsten",
+    "group": "Groep",
+    "groups": "Groepen",
+    "folder": "Map",
+    "folders": "Mappen",
+    "post": "Post",
+    "posts": "Posts",
     "settings": "Instellingen",
     "cancel": "Annuleren",
-    "confirm": "Bevestigen"
+    "confirm": "Bevestigen",
+    "userProfile": "Profiel"
   },
   "topbar": {
     "new": "Nieuw"
+  },
+  "groups": {
+    "create": {
+      "title": "Nieuwe groep",
+      "nameLabel": "Naam",
+      "namePlaceholder": "Naam van de groep",
+      "descriptionLabel": "Beschrijving",
+      "descriptionPlaceholder": "Waar gaat deze groep over?",
+      "imageLabel": "Groepsafbeelding",
+      "imagePlaceholder": "Plak een afbeelding-URL",
+      "settingsTitle": "Groepsinstellingen",
+      "settingsDescription": "Stel in hoe mensen lid worden en wie lijsten kan beheren.",
+      "approvalRequiredLabel": "Nieuwe leden moeten worden goedgekeurd",
+      "approvalRequiredDescription": "Lidmaatschapsaanvragen komen in een wachtrij terecht totdat een beheerder ze goedkeurt.",
+      "onlyModsCanAddListsLabel": "Alleen beheerders kunnen lijsten toevoegen",
+      "onlyModsCanAddListsDescription": "Gewone leden kunnen geen lijsten aan deze groep koppelen.",
+      "create": "Groep aanmaken",
+      "success": "Groep aangemaakt!"
+    }
   },
   "common": {
     "close": "Sluiten",

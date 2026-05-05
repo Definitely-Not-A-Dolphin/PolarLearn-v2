@@ -1,6 +1,6 @@
 import { useNavigate, useRouteLoaderData, useLocation } from "react-router"
 import type { ReactElement } from "react"
-import { Cog, Home, MessageCircle, PanelLeftClose, PanelLeftOpen, ShieldUser } from "lucide-react"
+import { Cog, Home, MessageCircle, PanelLeftClose, PanelLeftOpen, ShieldUser, Users } from "lucide-react"
 
 import {
   Sidebar,
@@ -89,6 +89,7 @@ export function AppSidebar() {
   const navItems = [
     { title: "navigation.home", icon: Home, url: "/app" },
     { title: "navigation.forum", icon: MessageCircle, url: "/app/forum" },
+    { title: "navigation.groups", icon: Users, url: "/app/groups" },
   ]
 
   const isActiveNavItem = (itemUrl: string) => {

@@ -3,8 +3,9 @@ import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
 import { buildSessionSummary, sessionSummaryLoaderSchema, type SessionSummaryLoaderData, type SessionSummarySource } from "~/lib/session-summary"
 import i18n from "~/i18n"
+import type { Route } from "./+types/stats"
 
-export async function loader({ params, request }: { params: Record<string, string | undefined>; request: Request }): Promise<SessionSummaryLoaderData> {
+export async function loader({ params, request }: Route.LoaderArgs): Promise<SessionSummaryLoaderData> {
   const listId = params.id
 
   if (!listId) {
