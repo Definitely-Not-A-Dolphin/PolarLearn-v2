@@ -31,6 +31,12 @@ export default [
       route("app/viewuser/:id/posts", "routes/app/viewuser/posts.tsx"),
       route("app/viewuser/:id", "routes/app/viewuser/_index.tsx"),
     ]),
+    layout("routes/app/group/layout.tsx", [
+      route("app/group/:id/lists", "routes/app/group/lists.tsx"),
+      route("app/group/:id/members", "routes/app/group/members.tsx"),
+      route("app/group/:id/settings", "routes/app/group/settings.tsx"),
+      route("app/group/:id", "routes/app/group/_index.tsx"),
+    ]),
     route("app/groups", "routes/app/groups.tsx"),
   ]),
   route("app/session/:id", "routes/app/session/[id].tsx")

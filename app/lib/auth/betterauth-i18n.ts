@@ -1,6 +1,6 @@
 import i18n from "~/i18n";
 
-const errorCodeToTranslationKey: Record<string, string> = {
+const errorCodeToTranslationKey = {
   INVALID_EMAIL_OR_PASSWORD: "auth:errors.invalidCredentials",
   INVALID_USERNAME_OR_PASSWORD: "auth:errors.invalidCredentials",
   INVALID_CREDENTIALS: "auth:errors.invalidCredentials",
@@ -18,41 +18,46 @@ const errorCodeToTranslationKey: Record<string, string> = {
   RATE_LIMIT: "auth:errors.rateLimit",
   RATELIMIT: "auth:errors.rateLimit",
   UNKNOWN: "auth:errors.unknown",
-};
+} as const;
 
-function normalizeErrorCode(code: string): string {
-  return code.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+function resolvePath(source: Record<string, unknown>, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== "object") {
+      return undefined;
+    }
+
+    return (current as Record<string, unknown>)[segment];
+  }, source);
 }
 
-export function getBetterAuthErrorMessage(error: unknown): string {
-  const fallback = i18n.t("auth:errors.unknown");
+function translateFromResource(resource: Record<string, unknown>, key: string): string | undefined {
+  const normalizedKey = key.includes(":") ? key.replace(":", ".") : key;
+  const value = resolvePath(resource, normalizedKey);
 
-  if (!error) {
-    return fallback;
-  }
+  return typeof value === "string" ? value : undefined;
+}
 
-  if (typeof error === "string") {
-    const normalized = normalizeErrorCode(error);
-    const key = errorCodeToTranslationKey[normalized];
-    return key ? i18n.t(key) : fallback;
-  }
+const defaultLocaleResource = i18n.resources[i18n.DEFAULT_LANG] ?? {};
 
-  if (typeof error === "object") {
-    const typedError = error as {
-      code?: string;
-      message?: string;
-      error?: string;
-    };
+function buildLocaleTranslations(resource: Record<string, unknown>): Record<string, string> {
+  const translations: Record<string, string> = {};
 
-    const candidateCode = typedError.code ?? typedError.error;
-    if (candidateCode) {
-      const normalized = normalizeErrorCode(candidateCode);
-      const key = errorCodeToTranslationKey[normalized];
-      if (key) {
-        return i18n.t(key);
-      }
+  for (const [errorCode, translationKey] of Object.entries(errorCodeToTranslationKey)) {
+    const translatedMessage =
+      translateFromResource(resource, translationKey) ??
+      translateFromResource(defaultLocaleResource, translationKey);
+
+    if (translatedMessage) {
+      translations[errorCode] = translatedMessage;
     }
   }
 
-  return fallback;
+  return translations;
 }
+
+export const betterAuthTranslations = Object.fromEntries(
+  Object.entries(i18n.resources).map(([locale, resource]) => [
+    locale,
+    buildLocaleTranslations(resource),
+  ]),
+) as Record<string, Record<string, string>>;

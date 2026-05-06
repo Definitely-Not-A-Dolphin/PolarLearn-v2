@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
-import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
 import type { Route } from "./+types/sign-up";
 import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
@@ -80,14 +79,15 @@ export default function SignUpPage() {
               password: passwordValue,
             }).then((res) => {
               if (res.error) {
-                toast.error(getBetterAuthErrorMessage(res.error));
+                const authError = res.error as { message?: string; originalMessage?: string };
+                toast.error(authError.message || authError.originalMessage || "Authentication failed.");
                 return;
               }
 
               toast.success(t("auth:signUp.ok"));
               void navigate("/auth/sign-in");
             }).catch((err: unknown) => {
-              toast.error(getBetterAuthErrorMessage(err));
+              toast.error(err instanceof Error ? err.message || "Authentication failed." : "Authentication failed.");
             }).finally(() => {
               setIsLoading(false);
             });

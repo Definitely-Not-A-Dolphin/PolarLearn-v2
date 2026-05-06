@@ -1,11 +1,14 @@
 import { prisma } from "../db";
 import { betterAuth, logger } from "better-auth";
+import { i18n as betterAuthI18n } from "@better-auth/i18n";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin, organization, username } from "better-auth/plugins"
 import { createAuthMiddleware, getIp } from "better-auth/api";
 import { sso } from "@better-auth/sso"
 import { passkey } from "@better-auth/passkey"
 import { logger as appLogger } from "../logger"
+import { betterAuthTranslations } from "./betterauth-i18n";
+import i18n from "~/i18n";
 
 export const auth = betterAuth({
   telemetry: {
@@ -18,11 +21,21 @@ export const auth = betterAuth({
   baseURL: process.env.APP_BASE as string,
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: !!process.env.SMTP_HOST
+    requireEmailVerification: !!process.env.SMTP_HOST,
+  },
+  user: {
+    deleteUser: {
+      enabled: true
+    }
   },
   secret: process.env.SECRET,
   trustedOrigins: ["*"],
   advanced: {
+    database: {
+      generateId: () => {
+        return crypto.randomUUID()
+      }
+    },
     ipAddress: {
       ipAddressHeaders: [
         "x-forwarded-for",
@@ -38,8 +51,9 @@ export const auth = betterAuth({
     cookiePrefix: "polarlearn.auth"
   },
   logger: {
-    log: (level, message) => {
-      logger[level](message)
+    level: "debug",
+    log: (level, message, ...args) => {
+      appLogger[level](message, ...args)
     }
   },
   hooks: {
@@ -106,6 +120,14 @@ export const auth = betterAuth({
     })
   },
   plugins: [
+    betterAuthI18n({
+      translations: betterAuthTranslations,
+      detection: ["callback"],
+      defaultLocale: i18n.DEFAULT_LANG,
+      getLocale: () => {
+        return i18n.language ?? null
+      },
+    }),
     username(),
     admin({
       adminRoles: ["admin"],
@@ -117,33 +139,35 @@ export const auth = betterAuth({
       }
     }),
     passkey(),
-    organization({
-      allowUserToCreateOrganization: async (user) => {
-        const target = await prisma.user.findFirst({
-          where: { id: user.id },
-        })
-        return target?.role === "admin";
-      },
-      organizationHooks: {
-        afterCreateOrganization: async ({ organization, user: creator }) => {
-          const superadmins = await prisma.user.findMany({
-            where: { role: "admin" }
-          });
-          const adminsToAdd = superadmins.filter((superadmin: { id: string }) => superadmin.id !== creator.id);
-          if (adminsToAdd.length > 0) {
-            await prisma.member.createMany({
-              data: adminsToAdd.map((superadmin: { id: string }) => ({
-                id: crypto.randomUUID(),
-                organizationId: organization.id,
-                userId: superadmin.id,
-                role: "owner",
-                createdAt: new Date(),
-                updatedAt: new Date()
-              }))
-            });
-          }
-        }
-      }
-    })
+    // Too hard to figure out how to couple lists to orgs, and not scoping/locking admins to an org
+    // Will implement later
+    // organization({
+    //   allowUserToCreateOrganization: async (user) => {
+    //     const target = await prisma.user.findFirst({
+    //       where: { id: user.id },
+    //     })
+    //     return target?.role === "admin";
+    //   },
+    //   organizationHooks: {
+    //     afterCreateOrganization: async ({ organization, user: creator }) => {
+    //       const superadmins = await prisma.user.findMany({
+    //         where: { role: "admin" }
+    //       });
+    //       const adminsToAdd = superadmins.filter((superadmin: { id: string }) => superadmin.id !== creator.id);
+    //       if (adminsToAdd.length > 0) {
+    //         await prisma.member.createMany({
+    //           data: adminsToAdd.map((superadmin: { id: string }) => ({
+    //             id: crypto.randomUUID(),
+    //             organizationId: organization.id,
+    //             userId: superadmin.id,
+    //             role: "owner",
+    //             createdAt: new Date(),
+    //             updatedAt: new Date()
+    //           }))
+    //         });
+    //       }
+    //     }
+    //   }
+    // })
   ]
 });

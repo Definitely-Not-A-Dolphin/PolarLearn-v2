@@ -456,9 +456,7 @@ export const ListRouter = createTRPCRouter({
         where: { id: ctx.user.id }
       })
 
-      const lists = RecentListsSchema.parse(
-        (user?.recentItems as { recent_lists?: z.infer<typeof RecentListsSchema> }).recent_lists ?? []
-      )
+      const { recent_lists: lists } = extractRecentItems(user?.recentItems)
 
       const seen = new Set<string>()
       const deduped = [...lists].reverse().filter((item) => {
@@ -467,6 +465,34 @@ export const ListRouter = createTRPCRouter({
         return true
       })
 
+      const hydratedLists = await Promise.all(deduped.map(async (item) => {
+        const rawList = await ctx.prisma.list.findFirst({
+          where: { id: item.id },
+          include: {
+            user: true,
+            ...listRecordInclude,
+          },
+        })
+
+        return rawList ? listRecordSchema.parse(rawList) : null
+      }))
+
+      return hydratedLists
+    }),
+  getRecentSubjects: protectedProcedure
+    .query(async ({ ctx }) => {
+      const user = await ctx.prisma.user.findFirst({
+        where: { id: ctx.user.id }
+      })
+
+      const { recent_subjects: subjects } = extractRecentItems(user?.recentItems)
+
+      const seen = new Set<string>()
+      const deduped = [...subjects].reverse().filter((subject) => {
+        if (seen.has(subject)) return false
+        seen.add(subject)
+        return true
+      })
       return deduped
     }),
   rmListFromRecent: protectedProcedure
@@ -632,6 +658,10 @@ export const ListRouter = createTRPCRouter({
           versionData: newHistory,
           items: updatedItems,
         }
+      })
+
+      await ctx.prisma.learnSession.deleteMany({
+        where: { listId: input.id },
       })
 
       const user = await ctx.prisma.user.findUnique({
@@ -1132,6 +1162,12 @@ export const ListRouter = createTRPCRouter({
           versionData: newHistory,
           items: mergedSnapshot,
         }
+      })
+
+      // Sessions must be cleared after a merge which changes the list items,
+      // otherwise clients may resume an invalid session state.
+      await ctx.prisma.learnSession.deleteMany({
+        where: { listId: input.id },
       })
       return 'OK'
     }),

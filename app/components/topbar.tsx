@@ -88,6 +88,9 @@ export function TopBar() {
       {location.pathname === "/app/groups" && (
         <h1 className="text-2xl font-bold">{t("navigation.groups")}</h1>
       )}
+      {location.pathname.startsWith("/app/group/") && (
+        <h1 className="text-2xl font-bold">{t("navigation.group")}</h1>
+      )}
       <div className="grow"></div>
       <Popover>
         <PopoverTrigger>

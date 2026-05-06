@@ -1,16 +1,16 @@
-/* (accessibility) clickable container now has keyboard handlers */
-import { auth } from "~/lib/auth/server";
-import { redirect, useLoaderData, useNavigate, useRevalidator } from "react-router";
+import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
 import { List, Star, ListX } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area"
-import { prisma } from "~/lib/db";
 import { RecentListsSchema, RecentSubjectsSchema, extractRecentItems } from "~/lib/list";
 import z from "zod";
 import { subjects as subjectsList } from "~/lib/subjects";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "~/server/react";
+import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import type { Route } from "./+types/_index";
+import { appRouter } from "~/server/main";
 
 interface LoaderData {
   recentItems: {
@@ -24,62 +24,22 @@ interface LoaderData {
   }
 }
 
-export async function loader(loaderArgs: { request: Request }) {
+export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
-  const user = result?.user
-  if (!user) {
-    return redirect('/app')
+  const context = await createTRPCContext({ headers })
+  if (!context.user) {
+    throw new Response("Unauthorized", { status: 401 })
   }
+  const caller = createCallerFactory(appRouter)(context)
+  const recentLists = await caller.list.getRecentLists()
+  const recentSubjects = await caller.list.getRecentSubjects()
 
-  const rawUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  })
-  const recentItems = extractRecentItems(rawUser?.recentItems);
-
-  const recentListIds = recentItems.recent_lists.map((list) => list.id)
-  const lists = recentListIds.length > 0
-    ? await prisma.list.findMany({
-      where: {
-        id: {
-          in: recentListIds,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        subject: true,
-        userId: true,
-        user: {
-          select: {
-            id: true,
-            displayUsername: true,
-            username: true,
-            name: true,
-          },
-        },
-      },
-    })
-    : []
-
-  const listsById = new Map(lists.map((list) => [list.id, list]))
-
-  const hydratedRecentItems = {
-    ...recentItems,
-    recent_lists: recentItems.recent_lists.map((list) => {
-      const matched = listsById.get(list.id)
-
-      return {
-        ...list,
-        name: matched?.name,
-        subject: matched?.subject,
-        authorId: matched?.userId,
-        authorName: matched?.user.name,
-      }
-    }),
+  return {
+    recentItems: {
+      recent_lists: recentLists,
+      recent_subjects: recentSubjects,
+    }
   }
-
-  return { recentItems: hydratedRecentItems };
 }
 
 export default function HomePage() {
@@ -158,83 +118,80 @@ export default function HomePage() {
           </div>
         </div>
         <ScrollBar orientation="horizontal" />
-        <h1 className="font-bold text-3xl mt-4">{t("home.recentLists")}</h1>
+      </ScrollArea>
+      <h1 className="font-bold text-3xl mt-4">{t("home.recentLists")}</h1>
 
-        <div className="mt-4 flex w-full flex-col gap-y-3">
-          {recentItems.recent_lists.length === 0 ? (
-            <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-              {t("home.noRecentLists")}
-            </div>
-          ) : (
-            recentItems.recent_lists.map((list) => {
-              const hasSubject = typeof list.subject === "string"
-                && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
-              const subject = hasSubject
-                ? subjectsList[list.subject as keyof typeof subjectsList]
-                : null
-              const subjectLabel = subject ? t(subject.labelKey) : null
-              const authorId = list.authorId
+      <div className="mt-4 flex w-full flex-col gap-y-3">
+        {recentItems.recent_lists.length === 0 ? (
+          <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+            {t("home.noRecentLists")}
+          </div>
+        ) : (
+          recentItems.recent_lists.map((list: any) => {
+            const hasSubject = typeof list.subject === "string"
+              && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
+            const subject = hasSubject
+              ? subjectsList[list.subject as keyof typeof subjectsList]
+              : null
+            const subjectLabel = subject ? t(subject.labelKey) : null
 
-              return (
-                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-                <div
-                  key={list.id}
-                  role="button"
-                  tabIndex={0}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
-                  onClick={() => { void navigate(`/app/viewlist/${list.id}`); }}
+            return (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+              <div
+                key={list.id}
+                role="button"
+                tabIndex={0}
+                className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
+                onClick={() => { void navigate(`/app/viewlist/${list.id}`); }}
+              >
+                <button
+                  type="button"
+                  className="flex min-w-0 items-center gap-x-3 text-left"
                 >
+                  {subject ? (
+                    <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
+                  ) : (
+                    <List size={20} className="shrink-0" />
+                  )}
+                  <span className="truncate text-base font-semibold">
+                    {list.name ?? t("lists.namePlaceholder")}
+                  </span>
+                </button>
+                {list.user?.id ? (
                   <button
                     type="button"
-                    className="flex min-w-0 items-center gap-x-3 text-left"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void navigate(`/app/viewuser/${list.user.id}`);
+                    }}
+                    className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
                   >
-                    {subject ? (
-                      <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
-                    ) : (
-                      <List size={20} className="shrink-0" />
-                    )}
-                    <span className="truncate text-base font-semibold">
-                      {list.name ?? t("lists.namePlaceholder")}
-                    </span>
+                    {list.user?.name ?? list.user?.id}
                   </button>
-
-                  {authorId ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void navigate(`/app/viewuser/${authorId}`);
-                      }}
-                      className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
-                    >
-                      {list.authorName ?? authorId}
-                    </button>
-                  ) : (
-                    <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
-                      {t("lists.unknownAuthor")}
-                    </span>
-                  )}
-
-                  <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
-                    {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        removeRecentListMutation.mutate({ listId: list.id })
-                      }}
-                      className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ListX />
-                    </button>
+                ) : (
+                  <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
+                    {t("lists.unknownAuthor")}
                   </span>
-                </div>
-              )
-            })
-          )}
-        </div>
+                )}
 
-      </ScrollArea>
+                <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
+                  {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeRecentListMutation.mutate({ listId: list.id })
+                    }}
+                    className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ListX />
+                  </button>
+                </span>
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
   );
 }

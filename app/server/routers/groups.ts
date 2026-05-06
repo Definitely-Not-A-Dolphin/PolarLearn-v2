@@ -1,4 +1,4 @@
-import type { TRPCRouterRecord } from '@trpc/server'
+import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
 
 import { protectedProcedure } from '~/server/trpc'
@@ -25,6 +25,30 @@ export const groupsRouter = {
     })
     return groups
   }),
+  getListsInGroup: protectedProcedure.input(
+    z.object({
+      id: z.string(),
+    })
+  ).query(async ({ ctx, input }) => {
+    const lists = await ctx.prisma.list.findMany({
+      where: {
+        inGroups: {
+          some: {
+            id: input.id,
+          },
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
+      }
+    })
+    return lists
+  }),
   createGroup: protectedProcedure.input(
     z.object({
       name: z.string().min(3).max(50),
@@ -42,6 +66,11 @@ export const groupsRouter = {
         image: input.image ?? null,
         approvalRequired: input.approvalRequired ?? false,
         onlyModsCanAddLists: input.onlyModsCanAddLists ?? false,
+        creator: {
+          connect: {
+            id: ctx.user.id,
+          },
+        },
         members: {
           connect: {
             id: ctx.user.id,
@@ -55,5 +84,182 @@ export const groupsRouter = {
       },
     })
     return group
+  }),
+  getGroupData: protectedProcedure.input(
+    z.object({
+      id: z.string(),
+    })
+  ).query(async ({ ctx, input }) => {
+    const group = await ctx.prisma.group.findUnique({
+      where: {
+        id: input.id,
+      },
+      include: {
+        members: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          }
+        },
+        moderators: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          }
+        },
+        lists: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            subject: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+              }
+            },
+          }
+        }
+        ,
+        approvalQueue: {
+          select: {
+            id: true,
+          }
+        }
+      }
+    })
+    if (!group) {
+      throw new TRPCError({ code: 'NOT_FOUND' })
+    }
+    return group
+  }),
+  addListToGroup: protectedProcedure.input(
+    z.object({
+      groupId: z.string(),
+      listId: z.string(),
+    })
+  ).mutation(async ({ ctx, input }) => {
+    const group = await ctx.prisma.group.findUnique({
+      where: {
+        id: input.groupId,
+      },
+      include: {
+        members: {
+          select: {
+            id: true,
+          }
+        }, moderators: {
+          select: {
+            id: true,
+          }
+        },
+      }
+    })
+    if (!group) {
+      throw new TRPCError({ code: 'NOT_FOUND' })
+    }
+    const isMember = group.members.some((member) => member.id === ctx.user.id)
+    const isModerator = group.moderators.some((mod) => mod.id === ctx.user.id)
+    if (!isMember) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You must be a member of the group to add lists' })
+    }
+    if (group.onlyModsCanAddLists && !isModerator) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only moderators can add lists to this group' })
+    }
+    await ctx.prisma.list.update({
+      where: {
+        id: input.listId,
+      },
+      data: {
+        inGroups: {
+          connect: {
+            id: input.groupId,
+          },
+        },
+      },
+    })
+    return 'OK'
+  }),
+  joinGroup: protectedProcedure.input(
+    z.object({
+      id: z.string(),
+    })
+  ).mutation(async ({ ctx, input }) => {
+    const group = await ctx.prisma.group.findUnique({
+      where: {
+        id: input.id,
+      },
+      include: {
+        members: {
+          select: {
+            id: true,
+          }
+        }
+      }
+    })
+    if (!group) {
+      throw new TRPCError({ code: 'NOT_FOUND' })
+    }
+    if (group.members.some((member) => member.id === ctx.user.id)) {
+      throw new TRPCError({ code: 'BAD_REQUEST' })
+    }
+    if (group.approvalRequired) {
+      await ctx.prisma.group.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          approvalQueue: {
+            connect: {
+              id: ctx.user.id,
+            },
+          },
+        },
+      })
+      return 'PENDING'
+    }
+    await ctx.prisma.group.update({
+      where: {
+        id: input.id,
+      },
+      data: {
+        members: {
+          connect: {
+            id: ctx.user.id,
+          },
+        },
+      },
+    })
+    return 'OK'
+  }),
+  leaveGroup: protectedProcedure.input(
+    z.object({
+      id: z.string(),
+    })
+  ).mutation(async ({ ctx, input }) => {
+    const group = await ctx.prisma.group.findUnique({
+      where: {
+        id: input.id,
+      },
+    })
+    if (!group) {
+      throw new TRPCError({ code: 'NOT_FOUND' })
+    }
+    await ctx.prisma.group.update({
+      where: {
+        id: input.id,
+      },
+      data: {
+        members: {
+          disconnect: {
+            id: ctx.user.id,
+          },
+        },
+      },
+    })
+    return 'OK'
   }),
 } satisfies TRPCRouterRecord

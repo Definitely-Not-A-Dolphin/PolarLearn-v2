@@ -10,7 +10,6 @@ import gsap from "gsap";
 import { getRandomQuote } from "~/lib/quotes"
 import entree from "~/img/entree.svg"
 import i18n from "~/i18n";
-import { getBetterAuthErrorMessage } from "~/lib/auth/betterauth-i18n";
 import type { Route } from "./+types/sign-in";
 import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
@@ -93,12 +92,13 @@ export default function SignInPage() {
               password,
             }).then((res) => {
               if (res.error) {
-                toast.error(getBetterAuthErrorMessage(res.error));
+                const authError = res.error as { message?: string; originalMessage?: string };
+                toast.error(authError.message || authError.originalMessage || "Authentication failed.");
               } else {
                 void navigate("/app");
               }
             }).catch((err: unknown) => {
-              toast.error(getBetterAuthErrorMessage(err));
+              toast.error(err instanceof Error ? err.message || "Authentication failed." : "Authentication failed.");
             }).finally(() => {
               setIsLoading(false);
             });

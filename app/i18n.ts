@@ -56,7 +56,7 @@ function translate(key: string, options?: { defaultValue?: string } & Record<str
 
 const i18n = {
   get language() {
-    return process.env.APP_LANG;
+    return currentLanguage;
   },
   get isInitialized() {
     return initialized;

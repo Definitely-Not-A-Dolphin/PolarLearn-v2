@@ -26,16 +26,17 @@ function getQueryClient() {
   }
 }
 
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') return window.location.origin
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return `http://localhost:${(process.env.PORT ?? 3000).toString()}`
+function getBaseUrl() {
+  if (typeof window === 'undefined') {
+    return process.env.APP_BASE
+  }
+  return window.location.origin
 }
 
 const links = [
   loggerLink({
     enabled: (op) =>
-      process.env.NODE_ENV === 'development' ||
+      import.meta.env.DEV ||
       (op.direction === 'down' && op.result instanceof Error)
   }),
   httpBatchLink({

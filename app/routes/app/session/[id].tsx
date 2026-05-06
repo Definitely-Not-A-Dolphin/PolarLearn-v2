@@ -116,6 +116,7 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
     ...rpc.learning.updateSession.mutationOptions(),
     onError: () => {
       toast.error(t("learn.session.failedToSave"))
+      void navigate('/app')
     },
   })
   const { queue, answerLog, isComplete, getCurrentQuestion, submitAnswer, feedback, dismissFeedback, considerRight, listId } = useLearnStore()

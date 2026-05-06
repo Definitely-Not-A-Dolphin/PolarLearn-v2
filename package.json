@@ -6,13 +6,14 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "start": "prisma db push && react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@better-auth/i18n": "^1.6.9",
     "@better-auth/passkey": "^1.6.9",
     "@better-auth/sso": "^1.6.9",
     "@gsap/react": "^2.1.2",
