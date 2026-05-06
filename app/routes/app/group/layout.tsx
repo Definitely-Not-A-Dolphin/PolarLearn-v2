@@ -82,7 +82,7 @@ export default function Layout() {
   const [joinRequestSubmitted, setJoinRequestSubmitted] = useState(loaderData.isPending);
   const isJoinRequestPending = loaderData.isPending || joinRequestSubmitted;
   const revalidator = useRevalidator()
-  
+
 
   const addListMutation = useMutation({
     ...trpc.groups.addListToGroup.mutationOptions(),
@@ -161,91 +161,103 @@ export default function Layout() {
         </div>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{loaderData.group.description}</p>
       </div>
-      <div className="mt-4 flex flex-row items-center gap-3">
-        <Tabs
-          scheme={theme}
-          tabs={loaderData.tabs.map((tab: any) => tab.label)}
-          activeIndex={activeIndex === -1 ? 0 : activeIndex}
-          onActiveIndexChange={handleTabChange}
-        />
-        <div className="grow" />
-        {hasRecentLists && isModerator ? (
-          <>
-            <button
-              className="w-12 h-12 rounded-full dark:bg-neutral-800 bg-neutral-200 dark:hover:bg-neutral-700 hover:bg-neutral-300 transition-all cursor-pointer flex items-center justify-center m-1"
-              onClick={() => setAddListDialogOpen(true)}
-            >
-              <ListPlus />
-            </button>
-            <Dialog open={addListDialogOpen} onOpenChange={setAddListDialogOpen}>
-              <DialogContent>
-                <DialogTitle className="text-2xl font-bold">
-                  {t("lists.addListToGroup")}
-                </DialogTitle>
-                <div className="relative">
-                  <ScrollArea className={addListMutation.isPending ? "blur-sm" : ""}>
-                    {loaderData.recentLists.map((list: any) => {
-                      const hasSubject = typeof list.subject === "string"
-                        && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
-                      const subject = hasSubject
-                        ? subjectsList[list.subject as keyof typeof subjectsList]
-                        : null
-                      const subjectLabel = subject ? t(subject.labelKey) : ""
-                      return (
-                        <div
-                          key={list.id}
-                          role="button"
-                          tabIndex={0}
-                          className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
-                          onClick={() => {
-                            addListMutation.mutate({
-                              groupId: loaderData.group.id,
-                              listId: list.id,
-                            });
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="flex min-w-0 items-center gap-x-3 text-left"
-                          >
-                            {subject ? (
-                              <img src={subject.icon} alt={subjectLabel} className="h-6 w-6 shrink-0" />
-                            ) : (
-                              <List size={20} className="shrink-0" />
-                            )}
-                            <span className="truncate text-base font-semibold">
-                              {list.name ?? t("lists.namePlaceholder")}
-                            </span>
-                          </button>
+      {loaderData.group.approvalRequired && !loaderData.isMember ? (
+        <div className="mt-8 flex items-center justify-center">
+          <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-8 text-center dark:border-neutral-700 dark:bg-neutral-900">
+            <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+              {t("groups.privateGroup")}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 flex flex-row items-center gap-3">
+            <Tabs
+              scheme={theme}
+              tabs={loaderData.tabs.map((tab: any) => tab.label)}
+              activeIndex={activeIndex === -1 ? 0 : activeIndex}
+              onActiveIndexChange={handleTabChange}
+            />
+            <div className="grow" />
+            {hasRecentLists && isModerator ? (
+              <>
+                <button
+                  className="w-12 h-12 rounded-full dark:bg-neutral-800 bg-neutral-200 dark:hover:bg-neutral-700 hover:bg-neutral-300 transition-all cursor-pointer flex items-center justify-center m-1"
+                  onClick={() => setAddListDialogOpen(true)}
+                >
+                  <ListPlus />
+                </button>
+                <Dialog open={addListDialogOpen} onOpenChange={setAddListDialogOpen}>
+                  <DialogContent>
+                    <DialogTitle className="text-2xl font-bold">
+                      {t("lists.addListToGroup")}
+                    </DialogTitle>
+                    <div className="relative">
+                      <ScrollArea className={addListMutation.isPending ? "blur-sm" : ""}>
+                        {loaderData.recentLists.map((list: any) => {
+                          const hasSubject = typeof list.subject === "string"
+                            && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
+                          const subject = hasSubject
+                            ? subjectsList[list.subject as keyof typeof subjectsList]
+                            : null
+                          const subjectLabel = subject ? t(subject.labelKey) : ""
+                          return (
+                            <div
+                              key={list.id}
+                              role="button"
+                              tabIndex={0}
+                              className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
+                              onClick={() => {
+                                addListMutation.mutate({
+                                  groupId: loaderData.group.id,
+                                  listId: list.id,
+                                });
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="flex min-w-0 items-center gap-x-3 text-left"
+                              >
+                                {subject ? (
+                                  <img src={subject.icon} alt={subjectLabel} className="h-6 w-6 shrink-0" />
+                                ) : (
+                                  <List size={20} className="shrink-0" />
+                                )}
+                                <span className="truncate text-base font-semibold">
+                                  {list.name ?? t("lists.namePlaceholder")}
+                                </span>
+                              </button>
+                            </div>
+                          )
+                        })}
+                        <ScrollBar orientation="vertical" />
+                      </ScrollArea>
+                      {addListMutation.isPending && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="h-8 w-8 animate-spin" />
                         </div>
-                      )
-                    })}
-                    <ScrollBar orientation="vertical" />
-                  </ScrollArea>
-                  {addListMutation.isPending && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 animate-spin" />
+                      )}
                     </div>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="transparent"
-                    onClick={() => setAddListDialogOpen(false)}
-                    scheme={rootData!.theme}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </>
-        ) : null}
-      </div>
-      <hr />
-      <div className="py-4">
-        <Outlet />
-      </div>
+                    <DialogFooter>
+                      <Button
+                        variant="transparent"
+                        onClick={() => setAddListDialogOpen(false)}
+                        scheme={rootData!.theme}
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : null}
+          </div>
+          <hr />
+          <div className="py-4">
+            <Outlet />
+          </div>
+        </>
+      )}
     </div>
   );
 }
