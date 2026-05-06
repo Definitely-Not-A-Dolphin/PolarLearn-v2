@@ -78,7 +78,7 @@ export default function SettingsPage() {
             <CheckWithLabel
               label={t("groups.create.approvalRequiredLabel")}
               checked={approvalRequired}
-              onChange={() => setApprovalRequired((prev) => !prev)}
+              onChange={() => setApprovalRequired((prev: any) => !prev)}
               className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
             />
             <p className="ml-6 text-sm text-neutral-500 dark:text-neutral-400">
@@ -90,7 +90,7 @@ export default function SettingsPage() {
             <CheckWithLabel
               label={t("groups.create.onlyModsCanAddListsLabel")}
               checked={onlyModsCanAddLists}
-              onChange={() => setOnlyModsCanAddLists((prev) => !prev)}
+              onChange={() => setOnlyModsCanAddLists((prev: any) => !prev)}
               className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
             />
             <p className="ml-6 text-sm text-neutral-500 dark:text-neutral-400">
