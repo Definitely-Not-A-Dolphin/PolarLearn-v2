@@ -79,6 +79,23 @@
     "new": "Nieuw"
   },
   "groups": {
+    "members": "Leden",
+    "allMembers": "Alle leden",
+    "pendingMembers": "Wachtende leden",
+    "pending": "In afwachting",
+    "owner": "Eigenaar",
+    "moderator": "Beheerder",
+    "noMembers": "Er zijn nog geen leden in deze groep.",
+    "approve": "Goedkeuren",
+    "reject": "Afwijzen",
+    "memberApproved": "Lidmaatschapsaanvraag goedgekeurd.",
+    "memberRejected": "Lidmaatschapsaanvraag afgewezen.",
+    "promoteModerator": "Beheerder maken",
+    "unpromoteModerator": "Beheerderrechten intrekken",
+    "kickFromGroup": "Uit groep verwijderen",
+    "moderatorPromoted": "Gebruiker is beheerder geworden.",
+    "moderatorUnpromoted": "Beheerderrechten zijn ingetrokken.",
+    "memberKicked": "Lid is uit de groep verwijderd.",
     "create": {
       "title": "Nieuwe groep",
       "nameLabel": "Naam",
@@ -95,6 +112,9 @@
       "onlyModsCanAddListsDescription": "Gewone leden kunnen geen lijsten aan deze groep koppelen.",
       "create": "Groep aanmaken",
       "success": "Groep aangemaakt!"
+    },
+    "update": {
+      "success": "Groepsinstellingen opgeslagen!"
     }
   },
   "common": {

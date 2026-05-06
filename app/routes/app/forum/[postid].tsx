@@ -1,6 +1,6 @@
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { useLoaderData, useNavigate, useRevalidator, useRouteLoaderData } from "react-router";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
@@ -92,6 +92,7 @@ export default function PostPage() {
   const currentUserVote = (currentPost.currentUserVote as Vote | null | undefined) ?? null;
   const hasUpvoted = currentUserVote === "up";
   const hasDownvoted = currentUserVote === "down";
+  const revalidator = useRevalidator();
 
   const voteMutation = useMutation({
     ...trpc.forum.votePost.mutationOptions(),
@@ -128,7 +129,7 @@ export default function PostPage() {
   const deleteMutation = useMutation({
     ...trpc.forum.deletePost.mutationOptions(),
     onSuccess: async () => {
-      await queryClient.invalidateQueries(trpc.forum.getPosts.queryFilter());
+      revalidator.revalidate()
       setDeleteDialogOpen(false);
       toast.success(t("forum.post.deleted"));
 

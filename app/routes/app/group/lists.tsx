@@ -1,11 +1,28 @@
-import { useRouteLoaderData, useNavigate } from "react-router"
-import { List } from "lucide-react"
+import { useRouteLoaderData, useNavigate, useRevalidator } from "react-router"
+import { List, ListX } from "lucide-react"
 import { subjects as subjectsList } from "~/lib/subjects"
-import i18n, { t } from "~/i18n"
+import { t } from "~/i18n"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useTRPC } from "~/server/react"
+import { toast } from "sonner"
 
 export default function ListsPage() {
   const loaderData = useRouteLoaderData("../routes/app/group/layout")
   const navigate = useNavigate()
+  const trpc = useTRPC()
+  const canRemove = Boolean(loaderData.ownsGroup || loaderData.isModerator)
+  const revalidator = useRevalidator()
+
+  const removeMutation = useMutation({
+    ...trpc.groups.removeListFromGroup.mutationOptions(),
+    onSuccess: async () => {
+      toast.success(t("groups.listRemovedFromGroup"))
+      revalidator.revalidate()
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("errors.unknown"))
+    }
+  })
 
   return (
     <div className="w-full flex flex-col gap-y-3">
@@ -56,7 +73,20 @@ export default function ListsPage() {
               </button>
 
               <span className="shrink-0 text-sm text-neutral-600 dark:text-neutral-300">
-                {new Date(list.updatedAt).toLocaleDateString('nl-NL')}
+                {canRemove ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeMutation.mutate({ groupId: loaderData.group.id, listId: list.id })
+                    }}
+                    className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ListX />
+                  </button>
+                ) : (
+                  new Date(list.updatedAt).toLocaleDateString('nl-NL')
+                )}
               </span>
             </div>
           )

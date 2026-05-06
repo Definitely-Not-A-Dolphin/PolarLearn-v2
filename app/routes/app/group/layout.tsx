@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData, useLocation, useNavigate, useRouteLoaderData } from "react-router";
+import { Outlet, useLoaderData, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router";
 import { Button, Tabs } from "@polarnl/polarui-react";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
@@ -9,6 +9,7 @@ import { AvatarFallback, AvatarImage, Avatar } from "~/components/ui/avatar";
 import { List, ListPlus, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "~/components/ui/dialog";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { subjects as subjectsList } from "~/lib/subjects";
 import { useTRPC } from "~/server/react";
@@ -49,6 +50,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     ...(recentLists.length > 0 ? { recentLists } : {}),
     tabs: generateTabs(group.moderators.some((mod) => mod.id === context.user!.id)),
     ownsGroup: group.creatorId === context.user.id,
+    isModerator: group.moderators.some((mod) => mod.id === context.user!.id),
     isMember: group.members.some((member: any) => member.id === context.user!.id),
     isPending: Array.isArray(group.approvalQueue) && group.approvalQueue.some((u: any) => u.id === context.user!.id),
   }
@@ -61,6 +63,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const theme = rootData?.theme ?? "dark";
   const trpc = useTRPC();
+  const isModerator = loaderData.isModerator
+  const queryClient = useQueryClient();
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
   const basePath = "/app/group/" + loaderData.group.id;
@@ -77,10 +81,18 @@ export default function Layout() {
   const [addListDialogOpen, setAddListDialogOpen] = useState(false);
   const [joinRequestSubmitted, setJoinRequestSubmitted] = useState(loaderData.isPending);
   const isJoinRequestPending = loaderData.isPending || joinRequestSubmitted;
+  const revalidator = useRevalidator()
+  
 
   const addListMutation = useMutation({
     ...trpc.groups.addListToGroup.mutationOptions(),
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      if (result === 'ALREADY') {
+        toast.info(t("groups.listAlreadyInGroup"))
+        setAddListDialogOpen(false)
+        return
+      }
+      revalidator.revalidate();
       toast.success(t("groups.listAddedToGroup"));
       setAddListDialogOpen(false);
     },
@@ -107,6 +119,7 @@ export default function Layout() {
   const leaveGroupMutation = useMutation({
     ...trpc.groups.leaveGroup.mutationOptions(),
     onSuccess: () => {
+      revalidator.revalidate();
       toast.success(t("groups.leftGroup"));
       navigate("/app/groups");
     },
@@ -156,7 +169,7 @@ export default function Layout() {
           onActiveIndexChange={handleTabChange}
         />
         <div className="grow" />
-        {hasRecentLists ? (
+        {hasRecentLists && isModerator ? (
           <>
             <button
               className="w-12 h-12 rounded-full dark:bg-neutral-800 bg-neutral-200 dark:hover:bg-neutral-700 hover:bg-neutral-300 transition-all cursor-pointer flex items-center justify-center m-1"
