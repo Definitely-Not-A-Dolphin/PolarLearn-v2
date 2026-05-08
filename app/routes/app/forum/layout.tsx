@@ -1,4 +1,9 @@
-import { Outlet, useLocation, useNavigate, useRouteLoaderData } from "react-router";
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useRouteLoaderData,
+} from "react-router";
 import { Tabs } from "@polarnl/polarui-react";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
@@ -7,7 +12,7 @@ const tabs = [
   { label: t("forum.tabs.allPosts"), path: "posts" },
   { label: t("forum.tabs.myPosts"), path: "myPosts" },
   { label: t("forum.tabs.myReplies"), path: "myReplies" },
-]
+];
 
 export default function Layout() {
   const location = useLocation();
@@ -17,7 +22,11 @@ export default function Layout() {
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
   const basePath = "/app/forum";
-  const activeIndex = tabs.findIndex(({ path }) => normalizedPath === `${basePath}/${path}` || normalizedPath.startsWith(`${basePath}/${path}/`));
+  const activeIndex = tabs.findIndex(
+    ({ path }) =>
+      normalizedPath === `${basePath}/${path}` ||
+      normalizedPath.startsWith(`${basePath}/${path}/`),
+  );
 
   const handleTabChange = (idx: number) => {
     const tab = tabs[idx];
@@ -25,7 +34,6 @@ export default function Layout() {
       void navigate(`${basePath}/${tab.path}`);
     }
   };
-
 
   return (
     <div className="p-4">
