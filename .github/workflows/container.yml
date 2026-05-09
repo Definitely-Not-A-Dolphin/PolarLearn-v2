@@ -44,7 +44,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -56,3 +56,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Webhook
+        run: |
+          curl -u ${{ secrets.WEBHOOK_SECRET }} \
+            -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{"name":"ghcr.io/polarnl/polarlearn-v2","tag":"latest"}'
