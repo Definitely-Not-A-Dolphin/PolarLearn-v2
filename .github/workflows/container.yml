@@ -57,9 +57,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Webhook
+      - name: Restart PolarLearn deployment
         run: |
-          curl -u ${{ secrets.WEBHOOK_SECRET }} \
-            -X POST ${{ secrets.WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{"name":"ghcr.io/polarnl/polarlearn-v2","tag":"latest"}'
+          curl --silent --show-error --fail \
+            -X POST "${{ secrets.WEBHOOK_URL }}" \
+            -H "${{ secrets.WEBHOOK_SECRET }}"
