@@ -282,7 +282,7 @@ function AnimatedButton() {
       <Button onClick={() => {
         nav("/auth/sign-in")
       }}>
-        tuff
+        Start met leren
       </Button>
     </div>
   );
