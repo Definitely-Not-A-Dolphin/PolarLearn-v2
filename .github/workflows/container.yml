@@ -61,4 +61,4 @@ jobs:
         run: |
           curl --silent --show-error --fail \
             -X POST "${{ secrets.WEBHOOK_URL }}" \
-            -H "${{ secrets.WEBHOOK_SECRET }}"
+            -H "X-PolarNL-Authorization-Token: ${{ secrets.WEBHOOK_SECRET }}"
