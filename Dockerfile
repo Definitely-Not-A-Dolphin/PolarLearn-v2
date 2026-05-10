@@ -6,11 +6,11 @@ RUN apk add --no-cache openssl \
 
 FROM base AS development-dependencies-env
 COPY package.json pnpm-lock.yaml /app/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 FROM base AS production-dependencies-env
 COPY package.json pnpm-lock.yaml /app/
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
 
 FROM base AS build-env
 COPY . /app/
