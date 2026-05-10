@@ -1,7 +1,7 @@
 import { useLoaderData, useNavigate } from "react-router"
 import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
-import { buildSessionSummary, sessionSummaryLoaderSchema, type SessionSummaryLoaderData, type SessionSummarySource } from "~/lib/session-summary"
+import { buildSessionSummary, sessionSummaryLoaderSchema, type SessionSummaryLoaderData, type SessionSummarySource } from "~/lib/stats"
 import i18n from "~/i18n"
 import type { Route } from "./+types/stats"
 

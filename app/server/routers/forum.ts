@@ -102,6 +102,9 @@ export const forumRouter = createTRPCRouter({
     .input(createPostInputSchema)
     .output(createPostOutputSchema)
     .mutation(async ({ input, ctx }) => {
+      if (ctx.user.forumBanned) {
+        throw new TRPCError({ code: 'FORBIDDEN' })
+      }
       const { title, content, subject, category } = input
       if (category === "announcement" && ctx.user.role !== "admin") {
         throw new TRPCError({ code: 'FORBIDDEN' })
@@ -205,6 +208,9 @@ export const forumRouter = createTRPCRouter({
     .input(replyToPostInputSchema)
     .output(postSchema)
     .mutation(async ({ input, ctx }) => {
+      if (ctx.user.forumBanned) {
+        throw new TRPCError({ code: 'FORBIDDEN' })
+      }
       const { postId, content } = input
       const parentPost = await ctx.prisma.forumPost.findUnique({
         where: { id: postId },
@@ -260,7 +266,6 @@ export const forumRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const { postId, cursor, limit } = input
 
-      // First verify the parent post exists and is not deleted
       const parentPost = await ctx.prisma.forumPost.findUnique({
         where: { id: postId },
         select: { id: true, deleted: true },

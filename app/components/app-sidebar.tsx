@@ -168,7 +168,7 @@ export function AppSidebar() {
                       className={cn(
                         "relative flex size-9 shrink-0 items-center justify-center",
                         isActive &&
-                        "before:absolute before:inset-0 before:rounded-full before:bg-sky-400/40 before:content-['']"
+                        "before:absolute before:inset-0 before:rounded-md before:bg-sky-400/40 before:content-['']"
                       )}
                     >
                       <item.icon className="relative z-10 size-5 shrink-0" />
@@ -243,7 +243,7 @@ export function AppSidebar() {
                       scheme={theme}
                       className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                       icon={<ShieldUser size={20} />}
-                      onClick={() => void navigate("/administrator")}>
+                      onClick={() => void navigate("/app/administration")}>
                       {i18n.t("userMenu.admin")}
                     </Button>
                   </DropdownMenuGroup>

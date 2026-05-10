@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Globe, GraduationCap, Megaphone, type LucideIcon } from "lucide-react";
+import { SubjectNamesArray } from "./subjectnames";
 
 export type CategoryInfo = {
   label: string
@@ -78,7 +79,7 @@ export const editPostInputSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).max(255).optional(),
   content: z.string().min(1).optional(),
-  subject: z.string().min(1).max(255).optional(),
+  subject: z.enum(SubjectNamesArray).optional(),
   category: forumCategorySchema.optional(),
 });
 

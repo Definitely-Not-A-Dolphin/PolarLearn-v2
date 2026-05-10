@@ -18,6 +18,7 @@ import polarlearnLogo from "~/img/polarlearn.svg";
 import { auth } from "./lib/auth/server";
 import { TRPCReactProvider } from "./server/react";
 import type { RootLoaderData, Theme } from "./lib/root-data";
+import ImpersonationBanner from "./components/impersonation";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -36,6 +37,7 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
   const headers = new Headers(loaderArgs.request.headers)
   const result = await auth.api.getSession({ headers })
   const user = result?.user
+  const session = result?.session
   const theme: Theme = "dark"
 
   return {
@@ -47,7 +49,8 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
       image: user?.image ?? null,
       email: user?.email ?? null,
       role: user?.role ?? null,
-    }
+    },
+    impersonatedBy: session?.impersonatedBy ?? null,
   }
 }
 
@@ -69,6 +72,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="font-sans">
         <Toaster richColors position="top-center" theme={theme} />
         <TRPCReactProvider>
+          <ImpersonationBanner />
           {children}
         </TRPCReactProvider>
         <ScrollRestoration />

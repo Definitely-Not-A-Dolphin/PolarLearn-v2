@@ -2,7 +2,7 @@ import { useLoaderData, useNavigate } from "react-router";
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { MessageSquare, Pin } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { forumCategoryRequiresSubject, getCategoryInfo, type GetPostsOutput, type Post } from "~/lib/forum";
 import i18n from "~/i18n";
@@ -31,40 +31,52 @@ export async function loader({ request }: Route.LoaderArgs): Promise<{ initialPo
 export default function PostsPage() {
   const { initialPosts } = useLoaderData<typeof loader>();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const postsQueryOptions = trpc.forum.getPosts.queryOptions({
-    limit: 10,
-    cursor: cursor ?? undefined,
-  });
+  const [posts, setPosts] = useState<Post[]>(initialPosts.posts);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialPosts.nextCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const query = useQuery({
-    ...postsQueryOptions,
-  });
+  const fetchMore = async () => {
+    if (!nextCursor || isLoadingMore) {
+      return;
+    }
 
-  const currentData = query.data ?? initialPosts;
-  const posts = currentData.posts;
+    setIsLoadingMore(true);
+    setLoadError(null);
 
-  const fetchMore = () => {
-    if (currentData.nextCursor) {
-      setCursor(currentData.nextCursor);
+    try {
+      const nextPage = await queryClient.fetchQuery(
+        trpc.forum.getPosts.queryOptions({
+          limit: 10,
+          cursor: nextCursor,
+        }),
+      );
+
+      setPosts((currentPosts) => mergePostsById(currentPosts, nextPage.posts));
+      setNextCursor(nextPage.nextCursor);
+    } catch {
+      setLoadError(i18n.t("forum.posts.failedToLoad"));
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
-  if (query.isError) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-destructive">{i18n.t("forum.posts.failedToLoad")}</div>
-      </div>
-    );
-  }
-
   return (
-    <div>
+    <div className="flex flex-col gap-3">
+      {loadError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
+
       <InfiniteScroll
         dataLength={posts.length}
-        next={fetchMore}
-        hasMore={Boolean(currentData.nextCursor)}
+        next={() => {
+          void fetchMore();
+        }}
+        hasMore={Boolean(nextCursor)}
         loader={
           <div className="flex items-center justify-center p-4">
             <div className="text-muted-foreground">{i18n.t("forum.posts.loadingMore")}</div>
@@ -102,6 +114,20 @@ export default function PostsPage() {
       </InfiniteScroll>
     </div>
   );
+}
+
+function mergePostsById(currentPosts: Post[], nextPosts: Post[]) {
+  const seen = new Set(currentPosts.map((post) => post.id));
+  const mergedPosts = [...currentPosts];
+
+  for (const post of nextPosts) {
+    if (!seen.has(post.id)) {
+      seen.add(post.id);
+      mergedPosts.push(post);
+    }
+  }
+
+  return mergedPosts;
 }
 
 function PostCard({

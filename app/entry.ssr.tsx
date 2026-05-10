@@ -1,4 +1,5 @@
 import { createFromReadableStream } from "@vitejs/plugin-rsc/ssr";
+import type { ReactFormState } from "react-dom/client";
 import { renderToReadableStream } from "react-dom/server.edge";
 import {
   unstable_routeRSCServerRequest as routeRSCServerRequest,
@@ -17,7 +18,7 @@ export async function generateHTML(
     async renderHTML(getPayload, options) {
       const payload = await getPayload();
       const formState =
-        payload.type === "render" ? await payload.formState : undefined;
+        payload.type === "render" ? (await payload.formState) as ReactFormState : undefined;
       const bootstrapScriptContent =
         // @ts-expect-error - this is the internal vite api only exposed in node_modules.
         await import.meta.viteRsc.loadBootstrapScriptContent("index");

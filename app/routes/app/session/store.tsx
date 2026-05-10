@@ -164,9 +164,7 @@ export const createLearnStore = (initData: LearnStoreInitData) => {
 
     getProgress: () => {
       const state = get()
-      // Only count correct answers as completed - incorrect answers stay in queue for re-learning
       const completed = state.answerLog.filter((entry) => entry.isCorrect).length
-      // Dynamic total: current queue + correct answers (questions that have been answered correctly)
       const total = state.queue.length + completed
       const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 

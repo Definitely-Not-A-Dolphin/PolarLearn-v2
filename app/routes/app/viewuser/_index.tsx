@@ -9,7 +9,7 @@ export async function loader({ params }: Route.LoaderArgs) {
     throw new Response("", { status: 400 });
   }
 
-  return redirect(`/app/viewuser/${id}/folders`);
+  return redirect(`/app/viewuser/${id}/lists`);
 }
 
 export default function ViewUserIndexRoute() {

@@ -1,37 +1,37 @@
 import { Button, Input } from "@polarnl/polarui-react";
-import { Mail, Lock, Loader2, LogIn } from "lucide-react"
+import { Mail, Lock, Loader2, LogIn } from "lucide-react";
 import { Link, useLoaderData, useRouteLoaderData, useNavigate, redirect } from "react-router";
-import { Image } from "@unpic/react"
+import { Image } from "@unpic/react";
 import { useState, useRef } from "react";
-import { toast } from "sonner"
+import { toast } from "sonner";
 import { authClient } from "~/lib/auth/client";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { getRandomQuote } from "~/lib/quotes"
-import entree from "~/img/entree.svg"
+import { getRandomQuote } from "~/lib/quotes";
+import entree from "~/img/entree.svg";
 import i18n from "~/i18n";
 import type { Route } from "./+types/sign-in";
 import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
 
+gsap.registerPlugin(useGSAP);
+
 export async function loader(loaderArgs: Route.LoaderArgs) {
-  const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
-  const user = result?.user
-  if (user) {
-    return redirect('/app')
-  }
+  const headers = new Headers(loaderArgs.request.headers);
+  const result = await auth.api.getSession({ headers });
+  if (result?.user) return redirect("/app");
 
   const lang = process.env.APP_LANG ?? "nl";
 
   return {
     quote: getRandomQuote(lang),
-    enableEntreeFederatedSignIn: !!process.env.ENTREE_THING // We do not have a contract w/ kennisnet yet, later replace with actual env var
+    enableEntreeFederatedSignIn: !!process.env.ENTREE_THING,
+    smtpEnabled: !!process.env.SMTP_HOST,
   };
 }
 
 export default function SignInPage() {
-  const { quote, enableEntreeFederatedSignIn } = useLoaderData<typeof loader>();
+  const { quote, enableEntreeFederatedSignIn, smtpEnabled } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
@@ -44,8 +44,6 @@ export default function SignInPage() {
 
   const passwordContainerRef = useRef<HTMLDivElement>(null);
 
-  gsap.registerPlugin(useGSAP);
-
   useGSAP(() => {
     if (showPassword && passwordContainerRef.current) {
       void gsap.fromTo(
@@ -55,6 +53,51 @@ export default function SignInPage() {
       );
     }
   }, [showPassword]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      // Logic for prioritizing SSO if it is linked to an SSO-enforced org
+      if (!showPassword) {
+        const sso = await authClient.signIn.sso({
+          email,
+          callbackURL: "/app",
+        });
+        if (sso.error) {
+          setShowPassword(true);
+        }
+        return;
+      }
+
+      const { data, error } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: "/app",
+      });
+
+      if (error) {
+        if (error.status === 403) {
+          if (smtpEnabled) {
+            toast.success(t("auth.signIn.notActivated"));
+          } else {
+            toast.error(t("errors.unknown"));
+          }
+        } else {
+          toast.error(error.message ?? t("auth.errors.unknown"));
+        }
+        return;
+      }
+
+      void navigate("/app");
+    } catch (err: any) {
+      toast.error(err?.message ?? t("auth.errors.unknown"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-row h-screen w-screen">
@@ -69,61 +112,33 @@ export default function SignInPage() {
       <div className="p-10 w-full md:w-[33%] flex flex-col">
         <h1 className="text-5xl font-bold">{t("auth:signIn.title")}</h1>
         <p className="text-xl mt-3">{t("auth:signIn.subtitle")}</p>
-        <form onSubmit={(e: React.SyntheticEvent) => {
-          e.preventDefault();
-          setIsLoading(true);
-
-          if (!showPassword) {
-            authClient.signIn.sso({
-              email: email,
-              callbackURL: "/app",
-            }).then((sso) => {
-              if (sso.error) {
-                setShowPassword(true);
-              }
-            }).catch(() => {
-              setShowPassword(true);
-            }).finally(() => {
-              setIsLoading(false);
-            });
-          } else {
-            authClient.signIn.email({
-              email,
-              password,
-            }).then((res) => {
-              if (res.error) {
-                const authError = res.error as { message?: string; originalMessage?: string };
-                toast.error(authError.message || authError.originalMessage || "Authentication failed.");
-              } else {
-                void navigate("/app");
-              }
-            }).catch((err: unknown) => {
-              toast.error(err instanceof Error ? err.message || "Authentication failed." : "Authentication failed.");
-            }).finally(() => {
-              setIsLoading(false);
-            });
-          }
-        }}>
+        <form onSubmit={(e) => { void handleSubmit(e); }}>
           <label
             htmlFor="email"
-            className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>
+            className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
+          >
             {t("auth:signIn.email")}
           </label>
           <Input
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
             placeholder={t("auth:signIn.emailPlaceholder")}
-            className="w-full "
+            className="w-full"
             value={email}
             onChange={(e) => { setEmail(e.target.value); }}
             disabled={showPassword}
             required
           />
 
-          <div ref={passwordContainerRef} className="overflow-hidden opacity-0" style={{ height: showPassword ? "auto" : 0 }}>
+          <div
+            ref={passwordContainerRef}
+            className="overflow-hidden opacity-0"
+            style={{ height: showPassword ? "auto" : 0 }}
+          >
             <label
               htmlFor="password"
-              className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}>
+              className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
+            >
               {t("auth:signIn.password")}
             </label>
             <Input
@@ -138,7 +153,8 @@ export default function SignInPage() {
             />
             <Link
               to="/auth/forgot-pass"
-              className="text-md text-sky-400 font-bold block mb-2">
+              className="text-md text-sky-400 font-bold block mb-2"
+            >
               {t("auth:signIn.forgotPassword")}
             </Link>
           </div>
@@ -149,32 +165,42 @@ export default function SignInPage() {
             className="w-full mt-5"
             type="submit"
             disabled={isLoading}
-            icon={isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}>
-            {isLoading ? t("auth:signIn.loading") : (showPassword ? t("auth:actions.login") : t("auth:signIn.continue"))}
+            icon={isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
+          >
+            {isLoading
+              ? t("auth:signIn.loading")
+              : showPassword
+                ? t("auth:actions.login")
+                : t("auth:signIn.continue")}
           </Button>
+
           <div className="w-full items-center justify-center mt-4 flex gap-1">
-            <p className="font-bold">
-              {t("auth:signIn.noAccount")}
-            </p>
+            <p className="font-bold">{t("auth:signIn.noAccount")}</p>
             <Link
               to="/auth/sign-up"
-              className="text-md text-sky-400 font-bold hover:underline">
+              className="text-md text-sky-400 font-bold hover:underline"
+            >
               {t("auth:signIn.createOne")}
             </Link>
           </div>
+
           <div className="flex flex-col gap-4">
             {rootData?.lang === "nl" && enableEntreeFederatedSignIn ? (
               <>
                 <div className="flex items-center my-4">
                   <hr className="grow border-neutral-600" />
-                  <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">{t("auth:signIn.separator")}</span>
+                  <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">
+                    {t("auth:signIn.separator")}
+                  </span>
                   <hr className="grow border-neutral-600" />
                 </div>
                 <Button
                   textColor={theme === "dark" ? "white" : "black"}
-                  className="w-full" type="button"
+                  className="w-full"
+                  type="button"
                   color={theme === "dark" ? "dark" : "light"}
-                  icon={<Image src={entree} width={23} height={23} />}>
+                  icon={<Image src={entree} width={23} height={23} />}
+                >
                   {t("auth:signIn.entree")}
                 </Button>
               </>
@@ -183,5 +209,5 @@ export default function SignInPage() {
         </form>
       </div>
     </div>
-  )
+  );
 }

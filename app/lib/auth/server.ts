@@ -2,13 +2,19 @@ import { prisma } from "../db";
 import { betterAuth, logger } from "better-auth";
 import { i18n as betterAuthI18n } from "@better-auth/i18n";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { admin, organization, username } from "better-auth/plugins"
+import { admin, username } from "better-auth/plugins"
 import { createAuthMiddleware, getIp } from "better-auth/api";
 import { sso } from "@better-auth/sso"
 import { passkey } from "@better-auth/passkey"
+import { readFile } from "node:fs/promises";
+import nunjucks from "nunjucks";
 import { logger as appLogger } from "../logger"
 import { betterAuthTranslations } from "./betterauth-i18n";
 import i18n from "~/i18n";
+import { smtpTransport } from "~/lib/smtp";
+
+const activationEmailTemplateUrl = new URL("./activation-email.html", import.meta.url);
+const forgotPasswordEmailTemplateUrl = new URL("./forgot-password-email.html", import.meta.url);
 
 export const auth = betterAuth({
   telemetry: {
@@ -17,15 +23,86 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql"
   }),
-  // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
   baseURL: process.env.APP_BASE as string,
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: !!process.env.SMTP_HOST,
+    sendResetPassword: async ({ user, url }) => {
+      if (!smtpTransport) {
+        appLogger.warn({
+          event: "auth.email.verification.skipped",
+          reason: "smtp-not-configured",
+          userId: user.id,
+          email: user.email,
+        })
+        return
+      }
+      const template = await readFile(forgotPasswordEmailTemplateUrl, "utf8")
+      const html = nunjucks.renderString(template, {
+        username: user.name?.trim() || user.email.split("@")[0] || "",
+        reset_url: url,
+      })
+      await smtpTransport.sendMail({
+        from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+        to: user.email,
+        subject: "PolarLearn | Wachtwoord Resetten",
+        html,
+      })
+    },
+    revokeSessionsOnPasswordReset: true
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }, request) => {
+      if (!smtpTransport) {
+        appLogger.warn({
+          event: "auth.email.verification.skipped",
+          reason: "smtp-not-configured",
+          userId: user.id,
+          email: user.email,
+        })
+        return
+      }
+
+      const username = user.name?.trim() || user.email.split("@")[0] || ""
+      const fromAddress = process.env.SMTP_FROM ?? process.env.SMTP_USER
+
+      if (!fromAddress) {
+        throw new Error("NO_SMTP")
+      }
+
+      const template = await readFile(activationEmailTemplateUrl, "utf8")
+      const html = nunjucks.renderString(template, {
+        username,
+        activation_url: url,
+      })
+
+      await smtpTransport.sendMail({
+        from: fromAddress,
+        to: user.email,
+        subject: "PolarLearn | Activeer je account",
+        html,
+      })
+    },
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true
   },
   user: {
     deleteUser: {
       enabled: true
+    },
+    additionalFields: {
+      forumBanned: {
+        type: "boolean",
+      },
+      forumBanReason: {
+        type: "string",
+        nullable: true,
+      },
+      banReason: {
+        type: "string",
+        nullable: true,
+      },
     }
   },
   secret: process.env.SECRET,

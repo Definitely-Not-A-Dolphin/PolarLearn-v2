@@ -89,6 +89,17 @@ export class Subject {
   public getIcon(subject: SubjectNames, props: SubjectIconProps = {}) {
     const metadata = subjects[subject]
 
+    if (!metadata) {
+      return <Image
+        src={subjectIcons.other}
+        alt={this.getSubjectNameById("other")}
+        layout="fixed"
+        width={24}
+        height={24}
+        {...props}
+      />
+    }
+    
     return (
       <Image
         src={metadata.icon}
@@ -103,6 +114,6 @@ export class Subject {
 
   public getSubjectNameById(id: SubjectNames): string {
     const metadata = subjects[id]
-    return i18n.t(metadata.labelKey)
+    return i18n.t(metadata.labelKey || id)
   }
 }

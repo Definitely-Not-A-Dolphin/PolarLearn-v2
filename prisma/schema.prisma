@@ -28,7 +28,9 @@ model User {
 
   role       String?
   banned     Boolean?  @default(false)
-  banReason  String?
+  banReason String?
+  forumBanned Boolean?  @default(false)
+  forumBanReason String?
   banExpires DateTime?
   passkeys   Passkey[]
 
