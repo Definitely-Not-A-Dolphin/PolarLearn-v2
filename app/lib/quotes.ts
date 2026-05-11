@@ -8,64 +8,69 @@ export const quotes: Quote[] = [
   {
     text: "Open Source zal voor altijd heersen.",
     author: "Andrei K. (Stichter PolarNL)",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Open Source will reign forever.",
     author: "Andrei K. (Founder of PolarNL)",
-    lang: "en"
+    lang: "en",
   },
   {
     text: "2 + 2 = 5",
     author: "Siem",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "2 + 2 = 5",
     author: "Siem",
-    lang: "en"
+    lang: "en",
   },
   {
     text: "Ik kan geen quote verzinnen dus hier is een koekje 🍪",
     author: "Andrei. K",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "The cake is a lie",
     author: "Siem",
-    lang: "en"
+    lang: "en",
   },
   {
     text: "Stille werk. Luide toekomst.",
     author: "Nerissa Z.",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Gebouwd door discipline, niet door geluk.",
     author: "Nerissa Z.",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Gemaakt met ❤️",
     author: "Team PolarNL",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Een klant is meer dan data waard.",
     author: "Quinn",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Veni, Vidi, Vici.",
     author: "Julius Caesar",
-    lang: "nl"
+    lang: "nl",
   },
   {
     text: "Veni, Vidi, Vici.",
     author: "Julius Caesar",
-    lang: "en"
-  }
-]
+    lang: "en",
+  },
+  {
+    text: "Oefening baart kunst. (vaak dan)",
+    author: "Jessi Flessi",
+    lang: "nl",
+  },
+];
 
 export function getRandomQuote(lang: string): Quote {
   const filteredQuotes = quotes.filter((quote) => quote.lang === lang);

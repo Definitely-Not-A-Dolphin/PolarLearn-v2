@@ -1,6 +1,14 @@
-import { useNavigate, useRouteLoaderData, useLocation } from "react-router"
-import type { ReactElement } from "react"
-import { Cog, Home, MessageCircle, PanelLeftClose, PanelLeftOpen, ShieldUser, Users } from "lucide-react"
+import { useNavigate, useRouteLoaderData, useLocation } from "react-router";
+import type { ReactElement } from "react";
+import {
+  Cog,
+  Home,
+  MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShieldUser,
+  Users,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -11,12 +19,12 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar,
-} from "~/components/ui/sidebar"
+} from "~/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "~/components/ui/tooltip"
+} from "~/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,27 +32,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
-import i18n from "~/i18n"
-import { Button } from "@polarnl/polarui-react"
-import { cn } from "~/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { authClient } from "~/lib/auth/client"
-import pl_logo from "~/img/polarlearn.svg"
-import { ChevronsUpDown, LogOut } from "lucide-react"
-import type { RootLoaderData } from "~/lib/root-data"
+} from "~/components/ui/dropdown-menu";
+import i18n from "~/i18n";
+import { Button } from "@polarnl/polarui-react";
+import { cn } from "~/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { authClient } from "~/lib/auth/client";
+import pl_logo from "~/img/polarlearn.svg";
+import { ChevronsUpDown, LogOut } from "lucide-react";
+import type { RootLoaderData } from "~/lib/root-data";
 
 function SidebarTooltip({
   label,
   children,
 }: {
-  label: string
-  children: ReactElement
+  label: string;
+  children: ReactElement;
 }) {
-  const { state } = useSidebar()
+  const { state } = useSidebar();
 
   if (state === "expanded") {
-    return children
+    return children;
   }
 
   return (
@@ -54,11 +62,11 @@ function SidebarTooltip({
         {label}
       </TooltipContent>
     </Tooltip>
-  )
+  );
 }
 
 function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
-  const Icon = isCollapsed ? PanelLeftOpen : PanelLeftClose
+  const Icon = isCollapsed ? PanelLeftOpen : PanelLeftClose;
 
   return (
     <div className="relative flex size-9 shrink-0 items-center justify-center text-sidebar-primary-foreground">
@@ -69,51 +77,60 @@ function SidebarToggleIcon({ isCollapsed }: { isCollapsed: boolean }) {
       />
       <Icon className="absolute inset-0 m-auto size-5 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-black dark:text-white " />
     </div>
-  )
+  );
 }
 
 export function AppSidebar() {
-  const { toggleSidebar, state, isMobile } = useSidebar()
-  const showLabels = isMobile || state === "expanded"
-  const isCollapsed = state === "collapsed"
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { toggleSidebar, state, isMobile } = useSidebar();
+  const showLabels = isMobile || state === "expanded";
+  const isCollapsed = state === "collapsed";
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/"
-  const currentPath = normalizePath(location.pathname)
+  const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/";
+  const currentPath = normalizePath(location.pathname);
 
   const rootData = useRouteLoaderData<RootLoaderData>("root");
-  const theme = rootData?.theme ?? "dark"
-  const user = rootData?.user
+  const theme = rootData?.theme ?? "dark";
+  const user = rootData?.user;
 
   const navItems = [
     { title: "navigation.home", icon: Home, url: "/app" },
     { title: "navigation.forum", icon: MessageCircle, url: "/app/forum" },
     { title: "navigation.groups", icon: Users, url: "/app/groups" },
-  ]
+  ];
 
   const isActiveNavItem = (itemUrl: string) => {
-    const normalizedItemUrl = normalizePath(itemUrl)
+    const normalizedItemUrl = normalizePath(itemUrl);
 
     if (normalizedItemUrl === "/app") {
-      return currentPath === normalizedItemUrl
+      return currentPath === normalizedItemUrl;
     }
 
-    return currentPath === normalizedItemUrl || currentPath.startsWith(`${normalizedItemUrl}/`)
-  }
+    return (
+      currentPath === normalizedItemUrl ||
+      currentPath.startsWith(`${normalizedItemUrl}/`)
+    );
+  };
 
   const handleLogout = () => {
     void authClient.signOut().then(() => {
       void navigate("/auth/sign-in");
     });
-  }
+  };
 
-  if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/session/")) {
+  if (
+    location.pathname.startsWith("/app/editlist/") ||
+    location.pathname.startsWith("/app/session/")
+  ) {
     return null;
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-neutral-700 bg-neutral-800">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-neutral-700 bg-neutral-800"
+    >
       <SidebarHeader className="hidden py-4 md:flex">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -129,7 +146,7 @@ export function AppSidebar() {
                 scheme={theme}
                 className={cn(
                   "group flex h-9 w-full items-center rounded-xl",
-                  showLabels ? "justify-start" : "justify-center p-0!"
+                  showLabels ? "justify-start" : "justify-center p-0!",
                 )}
                 onClick={toggleSidebar}
               >
@@ -137,7 +154,9 @@ export function AppSidebar() {
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left leading-none ml-2">
                     <span className="truncate text-xl font-bold font-heading flex-row flex text-neutral-700 dark:text-white">
-                      <p className=" bg-linear-to-r from-sky-400 to-sky-100 bg-clip-text text-transparent">Polar</p>
+                      <p className=" bg-linear-to-r from-sky-400 to-sky-100 bg-clip-text text-transparent">
+                        Polar
+                      </p>
                       Learn
                     </span>
                   </div>
@@ -151,7 +170,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         <SidebarMenu className="gap-2">
           {navItems.map((item) => {
-            const isActive = isActiveNavItem(item.url)
+            const isActive = isActiveNavItem(item.url);
             return (
               <SidebarMenuItem key={item.url}>
                 <SidebarTooltip label={i18n.t(item.title)}>
@@ -173,11 +192,15 @@ export function AppSidebar() {
                     >
                       <item.icon className="relative z-10 size-5 shrink-0" />
                     </div>
-                    {showLabels && <span className="truncate ml-2">{i18n.t(item.title)}</span>}
+                    {showLabels && (
+                      <span className="truncate ml-2">
+                        {i18n.t(item.title)}
+                      </span>
+                    )}
                   </Button>
                 </SidebarTooltip>
               </SidebarMenuItem>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarContent>
@@ -192,7 +215,7 @@ export function AppSidebar() {
                   variant={"transparent"}
                   className={cn(
                     "flex h-10 w-full items-center rounded-xl py-2",
-                    isCollapsed ? "justify-center" : "justify-start px-2"
+                    isCollapsed ? "justify-center" : "justify-start px-2",
                   )}
                 >
                   <Avatar>
@@ -220,7 +243,7 @@ export function AppSidebar() {
                 className="w-64 ml-2 rounded-lg border p-1 dark:bg-neutral-800"
               >
                 <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-3 px-2 py-1.5 text-left">
+                  <div className="flex items-center gap-3 px-2 py-1.5 text-left text-white">
                     <Avatar>
                       <AvatarImage src={user?.image ?? undefined} />
                       <AvatarFallback>
@@ -228,8 +251,14 @@ export function AppSidebar() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-sm leading-tight">
-                      <span className="truncate font-medium">{user?.name ?? i18n.t("userMenu.guest")}</span>
-                      {user?.email ? <span className="truncate text-xs text-muted-foreground">{user.email}</span> : null}
+                      <span className="truncate font-medium">
+                        {user?.name ?? i18n.t("userMenu.guest")}
+                      </span>
+                      {user?.email ? (
+                        <span className="truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -255,7 +284,8 @@ export function AppSidebar() {
                     scheme={theme}
                     className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
                     icon={<Cog size={20} />}
-                    onClick={() => void navigate("/app/usersettings")}>
+                    onClick={() => void navigate("/app/usersettings")}
+                  >
                     {i18n.t("userMenu.settings")}
                   </Button>
                 </DropdownMenuGroup>
@@ -266,7 +296,9 @@ export function AppSidebar() {
                   variant="transparent"
                   scheme={theme}
                   className="gap-2 hover:cursor-pointer font-bold w-full text-xs"
-                  onClick={() => { handleLogout() }}
+                  onClick={() => {
+                    handleLogout();
+                  }}
                   icon={<LogOut size={20} />}
                 >
                   {i18n.t("userMenu.logout")}
@@ -278,5 +310,5 @@ export function AppSidebar() {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

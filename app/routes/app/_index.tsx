@@ -1,8 +1,12 @@
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
 import { List, Star, ListX } from "lucide-react";
-import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area"
-import { RecentListsSchema, RecentSubjectsSchema, extractRecentItems } from "~/lib/list";
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import {
+  RecentListsSchema,
+  RecentSubjectsSchema,
+  extractRecentItems,
+} from "~/lib/list";
 import z from "zod";
 import { subjects as subjectsList } from "~/lib/subjects";
 import { useMutation } from "@tanstack/react-query";
@@ -14,50 +18,50 @@ import { appRouter } from "~/server/main";
 
 interface LoaderData {
   recentItems: {
-    recent_subjects: z.infer<typeof RecentSubjectsSchema>,
+    recent_subjects: z.infer<typeof RecentSubjectsSchema>;
     recent_lists: (z.infer<typeof RecentListsSchema>[number] & {
-      name?: string,
-      subject?: string,
-      authorId?: string,
-      authorName?: string,
-    })[]
-  }
+      name?: string;
+      subject?: string;
+      authorId?: string;
+      authorName?: string;
+    })[];
+  };
 }
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
-  const headers = new Headers(loaderArgs.request.headers)
-  const context = await createTRPCContext({ headers })
+  const headers = new Headers(loaderArgs.request.headers);
+  const context = await createTRPCContext({ headers });
   if (!context.user) {
-    throw new Response("Unauthorized", { status: 401 })
+    throw new Response("Unauthorized", { status: 401 });
   }
-  const caller = createCallerFactory(appRouter)(context)
-  const recentLists = await caller.list.getRecentLists()
-  const recentSubjects = await caller.list.getRecentSubjects()
+  const caller = createCallerFactory(appRouter)(context);
+  const recentLists = await caller.list.getRecentLists();
+  const recentSubjects = await caller.list.getRecentSubjects();
 
   return {
     recentItems: {
       recent_lists: recentLists,
       recent_subjects: recentSubjects,
-    }
-  }
+    },
+  };
 }
 
 export default function HomePage() {
-  const navigate = useNavigate()
-  const revalidator = useRevalidator()
-  const trpc = useTRPC()
+  const navigate = useNavigate();
+  const revalidator = useRevalidator();
+  const trpc = useTRPC();
   const t = i18n.t;
   const removeRecentListMutation = useMutation({
     ...trpc.list.rmListFromRecent.mutationOptions(),
     onSuccess: async () => {
-      await revalidator.revalidate()
+      await revalidator.revalidate();
     },
     onError: () => {
-      toast.error(t("errors.unknown"))
+      toast.error(t("errors.unknown"));
     },
-  })
+  });
 
-  const { recentItems } = useLoaderData<LoaderData>()
+  const { recentItems } = useLoaderData<LoaderData>();
   return (
     <div className="flex min-w-0 flex-col p-4">
       <h1 className="font-bold text-3xl">{t("home.quickstart")}</h1>
@@ -66,7 +70,9 @@ export default function HomePage() {
           <button
             type="button"
             className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/favorites"); }}
+            onClick={() => {
+              void navigate("/app/favorites");
+            }}
           >
             <Star size={48} />
             <h1 className="font-bold">{t("favorites.title")}</h1>
@@ -74,7 +80,9 @@ export default function HomePage() {
           <button
             type="button"
             className="flex flex-col gap-y-2 p-2 h-30 w-50 bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:bg-neutral-200 transition-all rounded-xl items-center justify-center cursor-pointer border-none"
-            onClick={() => { void navigate("/app/mylists"); }}
+            onClick={() => {
+              void navigate("/app/mylists");
+            }}
           >
             <List size={48} />
             <h1 className="font-bold">{t("mylists.title")}</h1>
@@ -91,30 +99,46 @@ export default function HomePage() {
             </div>
           )}
           <div className="flex w-max flex-row gap-x-4">
-            {recentItems.recent_subjects.length === 0 ? (
-              Object.entries(subjectsList).map(([subjectName, subject]) => {
-                const subjectLabel = t(subject.labelKey);
+            {recentItems.recent_subjects.length === 0
+              ? Object.entries(subjectsList).map(([subjectName, subject]) => {
+                  const subjectLabel = t(subject.labelKey);
 
-                return (
-                  <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl">
-                    <img src={subject.icon} alt={subjectLabel} className="h-8 w-8 relative z-10" />
-                    <h2 className="font-bold relative z-10">{subjectLabel}</h2>
-                  </div>
-                );
-              })
-            ) : (
-              recentItems.recent_subjects.map((subjectName) => {
-                const subject = subjectsList[subjectName];
-                if (subjectName === "other") return null
-                const subjectLabel = t(subject.labelKey);
-                return (
-                  <div key={subjectName} className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center">
-                    <img src={subject.icon} alt={subjectLabel} className="h-8 w-8 relative z-10" />
-                    <h2 className="font-bold relative z-10">{subjectLabel}</h2>
-                  </div>
-                );
-              })
-            )}
+                  return (
+                    <div
+                      key={subjectName}
+                      className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl"
+                    >
+                      <img
+                        src={subject.icon}
+                        alt={subjectLabel}
+                        className="h-8 w-8 relative z-10"
+                      />
+                      <h2 className="font-bold relative z-10">
+                        {subjectLabel}
+                      </h2>
+                    </div>
+                  );
+                })
+              : recentItems.recent_subjects.map((subjectName) => {
+                  const subject = subjectsList[subjectName];
+                  if (subjectName === "other") return null;
+                  const subjectLabel = t(subject.labelKey);
+                  return (
+                    <div
+                      key={subjectName}
+                      className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center"
+                    >
+                      <img
+                        src={subject.icon}
+                        alt={subjectLabel}
+                        className="h-8 w-8 relative z-10"
+                      />
+                      <h2 className="font-bold relative z-10">
+                        {subjectLabel}
+                      </h2>
+                    </div>
+                  );
+                })}
           </div>
         </div>
         <ScrollBar orientation="horizontal" />
@@ -128,12 +152,13 @@ export default function HomePage() {
           </div>
         ) : (
           recentItems.recent_lists.map((list: any) => {
-            const hasSubject = typeof list.subject === "string"
-              && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
+            const hasSubject =
+              typeof list.subject === "string" &&
+              Object.prototype.hasOwnProperty.call(subjectsList, list.subject);
             const subject = hasSubject
               ? subjectsList[list.subject as keyof typeof subjectsList]
-              : null
-            const subjectLabel = subject ? t(subject.labelKey) : null
+              : null;
+            const subjectLabel = subject ? t(subject.labelKey) : null;
 
             return (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events
@@ -142,14 +167,20 @@ export default function HomePage() {
                 role="button"
                 tabIndex={0}
                 className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
-                onClick={() => { void navigate(`/app/viewlist/${list.id}`); }}
+                onClick={() => {
+                  void navigate(`/app/viewlist/${list.id}`);
+                }}
               >
                 <button
                   type="button"
                   className="flex min-w-0 items-center gap-x-3 text-left"
                 >
                   {subject ? (
-                    <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
+                    <img
+                      src={subject.icon}
+                      alt={subjectLabel ?? ""}
+                      className="h-6 w-6 shrink-0"
+                    />
                   ) : (
                     <List size={20} className="shrink-0" />
                   )}
@@ -180,7 +211,7 @@ export default function HomePage() {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      removeRecentListMutation.mutate({ listId: list.id })
+                      removeRecentListMutation.mutate({ listId: list.id });
                     }}
                     className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -188,7 +219,7 @@ export default function HomePage() {
                   </button>
                 </span>
               </div>
-            )
+            );
           })
         )}
       </div>
