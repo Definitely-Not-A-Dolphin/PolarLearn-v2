@@ -1,7 +1,7 @@
 import { useLoaderData, useNavigate } from "react-router";
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { MessageSquare, Pin } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import {
