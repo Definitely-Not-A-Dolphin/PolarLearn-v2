@@ -349,6 +349,11 @@ export const forumRouter = createTRPCRouter({
           category: category ?? undefined,
         },
         include: {
+          replyTo: {
+            select: {
+              title: true,
+            },
+          },
           author: {
             select: {
               id: true,
@@ -375,6 +380,7 @@ export const forumRouter = createTRPCRouter({
       const currentUserId = ctx.user?.id ?? null;
       const repliesWithVote = replies.map((reply) => ({
         ...reply,
+        replyToTitle: reply.replyTo?.title ?? null,
         currentUserVote: getUserVote(reply.voters, currentUserId),
       }));
 

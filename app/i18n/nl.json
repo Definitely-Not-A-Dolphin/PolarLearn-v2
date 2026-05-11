@@ -433,7 +433,9 @@
     },
     "myReplies": {
       "empty": "Je hebt nog geen reacties geplaatst",
-      "emptyDescription": "Reageer op posts in het forum en je reacties verschijnen hier automatisch."
+      "emptyDescription": "Reageer op posts in het forum en je reacties verschijnen hier automatisch.",
+      "originalPostLabel": "Originele post",
+      "unknownOriginalPost": "Onbekende post"
     },
     "reply": {
       "created": "Reactie geplaatst!",

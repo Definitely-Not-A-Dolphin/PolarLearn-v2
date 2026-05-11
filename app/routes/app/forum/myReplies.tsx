@@ -192,9 +192,12 @@ function ReplyCard({ reply, onClick }: { reply: Post; onClick: () => void }) {
               {formatDate(reply.createdAt)}
             </span>
           </div>
+          <div className="text-lg font-semibold text-foreground">
+            {reply.replyToTitle ?? t("forum.myReplies.unknownOriginalPost")}
+          </div>
 
           {reply.content && (
-            <p className="mb-3 text-sm text-foreground">{reply.content}</p>
+            <p className="mb-1 mt-1 text-sm text-foreground">{reply.content}</p>
           )}
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

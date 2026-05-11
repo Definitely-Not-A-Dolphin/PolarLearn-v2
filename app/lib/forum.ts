@@ -184,6 +184,7 @@ export const postSchema = z.object({
   category: forumCategorySchema,
   subject: z.string().nullable(),
   replyToId: z.string().nullable().optional(),
+  replyToTitle: z.string().nullable().optional(),
   pinned: z.boolean(),
   votes: z.number(),
   cachedTotalVotes: z.number(),
