@@ -2,7 +2,7 @@ import { useLoaderData, useNavigate } from "react-router";
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { MessageSquare, Pin } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import {
   forumCategoryRequiresSubject,
@@ -48,43 +48,56 @@ export async function loader({
 export default function MyRepliesPage() {
   const { initialReplies } = useLoaderData<typeof loader>();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [replies, setReplies] = useState<Post[]>(initialReplies.posts);
+  const [nextCursor, setNextCursor] = useState<string | null>(
+    initialReplies.nextCursor,
+  );
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const repliesQueryOptions = trpc.forum.getMyReplies.queryOptions({
-    limit: 10,
-    cursor: cursor ?? undefined,
-  });
+  const fetchMore = async () => {
+    if (!nextCursor || isLoadingMore) {
+      return;
+    }
 
-  const query = useQuery({
-    ...repliesQueryOptions,
-  });
+    setIsLoadingMore(true);
+    setLoadError(null);
 
-  const currentData = query.data ?? initialReplies;
-  const replies = currentData.posts;
+    try {
+      const nextPage = await queryClient.fetchQuery(
+        trpc.forum.getMyReplies.queryOptions({
+          limit: 10,
+          cursor: nextCursor,
+        }),
+      );
 
-  const fetchMore = () => {
-    if (currentData.nextCursor) {
-      setCursor(currentData.nextCursor);
+      setReplies((currentReplies) =>
+        mergeRepliesById(currentReplies, nextPage.posts),
+      );
+      setNextCursor(nextPage.nextCursor);
+    } catch {
+      setLoadError(i18n.t("forum.posts.failedToLoad"));
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
-  if (query.isError) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-destructive">
-          {i18n.t("forum.posts.failedToLoad")}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3">
+      {loadError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
+
       <InfiniteScroll
         dataLength={replies.length}
-        next={fetchMore}
-        hasMore={Boolean(currentData.nextCursor)}
+        next={() => {
+          void fetchMore();
+        }}
+        hasMore={Boolean(nextCursor)}
         loader={
           <div className="flex items-center justify-center p-4">
             <div className="text-muted-foreground">
@@ -214,6 +227,20 @@ function ReplyCard({ reply, onClick }: { reply: Post; onClick: () => void }) {
       </div>
     </button>
   );
+}
+
+function mergeRepliesById(currentReplies: Post[], nextReplies: Post[]) {
+  const seen = new Set(currentReplies.map((reply) => reply.id));
+  const mergedReplies = [...currentReplies];
+
+  for (const reply of nextReplies) {
+    if (!seen.has(reply.id)) {
+      seen.add(reply.id);
+      mergedReplies.push(reply);
+    }
+  }
+
+  return mergedReplies;
 }
 
 function formatDate(date: Date | string): string {
