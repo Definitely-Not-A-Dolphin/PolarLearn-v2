@@ -1,8 +1,7 @@
-// @ts-expect-error cant create types for this since it is actually meant to be used internally in rrv7
 import "virtual:react-router/unstable_rsc/inject-hmr-runtime"; // DO NOT REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 import { startTransition, StrictMode } from "react";
-import { hydrateRoot } from "react-dom/client";
+import { hydrateRoot, type ReactFormState } from "react-dom/client";
 import {
   createFromReadableStream,
   createTemporaryReferenceSet,
@@ -27,7 +26,7 @@ setServerCallback(
 createFromReadableStream<RSCPayload>(getRSCStream()).then((payload) => {
   startTransition(async () => {
     const formState =
-      payload.type === "render" ? await payload.formState : undefined;
+      payload.type === "render" ? (await payload.formState) as ReactFormState : undefined;
 
     hydrateRoot(
       document,
@@ -38,7 +37,6 @@ createFromReadableStream<RSCPayload>(getRSCStream()).then((payload) => {
         />
       </StrictMode>,
       {
-        // @ts-expect-error - no types for this yet
         formState,
       },
     );

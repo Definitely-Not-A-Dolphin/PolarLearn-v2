@@ -17,6 +17,7 @@ export const rootLoaderDataSchema = z.object({
   theme: themeSchema,
   lang: z.string(),
   user: rootUserSchema,
+  impersonatedBy: z.string().nullable(),
 });
 
 export type RootLoaderData = z.infer<typeof rootLoaderDataSchema>;

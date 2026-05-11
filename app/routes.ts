@@ -38,6 +38,13 @@ export default [
       route("app/group/:id", "routes/app/group/_index.tsx"),
     ]),
     route("app/groups", "routes/app/groups.tsx"),
+    layout("routes/app/administration/layout.tsx", [
+      route("app/administration/general", "routes/app/administration/general.tsx"),
+      route("app/administration/users", "routes/app/administration/users.tsx"),
+      route("app/administration/lists", "routes/app/administration/lists.tsx"),
+      route("app/administration/analytics", "routes/app/administration/analytics.tsx"),
+      route("app/administration", "routes/app/administration/_index.tsx"),
+    ])
   ]),
   route("app/session/:id", "routes/app/session/[id].tsx")
 ] satisfies RouteConfig;

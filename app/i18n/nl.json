@@ -71,6 +71,7 @@
     "post": "Post",
     "posts": "Posts",
     "settings": "Instellingen",
+    "administration": "Administratie",
     "cancel": "Annuleren",
     "confirm": "Bevestigen",
     "userProfile": "Profiel"
@@ -79,6 +80,15 @@
     "new": "Nieuw"
   },
   "groups": {
+    "joinGroup": "Lid worden",
+    "leaveGroup": "Groep verlaten",
+    "joinedGroup": "Je bent lid geworden van de groep.",
+    "leftGroup": "Je hebt de groep verlaten.",
+    "joinRequestSubmitted": "Lidmaatschapsaanvraag verstuurd",
+    "privateGroup": "Deze groep is privé. Je aanvraag moet eerst worden goedgekeurd.",
+    "listAlreadyInGroup": "Deze lijst staat al in de groep.",
+    "listAddedToGroup": "Lijst is aan de groep toegevoegd.",
+    "listRemovedFromGroup": "Lijst is uit de groep verwijderd.",
     "members": "Leden",
     "allMembers": "Alle leden",
     "pendingMembers": "Wachtende leden",
@@ -132,7 +142,59 @@
     "admin": "Admin",
     "settings": "Instellingen"
   },
+  "admin": {
+    "tabs": {
+      "general": "Algemeen",
+      "users": "Gebruikers",
+      "lists": "Lijsten",
+      "analytics": "Analytics"
+    },
+    "general": {
+      
+    },
+    "users": {
+      "loadError": "Gebruikers konden niet worden geladen.",
+      "actionError": "Actie kon niet worden uitgevoerd.",
+      "loadingMore": "Meer gebruikers laden...",
+      "allLoaded": "Alle gebruikers zijn geladen.",
+      "columns": {
+        "user": "Gebruiker",
+        "actions": "Acties",
+        "createdAt": "Aangemaakt"
+      },
+      "badges": {
+        "platformBanned": "Geblokkeerd",
+        "forumBanned": "Forum geblokkeerd",
+        "verified": "Geverifieerd",
+        "unverified": "Niet geverifieerd"
+      },
+      "actions": {
+        "platformBan": "Platform ban",
+        "platformUnban": "Platform toelaten",
+        "forumBan": "Forum ban",
+        "forumUnban": "Forum toelaten",
+        "impersonate": "Impersonate"
+      },
+      "banDialog": {
+        "platformTitle": "Platformban toepassen",
+        "forumTitle": "Forumban toepassen",
+        "description": "Geef een reden op voordat je {{user}} blokkeert.",
+        "reasonLabel": "Reden",
+        "reasonPlaceholder": "Leg kort uit waarom deze ban nodig is.",
+        "reasonRequired": "Een reden is verplicht.",
+        "confirm": "Ban toepassen",
+        "saving": "Bezig..."
+      }
+    },
+    "lists": {
+      
+    },
+    "analytics": {
+      
+    }
+  },
   "lists": {
+    "addListToGroup": "Lijst toevoegen aan groep",
     "favourites": {
       "like": "Vind ik leuk",
       "unlike": "Vind ik niet meer leuk"
@@ -249,6 +311,8 @@
       "subtitle": "Met je PolarLearn-account.",
       "loading": "Even geduld...",
       "continue": "Doorgaan",
+      "checkEmail": "Gelukt! Check je e-mail voor een verificatielink.",
+      "notActivated": "Je account is nog niet geactiveerd. Check je e-mail voor een verificatielink.",
       "noAccount": "Geen account?",
       "createOne": "Maak er één!",
       "separator": "OF",

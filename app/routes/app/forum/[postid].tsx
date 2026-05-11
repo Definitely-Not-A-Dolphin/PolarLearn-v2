@@ -180,7 +180,7 @@ export default function PostPage() {
         }),
       );
 
-      setReplies((currentReplies) => [...currentReplies, ...nextPage.replies]);
+      setReplies((currentReplies) => mergePostsById(currentReplies, nextPage.replies));
       setNextCursor(nextPage.nextCursor);
     } finally {
       setIsLoadingMoreReplies(false);
@@ -392,7 +392,7 @@ export default function PostPage() {
         onOpenChange={setReplyDialogOpen}
         postId={currentPost.id}
         onReplySuccess={(newReply) => {
-          setReplies((currentReplies) => [newReply, ...currentReplies]);
+          setReplies((currentReplies) => mergePostsById([newReply], currentReplies));
         }}
       />
 
@@ -594,6 +594,20 @@ function DeletePostDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function mergePostsById(currentPosts: Post[], nextPosts: Post[]) {
+  const seen = new Set(currentPosts.map((post) => post.id));
+  const mergedPosts = [...currentPosts];
+
+  for (const post of nextPosts) {
+    if (!seen.has(post.id)) {
+      seen.add(post.id);
+      mergedPosts.push(post);
+    }
+  }
+
+  return mergedPosts;
 }
 
 function ReplyCard({

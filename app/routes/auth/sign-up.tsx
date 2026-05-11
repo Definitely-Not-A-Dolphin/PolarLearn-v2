@@ -3,7 +3,7 @@ import { Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { useState } from "react";
 import { zxcvbn } from "@zxcvbn-ts/core";
-import { toast } from "sonner"
+import { toast } from "sonner";
 import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
@@ -12,22 +12,20 @@ import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
-  const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
-  const user = result?.user
-  if (user) {
-    return redirect('/app')
-  }
+  const headers = new Headers(loaderArgs.request.headers);
+  const result = await auth.api.getSession({ headers });
+  if (result?.user) return redirect("/app");
 
   const lang = process.env.APP_LANG ?? "nl";
 
   return {
     quote: getRandomQuote(lang),
+    smtpEnabled: !!process.env.SMTP_HOST,
   };
 }
 
 export default function SignUpPage() {
-  const { quote } = useLoaderData<typeof loader>();
+  const { quote, smtpEnabled } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
@@ -36,8 +34,9 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const passResult = password ? zxcvbn(password) : null;
-  const score = passResult ? passResult.score : 0;
+  const score = passResult?.score ?? 0;
 
   let scoreText = "";
   if (password) {
@@ -45,6 +44,48 @@ export default function SignUpPage() {
     else if (score < 4) scoreText = t("auth:signUp.passwordStrength.medium");
     else scoreText = t("auth:signUp.passwordStrength.strong");
   }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get("username") as string;
+    const email = formData.get("email") as string;
+    const passwordValue = formData.get("password") as string;
+
+    try {
+      const { error } = await authClient.signUp.email({
+        name: username,
+        username,
+        email,
+        password: passwordValue,
+        callbackURL: "/app",
+      });
+
+      if (error) {
+        toast.error(error.message ?? t("auth:errors.authError"));
+        return;
+      }
+
+      if (smtpEnabled) {
+        toast.success(t("auth:signUp.okEmail"));
+        void navigate("/auth/sign-in");
+      } else {
+        toast.success(t("auth:signUp.ok"));
+        void navigate("/app");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message ?? t("auth:errors.unknown")
+          : t("auth:errors.unknown")
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-row h-screen w-screen">
@@ -59,40 +100,7 @@ export default function SignUpPage() {
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
         <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signUp.title")}</h1>
         <p className="text-lg mb-8 text-neutral-300">{t("auth:signUp.subtitle")}</p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (isLoading) {
-              return;
-            }
-
-            setIsLoading(true);
-            const formData = new FormData(e.currentTarget);
-            const username = formData.get("username") as string;
-            const email = formData.get("email") as string;
-            const passwordValue = formData.get("password") as string;
-
-            authClient.signUp.email({
-              name: username,
-              username,
-              email,
-              password: passwordValue,
-            }).then((res) => {
-              if (res.error) {
-                const authError = res.error as { message?: string; originalMessage?: string };
-                toast.error(authError.message || authError.originalMessage || "Authentication failed.");
-                return;
-              }
-
-              toast.success(t("auth:signUp.ok"));
-              void navigate("/auth/sign-in");
-            }).catch((err: unknown) => {
-              toast.error(err instanceof Error ? err.message || "Authentication failed." : "Authentication failed.");
-            }).finally(() => {
-              setIsLoading(false);
-            });
-          }}
-        >
+        <form onSubmit={(e) => { void handleSubmit(e); }}>
           <label
             htmlFor="username"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
