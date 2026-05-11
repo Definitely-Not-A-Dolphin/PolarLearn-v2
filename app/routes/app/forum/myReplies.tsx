@@ -1,7 +1,240 @@
+import { useLoaderData, useNavigate } from "react-router";
+import { useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { MessageSquare, Pin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "~/server/react";
+import {
+  forumCategoryRequiresSubject,
+  getCategoryInfo,
+  type GetPostsOutput,
+  type Post,
+} from "~/lib/forum";
+import i18n from "~/i18n";
+import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import { appRouter } from "~/server/main";
+import type { Route } from "./+types/myReplies";
+import { Subject } from "~/lib/subjects";
+import type { SubjectNames } from "~/lib/subjectnames";
+import { Badge } from "~/components/ui/badge";
+import { cn } from "~/lib/utils";
+
+type LoaderData = {
+  initialReplies: GetPostsOutput;
+};
+
+export async function loader({
+  request,
+}: Route.LoaderArgs): Promise<LoaderData> {
+  const headers = new Headers(request.headers);
+  const context = await createTRPCContext({ headers });
+
+  if (!context.user) {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  const caller = createCallerFactory(appRouter)(context);
+  const initialReplies = await caller.forum.getMyReplies({
+    limit: 10,
+    cursor: undefined,
+  });
+
+  return {
+    initialReplies,
+  };
+}
+
 export default function MyRepliesPage() {
+  const { initialReplies } = useLoaderData<typeof loader>();
+  const trpc = useTRPC();
+  const navigate = useNavigate();
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+
+  const repliesQueryOptions = trpc.forum.getMyReplies.queryOptions({
+    limit: 10,
+    cursor: cursor ?? undefined,
+  });
+
+  const query = useQuery({
+    ...repliesQueryOptions,
+  });
+
+  const currentData = query.data ?? initialReplies;
+  const replies = currentData.posts;
+
+  const fetchMore = () => {
+    if (currentData.nextCursor) {
+      setCursor(currentData.nextCursor);
+    }
+  };
+
+  if (query.isError) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-destructive">
+          {i18n.t("forum.posts.failedToLoad")}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      placeholder
-    </>
-  )
+    <div className="space-y-4">
+      <InfiniteScroll
+        dataLength={replies.length}
+        next={fetchMore}
+        hasMore={Boolean(currentData.nextCursor)}
+        loader={
+          <div className="flex items-center justify-center p-4">
+            <div className="text-muted-foreground">
+              {i18n.t("forum.posts.loadingMore")}
+            </div>
+          </div>
+        }
+        endMessage={
+          replies.length > 0 ? (
+            <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+              {i18n.t("forum.posts.noMore")}
+            </div>
+          ) : null
+        }
+      >
+        <div className="space-y-3">
+          {replies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900/80">
+              <MessageSquare className="mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {i18n.t("forum.myReplies.empty")}
+              </h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                {i18n.t("forum.myReplies.emptyDescription")}
+              </p>
+            </div>
+          ) : (
+            replies.map((reply) => (
+              <ReplyCard
+                key={reply.id}
+                reply={reply}
+                onClick={() => {
+                  void navigate(
+                    `/app/forum/posts/${reply.replyToId ?? reply.id}`,
+                  );
+                }}
+              />
+            ))
+          )}
+        </div>
+      </InfiniteScroll>
+    </div>
+  );
+}
+
+function ReplyCard({ reply, onClick }: { reply: Post; onClick: () => void }) {
+  const handleClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    onClick();
+  };
+  const subjects = new Subject();
+  const author = reply.author as { name: string; image: string | null } | null;
+  const authorName = author?.name ?? null;
+  const currentCategory = getCategoryInfo(reply.category);
+  const t = i18n.t;
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "w-full rounded-lg border p-4 text-left transition cursor-pointer",
+        reply.pinned
+          ? "border-sky-300/60 bg-sky-500/10 hover:bg-sky-500/15 dark:border-sky-400/30 dark:bg-sky-400/10 dark:hover:bg-sky-400/15"
+          : "border-border bg-card hover:bg-muted",
+      )}
+      onClick={handleClick}
+    >
+      <div className="flex gap-4">
+        <div className="shrink-0">
+          <div className="flex size-8 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+            {authorName ? authorName.charAt(0).toUpperCase() : "?"}
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className="h-auto rounded px-2 py-1 text-xs font-semibold text-white"
+              style={{ backgroundColor: currentCategory.color }}
+            >
+              <currentCategory.icon className="mr-1 h-3 w-3" />
+              {t(currentCategory.label)}
+            </Badge>
+            {forumCategoryRequiresSubject(reply.category) && reply.subject && (
+              <>
+                <div className="flex items-center gap-1">
+                  {subjects.getIcon(reply.subject as SubjectNames, {
+                    width: 16,
+                    height: 16,
+                  })}
+                  <span className="text-xs text-muted-foreground">
+                    {subjects.getSubjectNameById(reply.subject as SubjectNames)}
+                  </span>
+                </div>
+                <span
+                  className="text-xs text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  {"\u00b7"}
+                </span>
+              </>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {formatDate(reply.createdAt)}
+            </span>
+          </div>
+
+          {reply.content && (
+            <p className="mb-3 text-sm text-foreground">{reply.content}</p>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>
+              {t("lists.authorPrefix", {
+                author:
+                  reply.author?.displayUsername ??
+                  reply.author?.name ??
+                  t("forum.unknownAuthor"),
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function formatDate(date: Date | string): string {
+  const parsedDate = date instanceof Date ? date : new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - parsedDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) {
+    return i18n.t("forum.posts.time.justNow");
+  }
+  if (diffMins < 60) {
+    return i18n.t("forum.posts.time.minutesAgo", { count: diffMins });
+  }
+  if (diffHours < 24) {
+    return i18n.t("forum.posts.time.hoursAgo", { count: diffHours });
+  }
+  if (diffDays < 7) {
+    return i18n.t("forum.posts.time.daysAgo", { count: diffDays });
+  }
+  return parsedDate.toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "short",
+  });
 }
