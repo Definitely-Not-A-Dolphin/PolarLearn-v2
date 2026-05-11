@@ -9,3 +9,5 @@
 /app/prisma
 .env
 prisma/migrations
+
+openapi.json
