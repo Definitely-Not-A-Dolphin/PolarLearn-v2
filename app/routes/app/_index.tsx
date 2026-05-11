@@ -1,10 +1,7 @@
-/* (accessibility) clickable container now has keyboard handlers */
-import { auth } from "~/lib/auth/server";
-import { redirect, useLoaderData, useNavigate } from "react-router";
+import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
 import { List, Star, ListX } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { prisma } from "~/lib/db";
 import {
   RecentListsSchema,
   RecentSubjectsSchema,
@@ -12,16 +9,12 @@ import {
 } from "~/lib/list";
 import z from "zod";
 import { subjects as subjectsList } from "~/lib/subjects";
-
-interface RecommendedList {
-  id: string;
-  name: string;
-  subject?: string;
-  authorId?: string;
-  authorName?: string;
-  learnedCount: number;
-  lastLearnedAt: string;
-}
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useTRPC } from "~/server/react";
+import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import type { Route } from "./+types/_index";
+import { appRouter } from "~/server/main";
 
 interface LoaderData {
   recentItems: {
@@ -33,222 +26,42 @@ interface LoaderData {
       authorName?: string;
     })[];
   };
-  recommendedLists: RecommendedList[];
 }
 
-export async function loader(loaderArgs: { request: Request }) {
+export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
-  const result = await auth.api.getSession({ headers });
-  const user = result?.user;
-  if (!user) {
-    return redirect("/app");
+  const context = await createTRPCContext({ headers });
+  if (!context.user) {
+    throw new Response("Unauthorized", { status: 401 });
   }
+  const caller = createCallerFactory(appRouter)(context);
+  const recentLists = await caller.list.getRecentLists();
+  const recentSubjects = await caller.list.getRecentSubjects();
 
-  const rawUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  });
-  const recentItems = extractRecentItems(rawUser?.recentItems);
-
-  const completedSessions = await prisma.learnSession.findMany({
-    where: {
-      userId: user.id,
-      isComplete: true,
+  return {
+    recentItems: {
+      recent_lists: recentLists,
+      recent_subjects: recentSubjects,
     },
-    select: {
-      updatedAt: true,
-      list: {
-        select: {
-          id: true,
-          subject: true,
-        },
-      },
-    },
-  });
-
-  const subjectStats = new Map<
-    string,
-    { learnedCount: number; lastLearnedAt: Date }
-  >();
-
-  for (const session of completedSessions) {
-    const subject = session.list.subject;
-
-    if (subject === "other") {
-      continue;
-    }
-
-    const existing = subjectStats.get(subject);
-
-    if (!existing) {
-      subjectStats.set(subject, {
-        learnedCount: 1,
-        lastLearnedAt: session.updatedAt,
-      });
-      continue;
-    }
-
-    existing.learnedCount += 1;
-    if (session.updatedAt > existing.lastLearnedAt) {
-      existing.lastLearnedAt = session.updatedAt;
-    }
-  }
-
-  const topSubjects = [...subjectStats.entries()]
-    .sort((left, right) => {
-      if (right[1].learnedCount !== left[1].learnedCount) {
-        return right[1].learnedCount - left[1].learnedCount;
-      }
-
-      return right[1].lastLearnedAt.getTime() - left[1].lastLearnedAt.getTime();
-    })
-    .slice(0, 3);
-
-  const recommendedSubjectNames = topSubjects.map(([subject]) => subject);
-  const completedListIds = [
-    ...new Set(completedSessions.map((session) => session.list.id)),
-  ];
-
-  const recentListIds = recentItems.recent_lists.map((list) => list.id);
-  const lists =
-    recentListIds.length > 0
-      ? await prisma.list.findMany({
-          where: {
-            id: {
-              in: recentListIds,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            subject: true,
-            userId: true,
-            user: {
-              select: {
-                id: true,
-                displayUsername: true,
-                username: true,
-                name: true,
-              },
-            },
-          },
-        })
-      : [];
-
-  const recommendedListsRaw =
-    recommendedSubjectNames.length > 0
-      ? await prisma.list.findMany({
-          where: {
-            subject: {
-              in: recommendedSubjectNames,
-            },
-            userId: {
-              not: user.id,
-            },
-            id: {
-              notIn: completedListIds,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            subject: true,
-            userId: true,
-            updatedAt: true,
-            user: {
-              select: {
-                id: true,
-                displayUsername: true,
-                username: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: {
-            updatedAt: "desc",
-          },
-          take: 12,
-        })
-      : [];
-
-  const recommendedListsFallback =
-    recommendedListsRaw.length > 0 || recommendedSubjectNames.length === 0
-      ? recommendedListsRaw
-      : await prisma.list.findMany({
-          where: {
-            subject: {
-              in: recommendedSubjectNames,
-            },
-            id: {
-              notIn: completedListIds,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            subject: true,
-            userId: true,
-            updatedAt: true,
-            user: {
-              select: {
-                id: true,
-                displayUsername: true,
-                username: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: {
-            updatedAt: "desc",
-          },
-          take: 12,
-        });
-
-  const listsById = new Map(lists.map((list) => [list.id, list]));
-  const subjectStatsByName = new Map(topSubjects);
-
-  const hydratedRecentItems = {
-    ...recentItems,
-    recent_lists: recentItems.recent_lists.map((list) => {
-      const matched = listsById.get(list.id);
-
-      return {
-        ...list,
-        name: matched?.name,
-        subject: matched?.subject,
-        authorId: matched?.userId,
-        authorName: matched?.user.name,
-      };
-    }),
   };
-
-  const recommendedLists = recommendedListsFallback.map((list) => {
-    const stats = list.subject
-      ? subjectStatsByName.get(list.subject)
-      : undefined;
-
-    return {
-      id: list.id,
-      name: list.name,
-      subject: list.subject,
-      authorId: list.userId,
-      authorName:
-        list.user?.name ??
-        list.user?.displayUsername ??
-        list.user?.username ??
-        list.userId,
-      learnedCount: stats?.learnedCount ?? 0,
-      lastLearnedAt: stats?.lastLearnedAt.toISOString() ?? "",
-    };
-  });
-
-  return { recentItems: hydratedRecentItems, recommendedLists };
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
+  const trpc = useTRPC();
   const t = i18n.t;
+  const removeRecentListMutation = useMutation({
+    ...trpc.list.rmListFromRecent.mutationOptions(),
+    onSuccess: async () => {
+      await revalidator.revalidate();
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    },
+  });
 
-  const { recentItems, recommendedLists } = useLoaderData<LoaderData>();
+  const { recentItems } = useLoaderData<LoaderData>();
   return (
     <div className="flex min-w-0 flex-col p-4">
       <h1 className="font-bold text-3xl">{t("home.quickstart")}</h1>
@@ -329,154 +142,87 @@ export default function HomePage() {
           </div>
         </div>
         <ScrollBar orientation="horizontal" />
-        <h1 className="font-bold text-3xl mt-4">{t("home.recentLists")}</h1>
-
-        <div className="mt-4 flex w-full flex-col gap-y-3">
-          {recentItems.recent_lists.length === 0 ? (
-            <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-              {t("home.noRecentLists")}
-            </div>
-          ) : (
-            recentItems.recent_lists.map((list) => {
-              const hasSubject =
-                typeof list.subject === "string" &&
-                Object.prototype.hasOwnProperty.call(
-                  subjectsList,
-                  list.subject,
-                );
-              const subject = hasSubject
-                ? subjectsList[list.subject as keyof typeof subjectsList]
-                : null;
-              const subjectLabel = subject ? t(subject.labelKey) : null;
-              const authorId = list.authorId;
-
-              return (
-                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-                <div
-                  key={list.id}
-                  role="button"
-                  tabIndex={0}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
-                  onClick={() => {
-                    void navigate(`/app/viewlist/${list.id}`);
-                  }}
-                >
-                  <button
-                    type="button"
-                    className="flex min-w-0 items-center gap-x-3 text-left"
-                  >
-                    {subject ? (
-                      <img
-                        src={subject.icon}
-                        alt={subjectLabel ?? ""}
-                        className="h-6 w-6 shrink-0"
-                      />
-                    ) : (
-                      <List size={20} className="shrink-0" />
-                    )}
-                    <span className="truncate text-base font-semibold">
-                      {list.name ?? t("lists.namePlaceholder")}
-                    </span>
-                  </button>
-
-                  {authorId ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void navigate(`/app/viewuser/${authorId}`);
-                      }}
-                      className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
-                    >
-                      {list.authorName ?? authorId}
-                    </button>
-                  ) : (
-                    <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
-                      {t("lists.unknownAuthor")}
-                    </span>
-                  )}
-
-                  <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
-                    {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
-                    <div className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all">
-                      <ListX />
-                    </div>
-                  </span>
-                </div>
-              );
-            })
-          )}
-        </div>
       </ScrollArea>
+      <h1 className="font-bold text-3xl mt-4">{t("home.recentLists")}</h1>
 
-      <h1 className="font-bold text-3xl mt-6">Aanbevolen lijsten</h1>
-      <ScrollArea className="mt-4 w-full max-w-full overflow-hidden">
-        {recommendedLists.length === 0 ? (
+      <div className="mt-4 flex w-full flex-col gap-y-3">
+        {recentItems.recent_lists.length === 0 ? (
           <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-            Nog niet genoeg leersessies om aanbevelingen te tonen.
+            {t("home.noRecentLists")}
           </div>
         ) : (
-          <div className="flex w-max flex-row gap-x-4">
-            {recommendedLists.map((list) => {
-              const hasSubject =
-                typeof list.subject === "string" &&
-                Object.prototype.hasOwnProperty.call(
-                  subjectsList,
-                  list.subject,
-                );
-              const subject = hasSubject
-                ? subjectsList[list.subject as keyof typeof subjectsList]
-                : null;
-              const subjectLabel = subject
-                ? t(subject.labelKey)
-                : (list.subject ?? "Vak");
-              const learnedAtLabel = list.lastLearnedAt
-                ? new Date(list.lastLearnedAt).toLocaleDateString("nl-NL")
-                : null;
+          recentItems.recent_lists.map((list: any) => {
+            const hasSubject =
+              typeof list.subject === "string" &&
+              Object.prototype.hasOwnProperty.call(subjectsList, list.subject);
+            const subject = hasSubject
+              ? subjectsList[list.subject as keyof typeof subjectsList]
+              : null;
+            const subjectLabel = subject ? t(subject.labelKey) : null;
 
-              return (
+            return (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+              <div
+                key={list.id}
+                role="button"
+                tabIndex={0}
+                className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
+                onClick={() => {
+                  void navigate(`/app/viewlist/${list.id}`);
+                }}
+              >
                 <button
-                  key={list.id}
                   type="button"
-                  className="flex w-64 flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-100 p-4 text-left transition-all hover:bg-neutral-200 dark:border-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-                  onClick={() => {
-                    void navigate(`/app/viewlist/${list.id}`);
-                  }}
+                  className="flex min-w-0 items-center gap-x-3 text-left"
                 >
-                  <div className="flex items-center gap-2">
-                    {subject ? (
-                      <img
-                        src={subject.icon}
-                        alt={subjectLabel}
-                        className="h-6 w-6 shrink-0"
-                      />
-                    ) : (
-                      <List size={20} className="shrink-0" />
-                    )}
-                    <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                      {subjectLabel}
-                    </span>
-                  </div>
-
-                  <div className="min-w-0 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                    {list.name}
-                  </div>
-
-                  <div className="text-sm text-neutral-600 dark:text-neutral-300">
-                    {list.learnedCount}x geleerd in dit vak
-                  </div>
-
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {learnedAtLabel
-                      ? `Laatst geleerd op ${learnedAtLabel}`
-                      : "Geschikt op basis van je leerhistorie"}
-                  </div>
+                  {subject ? (
+                    <img
+                      src={subject.icon}
+                      alt={subjectLabel ?? ""}
+                      className="h-6 w-6 shrink-0"
+                    />
+                  ) : (
+                    <List size={20} className="shrink-0" />
+                  )}
+                  <span className="truncate text-base font-semibold">
+                    {list.name ?? t("lists.namePlaceholder")}
+                  </span>
                 </button>
-              );
-            })}
-          </div>
+                {list.user?.id ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void navigate(`/app/viewuser/${list.user.id}`);
+                    }}
+                    className="justify-self-center font-bold truncate text-sm text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
+                  >
+                    {list.user?.name ?? list.user?.id}
+                  </button>
+                ) : (
+                  <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
+                    {t("lists.unknownAuthor")}
+                  </span>
+                )}
+
+                <span className="shrink-0 text-sm items-center gap-4 text-neutral-600 dark:text-neutral-300 flex flex-row">
+                  {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeRecentListMutation.mutate({ listId: list.id });
+                    }}
+                    className="h-10 w-10 bg-neutral-300 dark:bg-neutral-700 hover:dark:bg-neutral-600 text-red-400 rounded-full items-center justify-center flex transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ListX />
+                  </button>
+                </span>
+              </div>
+            );
+          })
         )}
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }
