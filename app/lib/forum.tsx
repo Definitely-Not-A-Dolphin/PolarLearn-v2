@@ -1,35 +1,25 @@
 import { z } from "zod";
 import { Globe, GraduationCap, Megaphone, type LucideIcon } from "lucide-react";
-import { SubjectNamesArray } from "./subjectnames";
 
 export type CategoryInfo = {
-  label: string;
-  color: string;
-  icon: LucideIcon;
-};
+  label: string
+  color: string
+  icon: LucideIcon
+}
 
-export const forumCategories = [
-  "school-related",
-  "non-school-related",
-  "announcement",
-] as const;
-export type ForumCategory = (typeof forumCategories)[number];
+export const forumCategories = ["school-related", "non-school-related", "announcement"] as const
+export type ForumCategory = (typeof forumCategories)[number]
 
-export const userForumCategories = [
-  "school-related",
-  "non-school-related",
-] as const satisfies readonly ForumCategory[];
-export const forumCategorySchema = z.enum(forumCategories);
-export const defaultForumCategory: ForumCategory = "school-related";
+export const userForumCategories = ["school-related", "non-school-related"] as const satisfies readonly ForumCategory[]
+export const forumCategorySchema = z.enum(forumCategories)
+export const defaultForumCategory: ForumCategory = "school-related"
 
-export function getAvailableForumCategories(
-  isAdmin: boolean,
-): readonly ForumCategory[] {
-  return isAdmin ? forumCategories : userForumCategories;
+export function getAvailableForumCategories(isAdmin: boolean): readonly ForumCategory[] {
+  return isAdmin ? forumCategories : userForumCategories
 }
 
 export function forumCategoryRequiresSubject(category: ForumCategory): boolean {
-  return category === "school-related";
+  return category === "school-related"
 }
 
 export const forumCategoryInfo = {
@@ -43,15 +33,15 @@ export const forumCategoryInfo = {
     color: "#16a34a",
     icon: Globe,
   },
-  announcement: {
+  "announcement": {
     label: "forum.categories.announcement",
     color: "#ef4444",
     icon: Megaphone,
   },
-} satisfies Record<ForumCategory, CategoryInfo>;
+} satisfies Record<ForumCategory, CategoryInfo>
 
 export function getCategoryInfo(category: ForumCategory): CategoryInfo {
-  return forumCategoryInfo[category];
+  return forumCategoryInfo[category]
 }
 
 export const getPostsInputSchema = z.object({
@@ -62,14 +52,6 @@ export const getPostsInputSchema = z.object({
 });
 
 export type GetPostsInput = z.infer<typeof getPostsInputSchema>;
-
-export const getMyRepliesInputSchema = z.object({
-  cursor: z.string().min(1).optional(),
-  limit: z.number().int().min(1).max(50).default(10),
-  category: forumCategorySchema.optional(),
-});
-
-export type GetMyRepliesInput = z.infer<typeof getMyRepliesInputSchema>;
 
 export const getPostInputSchema = z.object({
   id: z.string().min(1),
@@ -96,7 +78,7 @@ export const editPostInputSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).max(255).optional(),
   content: z.string().min(1).optional(),
-  subject: z.enum(SubjectNamesArray).optional(),
+  subject: z.string().min(1).max(255).optional(),
   category: forumCategorySchema.optional(),
 });
 
@@ -125,33 +107,27 @@ export type Vote = z.infer<typeof voteSchema>;
 export const votersSchema = z.record(z.string().min(1), voteSchema);
 export type Voters = z.infer<typeof votersSchema>;
 
-export function getUserVote(
-  voters: unknown,
-  userId: string | null | undefined,
-): Vote | null {
+export function getUserVote(voters: unknown, userId: string | null | undefined): Vote | null {
   if (!userId) {
-    return null;
+    return null
   }
 
-  const parsedVoters = votersSchema.safeParse(voters);
+  const parsedVoters = votersSchema.safeParse(voters)
   if (!parsedVoters.success) {
-    return null;
+    return null
   }
 
-  return parsedVoters.data[userId] ?? null;
+  return parsedVoters.data[userId] ?? null
 }
 
 export function calculateVoteTotals(voters: Voters) {
-  const voteValues = Object.values(voters);
-  const votes = voteValues.reduce(
-    (total, currentVote) => total + (currentVote === "up" ? 1 : -1),
-    0,
-  );
+  const voteValues = Object.values(voters)
+  const votes = voteValues.reduce((total, currentVote) => total + (currentVote === "up" ? 1 : -1), 0)
 
   return {
     votes,
     cachedTotalVotes: voteValues.length,
-  };
+  }
 }
 
 export const votePostInputSchema = z.object({
@@ -191,8 +167,6 @@ export const postSchema = z.object({
   content: z.string(),
   category: forumCategorySchema,
   subject: z.string().nullable(),
-  replyToId: z.string().nullable().optional(),
-  replyToTitle: z.string().nullable().optional(),
   pinned: z.boolean(),
   votes: z.number(),
   cachedTotalVotes: z.number(),

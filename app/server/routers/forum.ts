@@ -18,6 +18,7 @@ import {
   votePostOutputSchema,
   getPostRepliesInputSchema,
   getPostRepliesOutputSchema,
+  getMyRepliesInputSchema,
 } from "~/lib/forum";
 
 import {
@@ -337,7 +338,7 @@ export const forumRouter = createTRPCRouter({
       });
     }),
   getMyReplies: protectedProcedure
-    .input(getPostsInputSchema)
+    .input(getMyRepliesInputSchema)
     .output(getPostsOutputSchema)
     .query(async ({ input, ctx }) => {
       const { cursor, limit, category } = input;
