@@ -301,7 +301,6 @@ export default function HomePage() {
             const subjectLabel = subject ? t(subject.labelKey) : null;
 
             return (
-              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
               <div
                 key={session.id}
                 role="button"
@@ -309,6 +308,12 @@ export default function HomePage() {
                 className="grid w-full grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] items-center gap-x-4 rounded-xl bg-neutral-200 px-4 py-3 transition-all hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 cursor-pointer"
                 onClick={() => {
                   void navigate(`/app/session/${session.id}`);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void navigate(`/app/session/${session.id}`);
+                  }
                 }}
               >
                 <div className="flex min-w-0 items-center gap-x-3">
