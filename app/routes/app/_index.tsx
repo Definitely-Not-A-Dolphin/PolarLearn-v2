@@ -325,9 +325,6 @@ export default function HomePage() {
                     <span className="block truncate text-base font-semibold">
                       {session.list.name ?? t("lists.namePlaceholder")}
                     </span>
-                    <span className="block truncate text-sm text-neutral-600 dark:text-neutral-300">
-                      {subjectLabel ?? t("home.learn")}
-                    </span>
                   </div>
                 </div>
 
