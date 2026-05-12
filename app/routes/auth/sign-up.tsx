@@ -11,21 +11,32 @@ import type { Route } from "./+types/sign-up";
 import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
 
+function getSafeNextPath(requestUrl: string) {
+  const next = new URL(requestUrl).searchParams.get("next");
+
+  if (!next) return "/app";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/app";
+
+  return next;
+}
+
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
   const result = await auth.api.getSession({ headers });
-  if (result?.user) return redirect("/app");
+  const next = getSafeNextPath(loaderArgs.request.url);
+  if (result?.user) return redirect(next);
 
   const lang = process.env.APP_LANG ?? "nl";
 
   return {
     quote: getRandomQuote(lang),
     smtpEnabled: !!process.env.SMTP_HOST,
+    next,
   };
 }
 
 export default function SignUpPage() {
-  const { quote, smtpEnabled } = useLoaderData<typeof loader>();
+  const { quote, smtpEnabled, next } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
@@ -61,7 +72,7 @@ export default function SignUpPage() {
         username,
         email,
         password: passwordValue,
-        callbackURL: "/app",
+        callbackURL: next,
       });
 
       if (error) {
@@ -71,10 +82,10 @@ export default function SignUpPage() {
 
       if (smtpEnabled) {
         toast.success(t("auth:signUp.okEmail"));
-        void navigate("/auth/sign-in");
+        void navigate(`/auth/sign-in?next=${encodeURIComponent(next)}`);
       } else {
         toast.success(t("auth:signUp.ok"));
-        void navigate("/app");
+        void navigate(next);
       }
     } catch (err) {
       toast.error(
@@ -203,7 +214,7 @@ export default function SignUpPage() {
               {t("auth:signUp.haveAccount")}
             </p>
             <Link
-              to="/auth/sign-in"
+              to={`/auth/sign-in?next=${encodeURIComponent(next)}`}
               className="text-sm text-sky-400 font-bold hover:underline"
             >
               {t("auth:actions.login")}

@@ -38,7 +38,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!session?.user) {
     const url = new URL(request.url);
-    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
+    return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
 
   if (session.user.role !== "admin") {

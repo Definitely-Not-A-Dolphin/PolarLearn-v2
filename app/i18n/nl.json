@@ -24,6 +24,12 @@
     "empty": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!"
   },
   "learn": {
+    "modes": {
+      "quiz": "Quiz",
+      "test": "Toets",
+      "hint": "Hint",
+      "multiplechoice": "Meerkeuze"
+    },
     "session": {
       "failedToSave": "Je sessie kon niet opgeslagen worden.",
       "answerPlaceholder": "Jouw antwoord",

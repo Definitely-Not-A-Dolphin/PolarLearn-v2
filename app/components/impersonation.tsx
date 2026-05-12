@@ -69,7 +69,7 @@ export default function ImpersonationBanner() {
         <div className="text-sm text-yellow-800 dark:text-yellow-300">
           You are currently impersonating{" "}
           <span className="font-semibold">
-            {loaderData.user.name || loaderData.user.email || "User"}
+            {loaderData.user.name || "?"}
           </span>
         </div>
       </div>

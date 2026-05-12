@@ -26,7 +26,7 @@ export async function loader({ params, request }: { params: Record<string, strin
 
   if (!context.user) {
     const url = new URL(request.url)
-    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`)
+    return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`)
   }
 
   const session = await prisma.learnSession.findFirst({

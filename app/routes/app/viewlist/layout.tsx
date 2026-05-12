@@ -19,7 +19,18 @@ import { Button, Tabs } from "@polarnl/polarui-react";
 import { Subject } from "~/lib/subjects";
 import i18n from "~/i18n";
 import { prisma } from "~/lib/db";
-import { Loader2, Pencil, BookOpen, Trash, Star } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  BookOpen,
+  Trash,
+  Star,
+  ChevronDown,
+  GraduationCap,
+  PencilLine,
+  Lightbulb,
+  CheckSquare,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,13 +39,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import type { LoaderData, ListData } from "~/lib/viewlist";
 import type { RootLoaderData } from "~/lib/root-data";
 
 export async function loader({
   params,
   request,
-}: Route.LoaderArgs): Promise<LoaderData> {
+}: Route.LoaderArgs) {
   const id = params.id as string | undefined;
   if (!id) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
@@ -45,7 +57,7 @@ export async function loader({
 
   if (!context.user) {
     const url = new URL(request.url);
-    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
+    return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
   const userId = context.user.id;
   const caller = createCallerFactory(appRouter)(context);
@@ -94,6 +106,7 @@ export default function Layout() {
   const theme = rootData?.theme ?? "dark";
   const rpc = useTRPC();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isLearnPopoverOpen, setIsLearnPopoverOpen] = useState(false);
   const generateSessionMutation = useMutation({
     ...rpc.learning.generateLearnSession.mutationOptions(),
     onSuccess: (data: { id: string }) => {
@@ -125,6 +138,28 @@ export default function Layout() {
       },
     }),
   });
+  const learningModes = [
+    {
+      mode: "quiz" as const,
+      title: t("learn.modes.quiz"),
+      icon: GraduationCap,
+    },
+    {
+      mode: "test" as const,
+      title: t("learn.modes.test"),
+      icon: PencilLine,
+    },
+    {
+      mode: "hint" as const,
+      title: t("learn.modes.hint"),
+      icon: Lightbulb,
+    },
+    {
+      mode: "multiplechoice" as const,
+      title: t("learn.modes.multiplechoice"),
+      icon: CheckSquare,
+    },
+  ] as const;
   return (
     <div className="p-4">
       <div className="flex flex-row items-center gap-3">
@@ -153,7 +188,7 @@ export default function Layout() {
       <div className="mt-4">
         <Tabs
           scheme={theme}
-          tabs={[t("lists.words") || "Words", t("lists.stats") || "Stats"]}
+          tabs={[t("lists.words"), t("lists.stats")]}
           activeIndex={(() => {
             const p = location.pathname.replace(/\/+$/, "");
             if (p.includes(`/app/viewlist/${data.list.id}/stats`)) return 1;
@@ -169,24 +204,53 @@ export default function Layout() {
         />
       </div>
       <div className="py-4 flex flex-row gap-4">
-        <Button
-          scheme={theme}
-          color="sky"
-          textColor="white"
-          icon={
-            generateSessionMutation.isPending ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <BookOpen />
-            )
-          }
-          onClick={() => {
-            generateSessionMutation.mutate({ listId: data.list.id });
-          }}
-          disabled={generateSessionMutation.isPending}
-        >
-          {t("home.learn")}
-        </Button>
+        <Popover open={isLearnPopoverOpen} onOpenChange={setIsLearnPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              scheme={theme}
+              color="sky"
+              textColor="white"
+              icon={
+                generateSessionMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <BookOpen />
+                )
+              }
+              disabled={generateSessionMutation.isPending}
+            >
+              <span className="flex items-center gap-1">
+                {t("home.learn")}
+                <ChevronDown className="size-4" />
+              </span>
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-80 p-2" align="start" portalled={false}>
+            <div className="grid gap-1">
+              {learningModes.map((item) => (
+                <button
+                  key={item.mode}
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={generateSessionMutation.isPending}
+                  onClick={() => {
+                    setIsLearnPopoverOpen(false);
+                    generateSessionMutation.mutate({
+                      listId: data.list.id,
+                      mode: item.mode,
+                    });
+                  }}
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <item.icon className="size-4" />
+                  </span>
+                  <span className="font-medium text-foreground">{item.title}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
         {data.canEdit && (
           <Button
             scheme={theme}
@@ -266,7 +330,7 @@ export default function Layout() {
                     }}
                     disabled={deleteListMutation.isPending}
                   >
-                    {t("lists.delete.cancel") || "Cancel"}
+                    {t("lists.delete.cancel")}
                   </Button>
                   <Button
                     scheme={theme}
@@ -284,7 +348,7 @@ export default function Layout() {
                       )
                     }
                   >
-                    {t("lists.delete.title") || "Delete"}
+                    {t("lists.delete.title")}
                   </Button>
                 </DialogFooter>
               </DialogContent>

@@ -50,7 +50,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   const context = await createTRPCContext({ headers });
   if (!context.user) {
     const url = new URL(loaderArgs.request.url);
-    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
+    return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
   const caller = createCallerFactory(appRouter)(context);
   const recentLists = await caller.list.getRecentLists();

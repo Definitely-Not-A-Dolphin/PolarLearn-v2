@@ -16,10 +16,22 @@ import type { RootLoaderData } from "~/lib/root-data";
 
 gsap.registerPlugin(useGSAP);
 
+// Please dont remove this!
+// This prevents remote redirects to an attacker website
+function getSafeNextPath(requestUrl: string) {
+  const next = new URL(requestUrl).searchParams.get("next");
+
+  if (!next) return "/app";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/app";
+
+  return next;
+}
+
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
   const result = await auth.api.getSession({ headers });
-  if (result?.user) return redirect("/app");
+  const next = getSafeNextPath(loaderArgs.request.url);
+  if (result?.user) return redirect(next);
 
   const lang = process.env.APP_LANG ?? "nl";
 
@@ -27,11 +39,12 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
     quote: getRandomQuote(lang),
     enableEntreeFederatedSignIn: !!process.env.ENTREE_THING,
     smtpEnabled: !!process.env.SMTP_HOST,
+    next,
   };
 }
 
 export default function SignInPage() {
-  const { quote, enableEntreeFederatedSignIn, smtpEnabled } = useLoaderData<typeof loader>();
+  const { quote, enableEntreeFederatedSignIn, smtpEnabled, next } = useLoaderData<typeof loader>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
@@ -64,7 +77,7 @@ export default function SignInPage() {
       if (!showPassword) {
         const sso = await authClient.signIn.sso({
           email,
-          callbackURL: "/app",
+          callbackURL: next,
         });
         if (sso.error) {
           setShowPassword(true);
@@ -72,10 +85,10 @@ export default function SignInPage() {
         return;
       }
 
-      const { data, error } = await authClient.signIn.email({
+      const { error } = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/app",
+        callbackURL: next,
       });
 
       if (error) {
@@ -91,7 +104,7 @@ export default function SignInPage() {
         return;
       }
 
-      void navigate("/app");
+      void navigate(next);
     } catch (err: any) {
       toast.error(err?.message ?? t("auth.errors.unknown"));
     } finally {
@@ -160,7 +173,7 @@ export default function SignInPage() {
               >
                 {t("auth:signIn.forgotPassword")}
               </button>
-            ): null}
+            ) : null}
           </div>
 
           <Button
