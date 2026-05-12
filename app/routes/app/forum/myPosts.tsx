@@ -110,10 +110,10 @@ export default function MyPostsPage() {
             <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900/80">
               <MessageSquare className="mb-4 h-12 w-12 text-muted-foreground" />
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                Je hebt nog geen posts geplaatst
+                {i18n.t("forum.myPosts.empty")}
               </h3>
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Maak een post in het forum en hij verschijnt hier automatisch.
+                {i18n.t("forum.myPosts.emptyDescription")}
               </p>
             </div>
           ) : (

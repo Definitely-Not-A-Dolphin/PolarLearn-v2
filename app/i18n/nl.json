@@ -10,6 +10,9 @@
     "noRecentSubjects": "Je hebt nog geen vakken bekeken. Begin met het verkennen van onze vakken en ze zullen hier verschijnen!",
     "recentLists": "Recente lijsten",
     "noRecentLists": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!",
+    "recentSessions": "Recente sessies",
+    "noRecentSessions": "Je hebt nog geen actieve sessies.",
+    "resumeSession": "Verder leren",
     "learn": "Leren"
   },
   "favorites": {
@@ -149,9 +152,7 @@
       "lists": "Lijsten",
       "analytics": "Analytics"
     },
-    "general": {
-      
-    },
+    "general": {},
     "users": {
       "loadError": "Gebruikers konden niet worden geladen.",
       "actionError": "Actie kon niet worden uitgevoerd.",
@@ -186,12 +187,8 @@
         "saving": "Bezig..."
       }
     },
-    "lists": {
-      
-    },
-    "analytics": {
-      
-    }
+    "lists": {},
+    "analytics": {}
   },
   "lists": {
     "addListToGroup": "Lijst toevoegen aan groep",
@@ -429,6 +426,16 @@
       "loadingMore": "Meer reacties laden...",
       "noMore": "Je hebt het einde bereikt.",
       "empty": "Nog geen reacties."
+    },
+    "myPosts": {
+      "empty": "Je hebt nog geen posts geplaatst",
+      "emptyDescription": "Maak een post in het forum en hij verschijnt hier automatisch."
+    },
+    "myReplies": {
+      "empty": "Je hebt nog geen reacties geplaatst",
+      "emptyDescription": "Reageer op posts in het forum en je reacties verschijnen hier automatisch.",
+      "originalPostLabel": "Originele post",
+      "unknownOriginalPost": "Onbekende post"
     },
     "reply": {
       "created": "Reactie geplaatst!",
