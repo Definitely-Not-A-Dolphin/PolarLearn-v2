@@ -58,6 +58,21 @@ export async function loader({ params }: Route.LoaderArgs) {
           content: true,
         },
       },
+      createdGroups: {
+        orderBy: {
+          updatedAt: "desc",
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          members: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
     },
   });
   if (!user) {
