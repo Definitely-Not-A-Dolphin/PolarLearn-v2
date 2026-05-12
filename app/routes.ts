@@ -6,6 +6,7 @@ export default [
   route("api/auth/*", "routes/api/auth/[...auth].ts"),
   route("auth/sign-in", "routes/auth/sign-in.tsx"),
   route("auth/sign-up", "routes/auth/sign-up.tsx"),
+  route("auth/reset-password", "routes/auth/reset-password.tsx"),
   layout("routes/app/layout.tsx", [
     route("app", "routes/app/_index.tsx"),
     layout("routes/app/forum/layout.tsx", [

@@ -149,9 +149,7 @@
       "lists": "Lijsten",
       "analytics": "Analytics"
     },
-    "general": {
-      
-    },
+    "general": {},
     "users": {
       "loadError": "Gebruikers konden niet worden geladen.",
       "actionError": "Actie kon niet worden uitgevoerd.",
@@ -186,12 +184,8 @@
         "saving": "Bezig..."
       }
     },
-    "lists": {
-      
-    },
-    "analytics": {
-      
-    }
+    "lists": {},
+    "analytics": {}
   },
   "lists": {
     "addListToGroup": "Lijst toevoegen aan groep",
@@ -322,7 +316,26 @@
       "emailPlaceholder": "Je e-mailadres",
       "password": "Wachtwoord",
       "passwordPlaceholder": "Je wachtwoord",
-      "forgotPassword": "Wachtwoord vergeten?"
+      "forgotPassword": "Wachtwoord vergeten?",
+      "forgotPasswordSending": "Link versturen...",
+      "forgotPasswordEmailRequired": "Vul eerst je e-mailadres in.",
+      "forgotPasswordSent": "Als dat e-mailadres bestaat, ontvang je zo een resetlink."
+    },
+    "resetPassword": {
+      "title": "Nieuw wachtwoord",
+      "subtitle": "Stel een nieuw wachtwoord in met de link uit je e-mail.",
+      "loading": "Wachtwoord opslaan...",
+      "submit": "Wachtwoord resetten",
+      "newPassword": "Nieuw wachtwoord",
+      "newPasswordPlaceholder": "Voer je nieuwe wachtwoord in",
+      "confirmPassword": "Bevestig wachtwoord",
+      "confirmPasswordPlaceholder": "Herhaal je nieuwe wachtwoord",
+      "passwordMismatch": "De wachtwoorden komen niet overeen.",
+      "missingToken": "Deze resetlink is ongeldig of ontbreekt. Vraag een nieuwe resetlink aan.",
+      "invalidToken": "Deze resetlink is verlopen of ongeldig. Vraag een nieuwe resetlink aan.",
+      "success": "Je wachtwoord is opnieuw ingesteld. Je kunt nu opnieuw inloggen.",
+      "backToSignInText": "Terug naar",
+      "backToSignIn": "inloggen"
     },
     "signUp": {
       "title": "Maak een account aan",

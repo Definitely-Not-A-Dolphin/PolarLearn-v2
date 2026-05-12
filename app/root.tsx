@@ -31,7 +31,24 @@ export const links: Route.LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
   },
+  {
+    rel: "icon",
+    href: "/polarlearn.svg",
+    type: "image/svg+xml"
+  },
 ];
+
+export function meta({ }: Route.MetaArgs) {
+  const t = i18n.t;
+  return [
+    { title: "PolarLearn" },
+    { name: "description", content: t("home.description") },
+    { name: "twitter:card", content: "summary" },
+    { property: "og:title", content: "PolarLearn" },
+    { property: "og:description", content: t("home.description") },
+    { property: "og:image", content: '/banner.png' },
+  ]
+}
 
 export async function loader(loaderArgs: { request: Request }): Promise<RootLoaderData> {
   const headers = new Headers(loaderArgs.request.headers)
