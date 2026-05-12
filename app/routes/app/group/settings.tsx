@@ -14,6 +14,17 @@ export default function SettingsPage() {
   const revalidator = useRevalidator()
   const t = i18n.t
   const theme = rootData?.theme ?? "dark"
+  const isLoggedIn = Boolean(rootData?.user?.id)
+
+  if (!loaderData.isModerator) {
+    return (
+      <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+        {isLoggedIn
+          ? t("groups.onlyModeratorsCanManageSettings")
+          : t("groups.loginToManage")}
+      </div>
+    )
+  }
 
   const [groupName, setGroupName] = useState(loaderData.group.name)
   const [groupDescription, setGroupDescription] = useState(loaderData.group.description ?? "")

@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, useRevalidator } from "react-router";
+import { redirect, useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
 import { Clock3, List, ListX, Play, Star } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
@@ -49,7 +49,8 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
   const context = await createTRPCContext({ headers });
   if (!context.user) {
-    throw new Response("Unauthorized", { status: 401 });
+    const url = new URL(loaderArgs.request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
   const caller = createCallerFactory(appRouter)(context);
   const recentLists = await caller.list.getRecentLists();
@@ -169,44 +170,44 @@ export default function HomePage() {
           <div className="flex w-max flex-row gap-x-4">
             {recentItems.recent_subjects.length === 0
               ? Object.entries(subjectsList).map(([subjectName, subject]) => {
-                  const subjectLabel = t(subject.labelKey);
+                const subjectLabel = t(subject.labelKey);
 
-                  return (
-                    <div
-                      key={subjectName}
-                      className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl"
-                    >
-                      <img
-                        src={subject.icon}
-                        alt={subjectLabel}
-                        className="h-8 w-8 relative z-10"
-                      />
-                      <h2 className="font-bold relative z-10">
-                        {subjectLabel}
-                      </h2>
-                    </div>
-                  );
-                })
+                return (
+                  <div
+                    key={subjectName}
+                    className="relative flex flex-col gap-y-2 p-2 h-20 w-50 bg-neutral-200 cursor-not-allowed dark:bg-neutral-700 rounded-xl items-center justify-center before:absolute before:inset-0 before:bg-black/30 before:rounded-xl"
+                  >
+                    <img
+                      src={subject.icon}
+                      alt={subjectLabel}
+                      className="h-8 w-8 relative z-10"
+                    />
+                    <h2 className="font-bold relative z-10">
+                      {subjectLabel}
+                    </h2>
+                  </div>
+                );
+              })
               : recentItems.recent_subjects.map((subjectName) => {
-                  const subject = subjectsList[subjectName];
-                  if (subjectName === "other") return null;
-                  const subjectLabel = t(subject.labelKey);
-                  return (
-                    <div
-                      key={subjectName}
-                      className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center"
-                    >
-                      <img
-                        src={subject.icon}
-                        alt={subjectLabel}
-                        className="h-8 w-8 relative z-10"
-                      />
-                      <h2 className="font-bold relative z-10">
-                        {subjectLabel}
-                      </h2>
-                    </div>
-                  );
-                })}
+                const subject = subjectsList[subjectName];
+                if (subjectName === "other") return null;
+                const subjectLabel = t(subject.labelKey);
+                return (
+                  <div
+                    key={subjectName}
+                    className="relative flex flex-col gap-y-2 p-2 h-24 w-50 bg-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all cursor-pointer dark:bg-neutral-800 rounded-xl items-center justify-center"
+                  >
+                    <img
+                      src={subject.icon}
+                      alt={subjectLabel}
+                      className="h-8 w-8 relative z-10"
+                    />
+                    <h2 className="font-bold relative z-10">
+                      {subjectLabel}
+                    </h2>
+                  </div>
+                );
+              })}
           </div>
         </div>
         <ScrollBar orientation="horizontal" />

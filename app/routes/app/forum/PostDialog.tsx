@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { useRouteLoaderData } from "react-router";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { forumCategoryInfo, forumCategoryRequiresSubject, getAvailableForumCategories, type ForumCategory } from "~/lib/forum";
 import SubjectSelector from "~/components/subject-selector";
@@ -16,6 +17,7 @@ import type { SubjectNames } from "~/lib/subjectnames";
 import { t } from "~/i18n";
 import type { Theme } from "~/lib/root-data";
 import { cn } from "~/lib/utils";
+import type { RootLoaderData } from "~/lib/root-data";
 
 type PostDialogProps = {
   open: boolean;
@@ -62,6 +64,8 @@ export function PostDialog({
   subjects,
   isAdmin,
 }: PostDialogProps) {
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const canSubmitPost = isEdit || Boolean(rootData?.user?.id);
   const availableCategories = getAvailableForumCategories(isAdmin);
 
   const SelectedCategoryIcon = forumCategoryInfo[category].icon;
@@ -74,9 +78,11 @@ export function PostDialog({
     ? isEdit
       ? t("common.saving")
       : t("forum.createPost.posting")
-    : isEdit
-      ? t("common.save")
-      : t("forum.createPost.post");
+    : !canSubmitPost
+      ? t("forum.createPost.loginToPost")
+      : isEdit
+        ? t("common.save")
+        : t("forum.createPost.post");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,7 +105,7 @@ export function PostDialog({
                 setTitle(e.target.value);
               }}
               className="mt-2"
-              disabled={isPending}
+              disabled={isPending || !canSubmitPost}
             />
           </div>
 
@@ -110,7 +116,7 @@ export function PostDialog({
                 <button
                   type="button"
                   className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
-                  disabled={isPending}
+                  disabled={isPending || !canSubmitPost}
                 >
                   <span className="flex items-center gap-2">
                     <SelectedCategoryIcon className="size-4" />
@@ -140,7 +146,7 @@ export function PostDialog({
                           setCategory(categoryId);
                           setIsCategoryPopoverOpen(false);
                         }}
-                        disabled={isPending}
+                        disabled={isPending || !canSubmitPost}
                       >
                         <span className="flex items-center gap-2">
                           <CategoryIcon className="size-4" />
@@ -167,6 +173,7 @@ export function PostDialog({
                   open={isSubjectSelectorOpen}
                   onOpenChange={setIsSubjectSelectorOpen}
                   subjects={subjects}
+                  disabled={isPending || !canSubmitPost}
                 />
               </div>
             </div>
@@ -185,10 +192,16 @@ export function PostDialog({
               }}
               className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium placeholder-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               rows={8}
-              disabled={isPending}
+              disabled={isPending || !canSubmitPost}
             />
           </div>
         </div>
+
+        {!canSubmitPost ? (
+          <p className="px-4 text-sm text-muted-foreground">
+            {t("forum.createPost.loginToPostDescription")}
+          </p>
+        ) : null}
 
         <DialogFooter className="mt-4 shrink-0 border-t pt-4">
           <DialogClose asChild>
@@ -200,7 +213,7 @@ export function PostDialog({
             color="sky"
             textColor="white"
             onClick={onSubmit}
-            disabled={isPending}
+            disabled={isPending || (!isEdit && !canSubmitPost)}
             icon={isPending ? <Loader2 className="animate-spin" /> : undefined}
           >
             {submitButtonLabel}

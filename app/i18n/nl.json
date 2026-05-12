@@ -83,6 +83,13 @@
     "new": "Nieuw"
   },
   "groups": {
+    "fallbackName": "Groep",
+    "metaTitle": "{{groupName}} | PolarLearn group",
+    "metaDescription": "Bekijk groepslijsten, leden en instellingen op PolarLearn.",
+    "loginToJoin": "Log in om lid te worden.",
+    "loginToJoinDescription": "Log in om lid te worden, toegang aan te vragen of lijsten toe te voegen.",
+    "loginToManage": "Log in om deze groep te beheren.",
+    "onlyModeratorsCanManageSettings": "Alleen groepsbeheerders kunnen deze instellingen beheren.",
     "joinGroup": "Lid worden",
     "leaveGroup": "Groep verlaten",
     "joinedGroup": "Je bent lid geworden van de groep.",
@@ -393,12 +400,18 @@
     }
   },
   "forum": {
+    "loginPrompt": "Log in om een post te plaatsen en je reacties te zien.",
+    "postFallbackTitle": "Post",
+    "metaTitle": "Forum | PolarLearn",
+    "metaDescription": "Bekijk forumposts, praat mee en blijf op de hoogte van PolarLearn.",
     "tabs": {
       "allPosts": "Alle posts",
       "myPosts": "Mijn posts",
       "myReplies": "Mijn reacties"
     },
     "posts": {
+      "metaTitle": "Posts | PolarLearn forum",
+      "metaDescription": "Bekijk de nieuwste PolarLearn-forumposts en praat mee.",
       "pinned": "Vastgezet",
       "loading": "Posts laden...",
       "loadingMore": "Meer laden...",
@@ -414,6 +427,8 @@
       }
     },
     "post": {
+      "metaTitle": "{{title}} | PolarLearn forum",
+      "metaDescriptionFallback": "Lees het volledige gesprek en reageer op het PolarLearn-forum.",
       "created": "Post geplaatst!",
       "error": "Kon de post niet plaatsen",
       "titleRequired": "Een titel is verplicht",
@@ -429,6 +444,8 @@
     },
     "createPost": {
       "title": "Nieuwe post",
+      "loginToPost": "Log in om een post te plaatsen.",
+      "loginToPostDescription": "Log in om een post te plaatsen en je reacties te zien.",
       "titleLabel": "Titel",
       "titlePlaceholder": "Titel",
       "categoryLabel": "Categorie",
@@ -457,6 +474,8 @@
       "unknownOriginalPost": "Onbekende post"
     },
     "reply": {
+      "loginToReply": "Log in om te reageren.",
+      "loginToReplyDescription": "Log in om op deze post te reageren.",
       "created": "Reactie geplaatst!",
       "error": "Kon de reactie niet plaatsen",
       "contentRequired": "Reactie kan niet leeg zijn",

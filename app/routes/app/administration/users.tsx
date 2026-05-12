@@ -36,7 +36,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
   const session = await auth.api.getSession({ headers });
 
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user) {
+    const url = new URL(request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
+  }
+
+  if (session.user.role !== "admin") {
     return redirect("/app");
   }
 

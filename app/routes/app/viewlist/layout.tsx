@@ -8,6 +8,7 @@ import type { Route } from "./+types/layout";
 import { appRouter } from "~/server/main";
 import {
   Outlet,
+  redirect,
   useLoaderData,
   useLocation,
   useNavigate,
@@ -43,8 +44,8 @@ export async function loader({
   const context = await createTRPCContext({ headers });
 
   if (!context.user) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("", { status: 401 });
+    const url = new URL(request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
   const userId = context.user.id;
   const caller = createCallerFactory(appRouter)(context);

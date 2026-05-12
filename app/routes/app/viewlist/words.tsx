@@ -1,4 +1,4 @@
-import { useLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
 import i18n from "~/i18n";
@@ -21,7 +21,8 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Loa
   const context = await createTRPCContext({ headers });
 
   if (!context.user) {
-    throw new Response("", { status: 401 });
+    const url = new URL(request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
 
   const caller = createCallerFactory(appRouter)(context);

@@ -1,4 +1,5 @@
 import type { Route } from "./+types/[id]";
+import { redirect } from "react-router";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
 import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
@@ -39,8 +40,8 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<{ s
   const context = await createTRPCContext({ headers })
 
   if (!context.user) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("Unauthorized", { status: 401 })
+    const url = new URL(request.url)
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`)
   }
 
   const caller = createCallerFactory(appRouter)(context)

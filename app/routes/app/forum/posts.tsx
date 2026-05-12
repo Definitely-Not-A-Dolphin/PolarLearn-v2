@@ -5,7 +5,7 @@ import { MessageSquare, Pin } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { forumCategoryRequiresSubject, getCategoryInfo, type GetPostsOutput, type Post } from "~/lib/forum";
-import i18n from "~/i18n";
+import i18n, { t } from "~/i18n";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
 import type { Route } from "./+types/posts";
@@ -14,6 +14,16 @@ import type { SubjectNames } from "~/lib/subjectnames";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
+
+export function meta(): Route.MetaDescriptors {
+  return [
+    { title: t("forum.posts.metaTitle") },
+    {
+      name: "description",
+      content: t("forum.posts.metaDescription"),
+    },
+  ];
+}
 
 export async function loader({ request }: Route.LoaderArgs): Promise<{ initialPosts: GetPostsOutput }> {
   const headers = new Headers(request.headers);

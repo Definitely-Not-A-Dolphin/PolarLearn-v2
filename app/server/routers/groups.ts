@@ -1,7 +1,7 @@
 import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
 
-import { protectedProcedure } from '~/server/trpc'
+import { protectedProcedure, publicProcedure } from '~/server/trpc'
 
 export const groupsRouter = {
   getJoinedGroups: protectedProcedure.query(async ({ ctx }) => {
@@ -85,7 +85,7 @@ export const groupsRouter = {
     })
     return group
   }),
-  getGroupData: protectedProcedure.input(
+  getGroupData: publicProcedure.input(
     z.object({
       id: z.string(),
     })

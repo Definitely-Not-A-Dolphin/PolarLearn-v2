@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from "react-router"
+import { redirect, useLoaderData, useNavigate } from "react-router"
 import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
 import { buildSessionSummary, sessionSummaryLoaderSchema, type SessionSummaryLoaderData, type SessionSummarySource } from "~/lib/stats"
@@ -17,8 +17,8 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Ses
   const context = await createTRPCContext({ headers })
 
   if (!context.user) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("Unauthorized", { status: 401 })
+    const url = new URL(request.url)
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`)
   }
 
   const sessions = (await prisma.learnSession.findMany({

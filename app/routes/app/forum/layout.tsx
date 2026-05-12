@@ -7,6 +7,7 @@ import {
 import { Tabs } from "@polarnl/polarui-react";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
+import type { Route } from "./+types/layout";
 
 const tabs = [
   { label: t("forum.tabs.allPosts"), path: "posts" },
@@ -14,15 +15,27 @@ const tabs = [
   { label: t("forum.tabs.myReplies"), path: "myReplies" },
 ];
 
+export function meta(): Route.MetaDescriptors {
+  return [
+    { title: t("forum.metaTitle") },
+    {
+      name: "description",
+      content: t("forum.metaDescription"),
+    },
+  ];
+}
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
+  const isLoggedIn = Boolean(rootData?.user?.id);
+  const visibleTabs = isLoggedIn ? tabs : tabs.slice(0, 1);
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
   const basePath = "/app/forum";
-  const activeIndex = tabs.findIndex(
+  const activeIndex = visibleTabs.findIndex(
     ({ path }) =>
       normalizedPath === `${basePath}/${path}` ||
       normalizedPath.startsWith(`${basePath}/${path}/`),
@@ -38,10 +51,15 @@ export default function Layout() {
   return (
     <div className="p-4">
       <h1 className="truncate text-3xl font-bold">{t("navigation.forum")}</h1>
+      {!isLoggedIn ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t("forum.loginPrompt")}
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-row items-center gap-3">
         <Tabs
           scheme={theme}
-          tabs={tabs.map((tab) => tab.label)}
+          tabs={visibleTabs.map((tab) => tab.label)}
           activeIndex={activeIndex === -1 ? 0 : activeIndex}
           onActiveIndexChange={handleTabChange}
         />

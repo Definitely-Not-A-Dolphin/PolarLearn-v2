@@ -17,21 +17,20 @@ import type { Post } from "~/lib/forum";
 import type { RootLoaderData } from "~/lib/root-data";
 import { Loader2, MessageSquareReply } from "lucide-react";
 
-type ReplyDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  postId: string;
-  onReplySuccess: (reply: Post) => void;
-};
-
 export function ReplyDialog({
   open,
   onOpenChange,
   postId,
   onReplySuccess,
-}: ReplyDialogProps) {
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  postId: string;
+  onReplySuccess: (reply: Post) => void;
+}) {
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "light";
+  const canReply = Boolean(rootData?.user?.id);
   const rpc = useTRPC();
 
   const [content, setContent] = useState("");
@@ -49,8 +48,13 @@ export function ReplyDialog({
     },
   });
   const isPostingReply = replyMutation.isPending;
+  const submitLabel = canReply ? t("forum.reply.submit") : t("forum.reply.loginToReply");
 
   const handleSubmit = () => {
+    if (!canReply) {
+      return;
+    }
+
     if (!content.trim()) {
       toast.error(t("forum.reply.contentRequired"));
       return;
@@ -71,6 +75,12 @@ export function ReplyDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {!canReply ? (
+          <p className="text-sm text-muted-foreground">
+            {t("forum.reply.loginToReplyDescription")}
+          </p>
+        ) : null}
+
         <div>
           <label htmlFor="reply-content" className="font-medium">
             {t("forum.reply.content")}
@@ -84,7 +94,7 @@ export function ReplyDialog({
             }}
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium placeholder-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             rows={6}
-            disabled={isPostingReply}
+            disabled={isPostingReply || !canReply}
           />
         </div>
 
@@ -96,14 +106,16 @@ export function ReplyDialog({
           </DialogClose>
           <Button
             onClick={handleSubmit}
-            disabled={isPostingReply || !content.trim()}
+            disabled={isPostingReply || !canReply || !content.trim()}
             color="sky"
             textColor="white"
             icon={isPostingReply ? <Loader2 className="animate-spin" /> : <MessageSquareReply />}
           >
-            {isPostingReply
-              ? t("forum.reply.posting")
-              : t("forum.reply.submit")}
+            {!canReply
+              ? submitLabel
+              : isPostingReply
+                ? t("forum.reply.posting")
+                : t("forum.reply.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

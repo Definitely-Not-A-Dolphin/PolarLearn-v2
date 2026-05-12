@@ -41,7 +41,6 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResetPasswordLoading, setIsResetPasswordLoading] = useState(false);
 
   const passwordContainerRef = useRef<HTMLDivElement>(null);
 
@@ -100,36 +99,6 @@ export default function SignInPage() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (isResetPasswordLoading) return;
-
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      toast.error(t("auth:signIn.forgotPasswordEmailRequired"));
-      return;
-    }
-
-    setIsResetPasswordLoading(true);
-
-    try {
-      const { error } = await authClient.requestPasswordReset({
-        email: trimmedEmail,
-        redirectTo: new URL("/auth/reset-password", window.location.origin).toString(),
-      });
-
-      if (error) {
-        toast.error(error.message ?? t("auth:errors.unknown"));
-        return;
-      }
-
-      toast.success(t("auth:signIn.forgotPasswordSent"));
-    } catch (err: any) {
-      toast.error(err?.message ?? t("auth:errors.unknown"));
-    } finally {
-      setIsResetPasswordLoading(false);
-    }
-  };
-
   return (
     <div className="flex flex-row h-screen w-screen">
       <div className="w-[67%] bg-linear-to-b from-sky-400 to-sky-100 h-full md:flex hidden flex-col justify-center px-16 lg:px-32">
@@ -161,17 +130,6 @@ export default function SignInPage() {
             required
           />
 
-          <button
-            type="button"
-            onClick={() => { void handleForgotPassword(); }}
-            disabled={isResetPasswordLoading}
-            className="text-md text-sky-400 font-bold block mt-3 mb-2 cursor-pointer hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isResetPasswordLoading
-              ? t("auth:signIn.forgotPasswordSending")
-              : t("auth:signIn.forgotPassword")}
-          </button>
-
           <div
             ref={passwordContainerRef}
             className="overflow-hidden opacity-0"
@@ -193,6 +151,16 @@ export default function SignInPage() {
               onChange={(e) => { setPassword(e.target.value); }}
               required={showPassword}
             />
+            {smtpEnabled ? (
+              <button
+                onClick={() => {
+
+                }}
+                className="text-md text-sky-400 font-bold block mb-2 cursor-pointer hover:underline"
+              >
+                {t("auth:signIn.forgotPassword")}
+              </button>
+            ): null}
           </div>
 
           <Button

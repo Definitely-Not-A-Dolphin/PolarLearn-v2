@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from "react-router";
+import { redirect, useLoaderData, useNavigate } from "react-router";
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { MessageSquare } from "lucide-react";
@@ -30,8 +30,8 @@ export async function loader({
   const context = await createTRPCContext({ headers });
 
   if (!context.user) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("Unauthorized", { status: 401 });
+    const url = new URL(request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
 
   const caller = createCallerFactory(appRouter)(context);

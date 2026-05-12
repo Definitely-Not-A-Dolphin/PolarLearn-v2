@@ -54,6 +54,24 @@ import { ShieldUser } from "lucide-react";
 
 const REPLIES_PER_PAGE = 10;
 
+export function meta({ data }: Route.MetaArgs): Route.MetaDescriptors {
+  const postTitle = data?.post?.title?.trim() || i18n.t("forum.postFallbackTitle");
+  const postExcerpt =
+    data?.post?.content
+      ?.replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160) ||
+    i18n.t("forum.post.metaDescriptionFallback");
+
+  return [
+    { title: i18n.t("forum.post.metaTitle", { title: postTitle }) },
+    {
+      name: "description",
+      content: postExcerpt,
+    },
+  ];
+}
+
 export async function loader({ params, request }: Route.LoaderArgs) {
   const postId = params.postid;
   if (!postId) {
@@ -374,10 +392,14 @@ export default function PostPage() {
           textColor="white"
           icon={<MessageSquareReply />}
           onClick={() => {
+            if (!rootData?.user?.id) {
+              return;
+            }
             setReplyDialogOpen(true);
           }}
+          disabled={!rootData?.user?.id}
         >
-          {i18n.t("forum.reply.buttonLabel")}
+          {rootData?.user?.id ? i18n.t("forum.reply.buttonLabel") : i18n.t("forum.reply.loginToReply")}
         </Button>
 
         <div className="flex flex-wrap items-center gap-1">
@@ -613,15 +635,15 @@ export default function PostPage() {
                       currentReplies.map((currentReply) =>
                         currentReply.id === replyId
                           ? {
-                              ...currentReply,
-                              votes: updatedVoteTotals.votes,
-                              cachedTotalVotes:
-                                updatedVoteTotals.cachedTotalVotes,
-                              currentUserVote:
-                                currentReply.currentUserVote === vote
-                                  ? null
-                                  : vote,
-                            }
+                            ...currentReply,
+                            votes: updatedVoteTotals.votes,
+                            cachedTotalVotes:
+                              updatedVoteTotals.cachedTotalVotes,
+                            currentUserVote:
+                              currentReply.currentUserVote === vote
+                                ? null
+                                : vote,
+                          }
                           : currentReply,
                       ),
                     );

@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { Button, Input } from "@polarnl/polarui-react";
-import { useLoaderData, useRouteLoaderData, useNavigate } from "react-router";
+import { redirect, useLoaderData, useRouteLoaderData, useNavigate } from "react-router";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -179,8 +179,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const user = context.user;
 
   if (!user?.id) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("Unauthorized", { status: 401 });
+    const url = new URL(request.url);
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
 
   const caller = createCallerFactory(appRouter)(context);

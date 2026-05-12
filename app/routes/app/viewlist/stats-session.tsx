@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router"
+import { redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router"
 import { MoveLeft } from "lucide-react"
 import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
@@ -25,8 +25,8 @@ export async function loader({ params, request }: { params: Record<string, strin
   const context = await createTRPCContext({ headers })
 
   if (!context.user) {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw new Response("Unauthorized", { status: 401 })
+    const url = new URL(request.url)
+    return redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(`${url.pathname}${url.search}`)}`)
   }
 
   const session = await prisma.learnSession.findFirst({

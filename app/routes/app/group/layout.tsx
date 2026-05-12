@@ -41,6 +41,21 @@ function generateTabs(isModerator: boolean): Tab[] {
   return baseTabs;
 }
 
+export function meta({ data }: Route.MetaArgs): Route.MetaDescriptors {
+  const groupName = data?.group?.name?.trim() || t("groups.fallbackName");
+  const groupDescription =
+    data?.group?.description?.trim() ||
+    t("groups.metaDescription");
+
+  return [
+    { title: t("groups.metaTitle", { groupName }) },
+    {
+      name: "description",
+      content: groupDescription,
+    },
+  ];
+}
+
 export async function loader({ params, request }: Route.LoaderArgs) {
   const { id } = params;
   if (!id) {
@@ -48,12 +63,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
   const headers = new Headers(request.headers);
   const context = await createTRPCContext({ headers });
-  if (!context.user) {
-    throw new Response("Unauthorized", { status: 401 });
-  }
   const caller = createCallerFactory(appRouter)(context);
   const group = await caller.groups.getGroupData({ id });
-  const recentLists = await caller.list.getRecentLists();
+  const recentLists = context.user ? await caller.list.getRecentLists() : [];
   if (!group) {
     throw new Response("", { status: 404 });
   }
@@ -61,27 +73,28 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     group,
     ...(recentLists.length > 0 ? { recentLists } : {}),
     tabs: generateTabs(
-      group.moderators.some((mod) => mod.id === context.user!.id),
+      group.moderators.some((mod) => mod.id === context.user?.id),
     ),
-    ownsGroup: group.creatorId === context.user.id,
-    isModerator: group.moderators.some((mod) => mod.id === context.user!.id),
+    ownsGroup: group.creatorId === context.user?.id,
+    isModerator: group.moderators.some((mod) => mod.id === context.user?.id),
     isMember: group.members.some(
-      (member: any) => member.id === context.user!.id,
+      (member: any) => member.id === context.user?.id,
     ),
     isPending:
       Array.isArray(group.approvalQueue) &&
-      group.approvalQueue.some((u: any) => u.id === context.user!.id),
+      group.approvalQueue.some((u: any) => u.id === context.user?.id),
   };
 }
 
 export default function Layout() {
-  const loaderData = useLoaderData<{ tabs: Tab[]; [key: string]: any }>();
+  const loaderData = useLoaderData<{ tabs: Tab[];[key: string]: any }>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const location = useLocation();
   const navigate = useNavigate();
   const theme = rootData?.theme ?? "dark";
   const trpc = useTRPC();
   const isModerator = loaderData.isModerator;
+  const isLoggedIn = Boolean(rootData?.user?.id);
   const queryClient = useQueryClient();
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
@@ -167,7 +180,9 @@ export default function Layout() {
           </Avatar>
           <h1 className="mt-2 text-2xl font-bold">{loaderData.group.name}</h1>
           <div className="grow" />
-          {loaderData.group.creatorId !== rootData?.user?.id ? (
+          {!isLoggedIn ? (
+            <Button disabled>{t("groups.loginToJoin")}</Button>
+          ) : loaderData.group.creatorId !== rootData?.user?.id ? (
             <>
               <Button
                 onClick={() => {
@@ -192,6 +207,11 @@ export default function Layout() {
             </>
           ) : null}
         </div>
+        {!isLoggedIn ? (
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+            {t("groups.loginToJoinDescription")}
+          </p>
+        ) : null}
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
           {loaderData.group.description}
         </p>
@@ -244,8 +264,8 @@ export default function Layout() {
                               );
                             const subject = hasSubject
                               ? subjectsList[
-                                  list.subject as keyof typeof subjectsList
-                                ]
+                              list.subject as keyof typeof subjectsList
+                              ]
                               : null;
                             const subjectLabel = subject
                               ? t(subject.labelKey)
