@@ -52,10 +52,21 @@ export async function loader({ params }: Route.LoaderArgs) {
         },
       },
       forumPosts: {
+        where: {
+          isReply: false,
+          deleted: false,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
         select: {
           id: true,
           title: true,
           content: true,
+          category: true,
+          subject: true,
+          pinned: true,
+          createdAt: true,
         },
       },
       createdGroups: {
