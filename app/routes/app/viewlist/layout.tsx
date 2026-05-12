@@ -6,17 +6,34 @@ import { useState } from "react";
 
 import type { Route } from "./+types/layout";
 import { appRouter } from "~/server/main";
-import { Outlet, useLoaderData, useLocation, useNavigate, useRouteLoaderData, useRevalidator } from "react-router";
+import {
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useRouteLoaderData,
+  useRevalidator,
+} from "react-router";
 import { Button, Tabs } from "@polarnl/polarui-react";
 import { Subject } from "~/lib/subjects";
 import i18n from "~/i18n";
 import { prisma } from "~/lib/db";
 import { Loader2, Pencil, BookOpen, Trash, Star } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import type { LoaderData, ListData } from "~/lib/viewlist";
 import type { RootLoaderData } from "~/lib/root-data";
 
-export async function loader({ params, request }: Route.LoaderArgs): Promise<LoaderData> {
+export async function loader({
+  params,
+  request,
+}: Route.LoaderArgs): Promise<LoaderData> {
   const id = params.id as string | undefined;
   if (!id) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
@@ -33,15 +50,18 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Loa
   const caller = createCallerFactory(appRouter)(context);
   try {
     const list: ListData = await caller.list.getLatestListData({ listId: id });
-    const canEdit = list.userId === userId || list.collaborators.some((collaborator) => collaborator.id === userId);
+    const canEdit =
+      list.userId === userId ||
+      list.collaborators.some((collaborator) => collaborator.id === userId);
 
-    const collaborators = []
+    const collaborators = [];
     for (const collaborator of list.collaborators) {
-      const collaboratorId = typeof collaborator === 'string' ? collaborator : collaborator.id
+      const collaboratorId =
+        typeof collaborator === "string" ? collaborator : collaborator.id;
       const user = await prisma.user.findUnique({
         where: {
-          id: collaboratorId
-        }
+          id: collaboratorId,
+        },
       });
       if (user) {
         collaborators.push({ name: user.name || "?", id: user.id });
@@ -53,7 +73,7 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Loa
       collaborators,
       canEdit,
       canDelete: list.userId === userId,
-      user_liked: list.favoritedBy.some((fav) => fav.id === userId)
+      user_liked: list.favoritedBy.some((fav) => fav.id === userId),
     };
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
@@ -65,8 +85,8 @@ export default function Layout() {
   const data = useLoaderData<LoaderData>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const subjects = new Subject();
-  const icon = subjects.getIcon(data.list.subject, { width: 50, height: 50 })
-  const t = i18n.t
+  const icon = subjects.getIcon(data.list.subject, { width: 50, height: 50 });
+  const t = i18n.t;
   const location = useLocation();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
@@ -76,12 +96,12 @@ export default function Layout() {
   const generateSessionMutation = useMutation({
     ...rpc.learning.generateLearnSession.mutationOptions(),
     onSuccess: (data: { id: string }) => {
-      void navigate(`/app/session/${data.id}`)
+      void navigate(`/app/session/${data.id}`);
     },
     onError: () => {
-      toast.error(t("errors.unknown"))
-    }
-  })
+      toast.error(t("errors.unknown"));
+    },
+  });
   const deleteListMutation = useMutation({
     ...rpc.list.deleteList.mutationOptions({
       onSuccess: () => {
@@ -93,7 +113,7 @@ export default function Layout() {
         toast.error(t("errors.unknown"));
       },
     }),
-  })
+  });
   const likeListMutation = useMutation({
     ...rpc.list.starList.mutationOptions({
       onSuccess: () => {
@@ -103,7 +123,7 @@ export default function Layout() {
         toast.error(t("errors.unknown"));
       },
     }),
-  })
+  });
   return (
     <div className="p-4">
       <div className="flex flex-row items-center gap-3">
@@ -118,7 +138,9 @@ export default function Layout() {
             {index > 0 && ", "}
             <button
               type="button"
-              onClick={() => { void navigate(`/app/viewuser/${collaborator.id}`); }}
+              onClick={() => {
+                void navigate(`/app/viewuser/${collaborator.id}`);
+              }}
               className="font-bold text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
             >
               {collaborator.name}
@@ -150,9 +172,15 @@ export default function Layout() {
           scheme={theme}
           color="sky"
           textColor="white"
-          icon={generateSessionMutation.isPending ? <Loader2 className="animate-spin" /> : <BookOpen />}
+          icon={
+            generateSessionMutation.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <BookOpen />
+            )
+          }
           onClick={() => {
-            generateSessionMutation.mutate({ listId: data.list.id })
+            generateSessionMutation.mutate({ listId: data.list.id });
           }}
           disabled={generateSessionMutation.isPending}
         >
@@ -174,23 +202,38 @@ export default function Layout() {
         <Button
           scheme={theme}
           variant="transparent"
-          icon={likeListMutation.isPending
-            ? <Loader2 className="animate-spin" />
-            : <Star className={data.user_liked ? "text-amber-300" : ""} />}
+          icon={
+            likeListMutation.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Star
+                className={data.user_liked ? "text-amber-300" : ""}
+                fill={data.user_liked ? "currentColor" : "none"}
+              />
+            )
+          }
           onClick={() => {
             likeListMutation.mutate({ id: data.list.id });
           }}
           disabled={likeListMutation.isPending}
           className="hover:bg-neutral-200/70 dark:hover:bg-white/10"
         >
-          {data.user_liked ? t("lists.favourites.unlike") : t("lists.favourites.like")}
+          {data.user_liked
+            ? t("lists.favourites.unlike")
+            : t("lists.favourites.like")}
         </Button>
         {data.canDelete && (
           <>
             <Button
               scheme={theme}
               variant="transparent"
-              icon={deleteListMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
+              icon={
+                deleteListMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash />
+                )
+              }
               onClick={() => {
                 setIsDeleteDialogOpen(true);
               }}
@@ -200,10 +243,15 @@ export default function Layout() {
               {t("lists.delete.title")}
             </Button>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <Dialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle className="font-bold text-2xl">{t("lists.delete.title")}</DialogTitle>
+                  <DialogTitle className="font-bold text-2xl">
+                    {t("lists.delete.title")}
+                  </DialogTitle>
                   <DialogDescription>
                     {t("lists.delete.description")}
                   </DialogDescription>
@@ -227,7 +275,13 @@ export default function Layout() {
                       deleteListMutation.mutate({ id: data.list.id });
                     }}
                     disabled={deleteListMutation.isPending}
-                    icon={deleteListMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
+                    icon={
+                      deleteListMutation.isPending ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Trash />
+                      )
+                    }
                   >
                     {t("lists.delete.title") || "Delete"}
                   </Button>
@@ -240,5 +294,5 @@ export default function Layout() {
       <hr className="mb-4" />
       <Outlet />
     </div>
-  )
+  );
 }

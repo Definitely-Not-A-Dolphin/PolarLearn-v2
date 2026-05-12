@@ -1,11 +1,23 @@
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { useLoaderData, useNavigate, useRevalidator, useRouteLoaderData } from "react-router";
+import {
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+  useRouteLoaderData,
+} from "react-router";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
-import { forumCategoryRequiresSubject, getCategoryInfo, type ForumCategory, type Post, type Vote, type PostAuthor } from "~/lib/forum";
+import {
+  forumCategoryRequiresSubject,
+  getCategoryInfo,
+  type ForumCategory,
+  type Post,
+  type Vote,
+  type PostAuthor,
+} from "~/lib/forum";
 import { Subject } from "~/lib/subjects";
 import type { SubjectNames } from "~/lib/subjectnames";
 import { SubjectNamesArray } from "~/lib/subjectnames";
@@ -22,7 +34,16 @@ import i18n from "~/i18n";
 import { useTRPC } from "~/server/react";
 import type { Route } from "./+types/[postid]";
 import { Button } from "@polarnl/polarui-react";
-import { ArrowDown, ArrowUp, Loader2, MessageSquareReply, PencilLine, Pin, PinOff, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Loader2,
+  MessageSquareReply,
+  PencilLine,
+  Pin,
+  PinOff,
+  Trash2,
+} from "lucide-react";
 import { t } from "~/i18n";
 import { Avatar, AvatarImage, AvatarFallback } from "~/components/ui/avatar";
 import { PostDialog } from "./PostDialog";
@@ -70,17 +91,27 @@ export default function PostPage() {
   const currentCategory = getCategoryInfo(currentPost.category);
   const subjects = new Subject();
   const [replies, setReplies] = useState(initialReplies.replies);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialReplies.nextCursor);
+  const [nextCursor, setNextCursor] = useState<string | null>(
+    initialReplies.nextCursor,
+  );
   const [isLoadingMoreReplies, setIsLoadingMoreReplies] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(currentPost.title ?? "");
   const [editContent, setEditContent] = useState(currentPost.content);
-  const [editCategory, setEditCategory] = useState<ForumCategory>(currentPost.category);
-  const [editSubject, setEditSubject] = useState<SubjectNames>(currentPost.subject ? (currentPost.subject as SubjectNames) : SubjectNamesArray[0]);
-  const [isEditSubjectSelectorOpen, setIsEditSubjectSelectorOpen] = useState(false);
-  const [isEditCategoryPopoverOpen, setIsEditCategoryPopoverOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState<ForumCategory>(
+    currentPost.category,
+  );
+  const [editSubject, setEditSubject] = useState<SubjectNames>(
+    currentPost.subject
+      ? (currentPost.subject as SubjectNames)
+      : SubjectNamesArray[0],
+  );
+  const [isEditSubjectSelectorOpen, setIsEditSubjectSelectorOpen] =
+    useState(false);
+  const [isEditCategoryPopoverOpen, setIsEditCategoryPopoverOpen] =
+    useState(false);
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "light";
   const currentUserId = rootData?.user.id ?? null;
@@ -89,7 +120,8 @@ export default function PostPage() {
   const isOwner = Boolean(currentUserId && author?.id === currentUserId);
   const canManagePost = isOwner || isAdmin;
   const canVote = Boolean(currentUserId);
-  const currentUserVote = (currentPost.currentUserVote as Vote | null | undefined) ?? null;
+  const currentUserVote =
+    (currentPost.currentUserVote as Vote | null | undefined) ?? null;
   const hasUpvoted = currentUserVote === "up";
   const hasDownvoted = currentUserVote === "down";
   const revalidator = useRevalidator();
@@ -109,7 +141,9 @@ export default function PostPage() {
       toast.error(t("errors.unknown"));
     },
   });
-  const pendingVote = voteMutation.isPending ? voteMutation.variables.vote : null;
+  const pendingVote = voteMutation.isPending
+    ? voteMutation.variables.vote
+    : null;
 
   const editMutation = useMutation({
     ...trpc.forum.editPost.mutationOptions(),
@@ -129,7 +163,7 @@ export default function PostPage() {
   const deleteMutation = useMutation({
     ...trpc.forum.deletePost.mutationOptions(),
     onSuccess: async () => {
-      revalidator.revalidate()
+      revalidator.revalidate();
       setDeleteDialogOpen(false);
       toast.success(t("forum.post.deleted"));
 
@@ -147,11 +181,13 @@ export default function PostPage() {
         ...current,
         pinned: !current.pinned,
       }));
-      toast.success(t("forum.post.pinnedUpdated", {
-        action: currentPost.pinned
-          ? t("forum.post.unpin")
-          : t("forum.post.pin"),
-      }));
+      toast.success(
+        t("forum.post.pinnedUpdated", {
+          action: currentPost.pinned
+            ? t("forum.post.unpin")
+            : t("forum.post.pin"),
+        }),
+      );
     },
     onError: () => {
       toast.error(t("errors.unknown"));
@@ -180,7 +216,9 @@ export default function PostPage() {
         }),
       );
 
-      setReplies((currentReplies) => mergePostsById(currentReplies, nextPage.replies));
+      setReplies((currentReplies) =>
+        mergePostsById(currentReplies, nextPage.replies),
+      );
       setNextCursor(nextPage.nextCursor);
     } finally {
       setIsLoadingMoreReplies(false);
@@ -202,8 +240,9 @@ export default function PostPage() {
               <div className="flex flex-row items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    void navigate(`/app/viewuser/${authorId}`);
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void navigate(`/app/viewuser/${authorId}/lists`);
                   }}
                   className="cursor-pointer font-medium text-neutral-800 hover:underline dark:text-neutral-200"
                 >
@@ -220,9 +259,7 @@ export default function PostPage() {
                 )}
               </div>
             ) : (
-              <span className="font-medium">
-                {authorLabel}
-              </span>
+              <span className="font-medium">{authorLabel}</span>
             )}
             <span className="text-sm text-muted-foreground">
               {formatDate(currentPost.createdAt)}
@@ -234,7 +271,9 @@ export default function PostPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               {currentPost.title && (
-                <h1 className="text-2xl font-bold leading-tight">{currentPost.title}</h1>
+                <h1 className="text-2xl font-bold leading-tight">
+                  {currentPost.title}
+                </h1>
               )}
 
               <div className="flex flex-wrap items-center gap-2">
@@ -256,18 +295,23 @@ export default function PostPage() {
                   {t(currentCategory.label)}
                 </Badge>
 
-                {forumCategoryRequiresSubject(currentPost.category) && currentPost.subject && (
-                  <div className="flex items-center gap-1">
-                    {subjects.getIcon(currentPost.subject as SubjectNames, { width: 16, height: 16 })}
-                    <span className="text-xs text-muted-foreground">
-                      {subjects.getSubjectNameById(currentPost.subject as SubjectNames)}
-                    </span>
-                  </div>
-                )}
+                {forumCategoryRequiresSubject(currentPost.category) &&
+                  currentPost.subject && (
+                    <div className="flex items-center gap-1">
+                      {subjects.getIcon(currentPost.subject as SubjectNames, {
+                        width: 16,
+                        height: 16,
+                      })}
+                      <span className="text-xs text-muted-foreground">
+                        {subjects.getSubjectNameById(
+                          currentPost.subject as SubjectNames,
+                        )}
+                      </span>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
-
         </div>
 
         <MarkdownRenderer content={currentPost.content} />
@@ -278,9 +322,15 @@ export default function PostPage() {
             <Button
               variant="transparent"
               scheme={theme}
-              icon={pendingVote === "up"
-                ? <Loader2 className="animate-spin" />
-                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
+              icon={
+                pendingVote === "up" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowUp
+                    className={hasUpvoted ? "text-orange-500" : "text-white"}
+                  />
+                )
+              }
               onClick={() => {
                 handleVote("up");
               }}
@@ -291,14 +341,22 @@ export default function PostPage() {
               {""}
             </Button>
             <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
-              {typeof currentPost.votes === 'number' ? currentPost.votes : currentPost.cachedTotalVotes}
+              {typeof currentPost.votes === "number"
+                ? currentPost.votes
+                : currentPost.cachedTotalVotes}
             </span>
             <Button
               variant="transparent"
               scheme={theme}
-              icon={pendingVote === "down"
-                ? <Loader2 className="animate-spin" />
-                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
+              icon={
+                pendingVote === "down" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowDown
+                    className={hasDownvoted ? "text-violet-500" : "text-white"}
+                  />
+                )
+              }
               onClick={() => {
                 handleVote("down");
               }}
@@ -327,12 +385,22 @@ export default function PostPage() {
             <Button
               variant="transparent"
               scheme={theme}
-              icon={editMutation.isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+              icon={
+                editMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <PencilLine />
+                )
+              }
               onClick={() => {
                 setEditTitle(currentPost.title ?? "");
                 setEditContent(currentPost.content);
                 setEditCategory(currentPost.category);
-                setEditSubject(currentPost.subject ? (currentPost.subject as SubjectNames) : SubjectNamesArray[0]);
+                setEditSubject(
+                  currentPost.subject
+                    ? (currentPost.subject as SubjectNames)
+                    : SubjectNamesArray[0],
+                );
                 setEditDialogOpen(true);
               }}
               disabled={editMutation.isPending}
@@ -347,7 +415,13 @@ export default function PostPage() {
             <Button
               variant="transparent"
               scheme={theme}
-              icon={deleteMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              icon={
+                deleteMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )
+              }
               onClick={() => {
                 setDeleteDialogOpen(true);
               }}
@@ -363,25 +437,27 @@ export default function PostPage() {
             <Button
               variant="transparent"
               scheme={theme}
-              icon={pinMutation.isPending
-                ? <Loader2 className="animate-spin" />
-                : currentPost.pinned
-                  ? <PinOff />
-                  : <Pin />}
+              icon={
+                pinMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : currentPost.pinned ? (
+                  <PinOff />
+                ) : (
+                  <Pin />
+                )
+              }
               onClick={() => {
                 pinMutation.mutate({
                   id: currentPost.id,
                 });
               }}
               disabled={pinMutation.isPending}
-              title={currentPost.pinned
-                ? t("forum.post.unpin")
-                : t("forum.post.pin")}
+              title={
+                currentPost.pinned ? t("forum.post.unpin") : t("forum.post.pin")
+              }
               className="border-none shadow-none hover:bg-neutral-200/70 dark:hover:bg-white/10"
             >
-              {currentPost.pinned
-                ? t("forum.post.unpin")
-                : t("forum.post.pin")}
+              {currentPost.pinned ? t("forum.post.unpin") : t("forum.post.pin")}
             </Button>
           )}
         </div>
@@ -392,7 +468,9 @@ export default function PostPage() {
         onOpenChange={setReplyDialogOpen}
         postId={currentPost.id}
         onReplySuccess={(newReply) => {
-          setReplies((currentReplies) => mergePostsById([newReply], currentReplies));
+          setReplies((currentReplies) =>
+            mergePostsById([newReply], currentReplies),
+          );
         }}
       />
 
@@ -433,7 +511,9 @@ export default function PostPage() {
             title: trimmedTitle,
             content: trimmedContent,
             category: editCategory,
-            subject: forumCategoryRequiresSubject(editCategory) ? editSubject : undefined,
+            subject: forumCategoryRequiresSubject(editCategory)
+              ? editSubject
+              : undefined,
           });
         }}
         subjects={subjects}
@@ -493,43 +573,58 @@ export default function PostPage() {
                   currentUserId={currentUserId}
                   isAdmin={isAdmin}
                   onReplyUpdated={(updatedReply) => {
-                    setReplies((currentReplies) => currentReplies.map((currentReply) => (
-                      currentReply.id === updatedReply.id
-                        ? { ...currentReply, ...updatedReply }
-                        : currentReply
-                    )));
+                    setReplies((currentReplies) =>
+                      currentReplies.map((currentReply) =>
+                        currentReply.id === updatedReply.id
+                          ? { ...currentReply, ...updatedReply }
+                          : currentReply,
+                      ),
+                    );
                   }}
                   onReplyDeleted={(replyId) => {
-                    setReplies((currentReplies) => currentReplies.filter((currentReply) => currentReply.id !== replyId));
+                    setReplies((currentReplies) =>
+                      currentReplies.filter(
+                        (currentReply) => currentReply.id !== replyId,
+                      ),
+                    );
                   }}
                   onReplyPinned={(replyId) => {
                     setReplies((currentReplies) => {
-                      const nextReplies = currentReplies.map((currentReply) => (
+                      const nextReplies = currentReplies.map((currentReply) =>
                         currentReply.id === replyId
                           ? { ...currentReply, pinned: !currentReply.pinned }
-                          : currentReply
-                      ));
+                          : currentReply,
+                      );
 
                       return nextReplies.sort((left, right) => {
                         if (left.pinned !== right.pinned) {
                           return left.pinned ? -1 : 1;
                         }
 
-                        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+                        return (
+                          new Date(right.createdAt).getTime() -
+                          new Date(left.createdAt).getTime()
+                        );
                       });
                     });
                   }}
                   onReplyVoted={(replyId, vote, updatedVoteTotals) => {
-                    setReplies((currentReplies) => currentReplies.map((currentReply) => (
-                      currentReply.id === replyId
-                        ? {
-                          ...currentReply,
-                          votes: updatedVoteTotals.votes,
-                          cachedTotalVotes: updatedVoteTotals.cachedTotalVotes,
-                          currentUserVote: currentReply.currentUserVote === vote ? null : vote,
-                        }
-                        : currentReply
-                    )));
+                    setReplies((currentReplies) =>
+                      currentReplies.map((currentReply) =>
+                        currentReply.id === replyId
+                          ? {
+                              ...currentReply,
+                              votes: updatedVoteTotals.votes,
+                              cachedTotalVotes:
+                                updatedVoteTotals.cachedTotalVotes,
+                              currentUserVote:
+                                currentReply.currentUserVote === vote
+                                  ? null
+                                  : vote,
+                            }
+                          : currentReply,
+                      ),
+                    );
                   }}
                 />
               ))
@@ -540,7 +635,6 @@ export default function PostPage() {
     </div>
   );
 }
-
 
 function DeletePostDialog({
   open,
@@ -563,14 +657,10 @@ function DeletePostDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground">
-          {description}
-        </p>
+        <p className="text-sm text-muted-foreground">{description}</p>
 
         <DialogFooter>
           <DialogClose asChild>
@@ -586,9 +676,7 @@ function DeletePostDialog({
             textColor={theme === "dark" ? "white" : "black"}
             icon={isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
           >
-            {isPending
-              ? t("common.deleting")
-              : t("common.delete")}
+            {isPending ? t("common.deleting") : t("common.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -627,7 +715,11 @@ function ReplyCard({
   onReplyUpdated: (reply: Partial<Post> & { id: string }) => void;
   onReplyDeleted: (replyId: string) => void;
   onReplyPinned: (replyId: string) => void;
-  onReplyVoted: (replyId: string, vote: Vote, updatedVoteTotals: { votes: number; cachedTotalVotes: number }) => void;
+  onReplyVoted: (
+    replyId: string,
+    vote: Vote,
+    updatedVoteTotals: { votes: number; cachedTotalVotes: number },
+  ) => void;
 }) {
   const author = reply.author;
   const authorId = author?.id;
@@ -647,7 +739,8 @@ function ReplyCard({
   const isOwner = Boolean(currentUserId && authorId === currentUserId);
   const canManageReply = isOwner || isAdmin;
   const canVote = Boolean(currentUserId);
-  const currentUserVote = (reply.currentUserVote as Vote | null | undefined) ?? null;
+  const currentUserVote =
+    (reply.currentUserVote as Vote | null | undefined) ?? null;
   const hasUpvoted = currentUserVote === "up";
   const hasDownvoted = currentUserVote === "down";
 
@@ -660,7 +753,9 @@ function ReplyCard({
       toast.error(t("errors.unknown"));
     },
   });
-  const pendingVote = voteMutation.isPending ? voteMutation.variables.vote : null;
+  const pendingVote = voteMutation.isPending
+    ? voteMutation.variables.vote
+    : null;
 
   const editMutation = useMutation({
     ...trpc.forum.editPost.mutationOptions(),
@@ -680,7 +775,6 @@ function ReplyCard({
       onReplyDeleted(reply.id);
       setDeleteDialogOpen(false);
       toast.success(t("forum.reply.deleted"));
-
     },
     onError: () => {
       toast.error(t("errors.unknown"));
@@ -699,7 +793,9 @@ function ReplyCard({
   });
 
   return (
-    <article className={`rounded-lg border bg-neutral-800 p-4 ${reply.pinned ? 'border-sky-300/60 bg-sky-500/10 dark:border-sky-400/30 dark:bg-sky-400/10' : 'border-border'}`}>
+    <article
+      className={`rounded-lg border bg-neutral-800 p-4 ${reply.pinned ? "border-sky-300/60 bg-sky-500/10 dark:border-sky-400/30 dark:bg-sky-400/10" : "border-border"}`}
+    >
       <div className="mb-3 flex items-center gap-3">
         <Avatar>
           <AvatarImage src={author?.image ?? undefined} />
@@ -711,17 +807,16 @@ function ReplyCard({
           {authorId ? (
             <button
               type="button"
-              onClick={() => {
-                void navigate(`/app/viewuser/${authorId}`);
+              onClick={(event) => {
+                event.stopPropagation();
+                void navigate(`/app/viewuser/${authorId}/lists`);
               }}
               className="font-medium text-neutral-800 underline-offset-2 hover:underline dark:text-neutral-200"
             >
               {authorLabel}
             </button>
           ) : (
-            <span className="font-medium">
-              {authorLabel}
-            </span>
+            <span className="font-medium">{authorLabel}</span>
           )}
           <span className="text-sm text-muted-foreground">
             {formatDate(reply.createdAt)}
@@ -748,9 +843,15 @@ function ReplyCard({
             <Button
               variant="transparent"
               scheme={theme}
-              icon={pendingVote === "up"
-                ? <Loader2 className="animate-spin" />
-                : <ArrowUp className={hasUpvoted ? "text-orange-500" : "text-white"} />}
+              icon={
+                pendingVote === "up" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowUp
+                    className={hasUpvoted ? "text-orange-500" : "text-white"}
+                  />
+                )
+              }
               onClick={() => {
                 voteMutation.mutate({ id: reply.id, vote: "up" });
               }}
@@ -761,14 +862,22 @@ function ReplyCard({
               {""}
             </Button>
             <span className="min-w-4 text-center text-sm font-semibold tabular-nums text-foreground">
-              {typeof reply.votes === 'number' ? reply.votes : reply.cachedTotalVotes}
+              {typeof reply.votes === "number"
+                ? reply.votes
+                : reply.cachedTotalVotes}
             </span>
             <Button
               variant="transparent"
               scheme={theme}
-              icon={pendingVote === "down"
-                ? <Loader2 className="animate-spin" />
-                : <ArrowDown className={hasDownvoted ? "text-violet-500" : "text-white"} />}
+              icon={
+                pendingVote === "down" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowDown
+                    className={hasDownvoted ? "text-violet-500" : "text-white"}
+                  />
+                )
+              }
               onClick={() => {
                 voteMutation.mutate({ id: reply.id, vote: "down" });
               }}
@@ -785,7 +894,13 @@ function ReplyCard({
           <Button
             variant="transparent"
             scheme={theme}
-            icon={editMutation.isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+            icon={
+              editMutation.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <PencilLine />
+              )
+            }
             onClick={() => {
               setEditContent(reply.content);
               setEditDialogOpen(true);
@@ -802,7 +917,13 @@ function ReplyCard({
           <Button
             variant="transparent"
             scheme={theme}
-            icon={deleteMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            icon={
+              deleteMutation.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Trash2 />
+              )
+            }
             onClick={() => {
               setDeleteDialogOpen(true);
             }}
@@ -818,11 +939,15 @@ function ReplyCard({
           <Button
             variant="transparent"
             scheme={theme}
-            icon={pinMutation.isPending
-              ? <Loader2 className="animate-spin" />
-              : reply.pinned
-                ? <PinOff />
-                : <Pin />}
+            icon={
+              pinMutation.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : reply.pinned ? (
+                <PinOff />
+              ) : (
+                <Pin />
+              )
+            }
             onClick={() => {
               pinMutation.mutate({ id: reply.id });
             }}
@@ -918,7 +1043,9 @@ function EditReplyDialog({
             textColor="white"
             onClick={onSave}
             disabled={isPending}
-            icon={isPending ? <Loader2 className="animate-spin" /> : <PencilLine />}
+            icon={
+              isPending ? <Loader2 className="animate-spin" /> : <PencilLine />
+            }
           >
             {isPending ? t("common.saving") : t("common.save")}
           </Button>

@@ -21,6 +21,7 @@ import type { RootLoaderData, Theme } from "./lib/root-data";
 import ImpersonationBanner from "./components/impersonation";
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", type: "image/svg+xml", href: polarlearnLogo },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -68,7 +69,7 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
       role: user?.role ?? null,
     },
     impersonatedBy: session?.impersonatedBy ?? null,
-  }
+  };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -119,9 +120,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         ? t("errors.404.title")
         : t("errors.page.unavailableTitle");
     details =
-      error.status === 404
-        ? t("errors.404.message")
-        : t("errors.500.message");
+      error.status === 404 ? t("errors.404.message") : t("errors.500.message");
     technicalDetails = error.statusText || error.status.toString();
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message || details;
@@ -138,8 +137,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       <section className="w-full max-w-155 text-left">
         <img src={polarlearnLogo} alt="PolarLearn" className="h-15 w-15 mb-5" />
 
-        <h1 className="text-[23px] leading-tight font-bold text-foreground mb-2">{message}</h1>
-        <p className="text-[19px] leading-relaxed text-muted-foreground">{details}</p>
+        <h1 className="text-[23px] leading-tight font-bold text-foreground mb-2">
+          {message}
+        </h1>
+        <p className="text-[19px] leading-relaxed text-muted-foreground">
+          {details}
+        </p>
 
         <p className="text-[16px] text-muted-foreground mt-4">
           <button
@@ -158,7 +161,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
         <button
           type="button"
-          onClick={() => { setIsMoreInfoOpen((value) => !value); }}
+          onClick={() => {
+            setIsMoreInfoOpen((value) => !value);
+          }}
           className="mt-3 inline-flex items-center gap-1 text-[13px] text-muted-foreground/70 hover:text-foreground transition-colors"
         >
           {t("errors.page.moreInfo")}

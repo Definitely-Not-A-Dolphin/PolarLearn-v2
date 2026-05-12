@@ -1,4 +1,11 @@
-import { Outlet, useLoaderData, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router";
+import {
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useRevalidator,
+  useRouteLoaderData,
+} from "react-router";
 import { Button, Tabs } from "@polarnl/polarui-react";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
@@ -7,7 +14,12 @@ import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
 import { AvatarFallback, AvatarImage, Avatar } from "~/components/ui/avatar";
 import { List, ListPlus, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogTitle } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
@@ -34,41 +46,51 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   if (!id) {
     throw new Response("", { status: 400 });
   }
-  const headers = new Headers(request.headers)
-  const context = await createTRPCContext({ headers })
+  const headers = new Headers(request.headers);
+  const context = await createTRPCContext({ headers });
   if (!context.user) {
-    throw new Response("Unauthorized", { status: 401 })
+    throw new Response("Unauthorized", { status: 401 });
   }
-  const caller = createCallerFactory(appRouter)(context)
-  const group = await caller.groups.getGroupData({ id })
-  const recentLists = await caller.list.getRecentLists()
+  const caller = createCallerFactory(appRouter)(context);
+  const group = await caller.groups.getGroupData({ id });
+  const recentLists = await caller.list.getRecentLists();
   if (!group) {
-    throw new Response("", { status: 404 })
+    throw new Response("", { status: 404 });
   }
   return {
     group,
     ...(recentLists.length > 0 ? { recentLists } : {}),
-    tabs: generateTabs(group.moderators.some((mod) => mod.id === context.user!.id)),
+    tabs: generateTabs(
+      group.moderators.some((mod) => mod.id === context.user!.id),
+    ),
     ownsGroup: group.creatorId === context.user.id,
     isModerator: group.moderators.some((mod) => mod.id === context.user!.id),
-    isMember: group.members.some((member: any) => member.id === context.user!.id),
-    isPending: Array.isArray(group.approvalQueue) && group.approvalQueue.some((u: any) => u.id === context.user!.id),
-  }
+    isMember: group.members.some(
+      (member: any) => member.id === context.user!.id,
+    ),
+    isPending:
+      Array.isArray(group.approvalQueue) &&
+      group.approvalQueue.some((u: any) => u.id === context.user!.id),
+  };
 }
 
 export default function Layout() {
-  const loaderData = useLoaderData<{ tabs: Tab[];[key: string]: any }>()
+  const loaderData = useLoaderData<{ tabs: Tab[]; [key: string]: any }>();
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const location = useLocation();
   const navigate = useNavigate();
   const theme = rootData?.theme ?? "dark";
   const trpc = useTRPC();
-  const isModerator = loaderData.isModerator
+  const isModerator = loaderData.isModerator;
   const queryClient = useQueryClient();
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
   const basePath = "/app/group/" + loaderData.group.id;
-  const activeIndex = loaderData.tabs.findIndex(({ path }: { path: string }) => normalizedPath === `${basePath}/${path}` || normalizedPath.startsWith(`${basePath}/${path}/`));
+  const activeIndex = loaderData.tabs.findIndex(
+    ({ path }: { path: string }) =>
+      normalizedPath === `${basePath}/${path}` ||
+      normalizedPath.startsWith(`${basePath}/${path}/`),
+  );
 
   const handleTabChange = (idx: number) => {
     const tab = loaderData.tabs[idx];
@@ -77,20 +99,22 @@ export default function Layout() {
     }
   };
 
-  const hasRecentLists = Array.isArray(loaderData.recentLists) && loaderData.recentLists.length > 0;
+  const hasRecentLists =
+    Array.isArray(loaderData.recentLists) && loaderData.recentLists.length > 0;
   const [addListDialogOpen, setAddListDialogOpen] = useState(false);
-  const [joinRequestSubmitted, setJoinRequestSubmitted] = useState(loaderData.isPending);
+  const [joinRequestSubmitted, setJoinRequestSubmitted] = useState(
+    loaderData.isPending,
+  );
   const isJoinRequestPending = loaderData.isPending || joinRequestSubmitted;
-  const revalidator = useRevalidator()
-
+  const revalidator = useRevalidator();
 
   const addListMutation = useMutation({
     ...trpc.groups.addListToGroup.mutationOptions(),
     onSuccess: async (result) => {
-      if (result === 'ALREADY') {
-        toast.info(t("groups.listAlreadyInGroup"))
-        setAddListDialogOpen(false)
-        return
+      if (result === "ALREADY") {
+        toast.info(t("groups.listAlreadyInGroup"));
+        setAddListDialogOpen(false);
+        return;
       }
       revalidator.revalidate();
       toast.success(t("groups.listAddedToGroup"));
@@ -133,8 +157,13 @@ export default function Layout() {
       <div className="flex flex-col">
         <div className="flex flex-row gap-x-4">
           <Avatar className="h-15 w-15">
-            <AvatarImage src={loaderData.group.avatarUrl ?? undefined} alt={loaderData.group.name} />
-            <AvatarFallback>{loaderData.group.name.slice(0, 1).toUpperCase()}</AvatarFallback>
+            <AvatarImage
+              src={loaderData.group.avatarUrl ?? undefined}
+              alt={loaderData.group.name}
+            />
+            <AvatarFallback>
+              {loaderData.group.name.slice(0, 1).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <h1 className="mt-2 text-2xl font-bold">{loaderData.group.name}</h1>
           <div className="grow" />
@@ -148,7 +177,11 @@ export default function Layout() {
                     joinGroupMutation.mutate({ id: loaderData.group.id });
                   }
                 }}
-                disabled={joinGroupMutation.isPending || leaveGroupMutation.isPending || isJoinRequestPending}
+                disabled={
+                  joinGroupMutation.isPending ||
+                  leaveGroupMutation.isPending ||
+                  isJoinRequestPending
+                }
               >
                 {loaderData.isMember
                   ? t("groups.leaveGroup")
@@ -159,7 +192,9 @@ export default function Layout() {
             </>
           ) : null}
         </div>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{loaderData.group.description}</p>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+          {loaderData.group.description}
+        </p>
       </div>
       {loaderData.group.approvalRequired && !loaderData.isMember ? (
         <div className="mt-8 flex items-center justify-center">
@@ -187,49 +222,68 @@ export default function Layout() {
                 >
                   <ListPlus />
                 </button>
-                <Dialog open={addListDialogOpen} onOpenChange={setAddListDialogOpen}>
+                <Dialog
+                  open={addListDialogOpen}
+                  onOpenChange={setAddListDialogOpen}
+                >
                   <DialogContent>
                     <DialogTitle className="text-2xl font-bold">
                       {t("lists.addListToGroup")}
                     </DialogTitle>
                     <div className="relative">
-                      <ScrollArea className={addListMutation.isPending ? "blur-sm" : ""}>
-                        {loaderData.recentLists.map((list: any) => {
-                          const hasSubject = typeof list.subject === "string"
-                            && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
-                          const subject = hasSubject
-                            ? subjectsList[list.subject as keyof typeof subjectsList]
-                            : null
-                          const subjectLabel = subject ? t(subject.labelKey) : ""
-                          return (
-                            <div
-                              key={list.id}
-                              role="button"
-                              tabIndex={0}
-                              className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
-                              onClick={() => {
-                                addListMutation.mutate({
-                                  groupId: loaderData.group.id,
-                                  listId: list.id,
-                                });
-                              }}
-                            >
-                              <button
-                                type="button"
-                                className="flex min-w-0 items-center gap-x-3 text-left"
+                      <ScrollArea
+                        className={addListMutation.isPending ? "blur-sm" : ""}
+                      >
+                        <div className="space-y-3 pr-1">
+                          {loaderData.recentLists.map((list: any) => {
+                            const hasSubject =
+                              typeof list.subject === "string" &&
+                              Object.prototype.hasOwnProperty.call(
+                                subjectsList,
+                                list.subject,
+                              );
+                            const subject = hasSubject
+                              ? subjectsList[
+                                  list.subject as keyof typeof subjectsList
+                                ]
+                              : null;
+                            const subjectLabel = subject
+                              ? t(subject.labelKey)
+                              : "";
+                            return (
+                              <div
+                                key={list.id}
+                                role="button"
+                                tabIndex={0}
+                                className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 hover:bg-neutral-300 px-4 py-3 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all cursor-pointer"
+                                onClick={() => {
+                                  addListMutation.mutate({
+                                    groupId: loaderData.group.id,
+                                    listId: list.id,
+                                  });
+                                }}
                               >
-                                {subject ? (
-                                  <img src={subject.icon} alt={subjectLabel} className="h-6 w-6 shrink-0" />
-                                ) : (
-                                  <List size={20} className="shrink-0" />
-                                )}
-                                <span className="truncate text-base font-semibold">
-                                  {list.name ?? t("lists.namePlaceholder")}
-                                </span>
-                              </button>
-                            </div>
-                          )
-                        })}
+                                <button
+                                  type="button"
+                                  className="flex min-w-0 items-center gap-x-3 text-left"
+                                >
+                                  {subject ? (
+                                    <img
+                                      src={subject.icon}
+                                      alt={subjectLabel}
+                                      className="h-6 w-6 shrink-0"
+                                    />
+                                  ) : (
+                                    <List size={20} className="shrink-0" />
+                                  )}
+                                  <span className="truncate text-base font-semibold">
+                                    {list.name ?? t("lists.namePlaceholder")}
+                                  </span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                         <ScrollBar orientation="vertical" />
                       </ScrollArea>
                       {addListMutation.isPending && (

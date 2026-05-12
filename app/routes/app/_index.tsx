@@ -1,7 +1,8 @@
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
-import { List, Star, ListX } from "lucide-react";
+import { Clock3, List, ListX, Play, Star } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import { Progress } from "~/components/ui/progress";
 import {
   RecentListsSchema,
   RecentSubjectsSchema,
@@ -15,6 +16,7 @@ import { useTRPC } from "~/server/react";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import type { Route } from "./+types/_index";
 import { appRouter } from "~/server/main";
+import { prisma } from "~/lib/db";
 
 interface LoaderData {
   recentItems: {
@@ -26,6 +28,21 @@ interface LoaderData {
       authorName?: string;
     })[];
   };
+  recentSessions: {
+    id: string;
+    listId: string;
+    updatedAt: string;
+    list: {
+      id: string;
+      name: string;
+      subject: string;
+    };
+    progress: {
+      completed: number;
+      total: number;
+      percentage: number;
+    };
+  }[];
 }
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
@@ -37,12 +54,63 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   const caller = createCallerFactory(appRouter)(context);
   const recentLists = await caller.list.getRecentLists();
   const recentSubjects = await caller.list.getRecentSubjects();
+  const recentSessions = await prisma.learnSession.findMany({
+    where: {
+      userId: context.user.id,
+      isComplete: false,
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+    take: 5,
+    select: {
+      id: true,
+      listId: true,
+      updatedAt: true,
+      queue: true,
+      answerLog: true,
+      list: {
+        select: {
+          id: true,
+          name: true,
+          subject: true,
+        },
+      },
+    },
+  });
 
   return {
     recentItems: {
       recent_lists: recentLists,
       recent_subjects: recentSubjects,
     },
+    recentSessions: recentSessions.map((session) => {
+      const answerLog = session.answerLog as Array<{ isCorrect?: boolean }>;
+      const completed = answerLog.reduce<number>((count, entry) => {
+        if (
+          entry &&
+          typeof entry === "object" &&
+          "isCorrect" in entry &&
+          (entry as { isCorrect?: boolean }).isCorrect
+        ) {
+          return count + 1;
+        }
+
+        return count;
+      }, 0);
+      const total = session.queue.length + completed;
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      return {
+        id: session.id,
+        listId: session.listId,
+        updatedAt: session.updatedAt.toISOString(),
+        list: session.list,
+        progress: {
+          completed,
+          total,
+          percentage,
+        },
+      };
+    }),
   };
 }
 
@@ -61,7 +129,7 @@ export default function HomePage() {
     },
   });
 
-  const { recentItems } = useLoaderData<LoaderData>();
+  const { recentItems, recentSessions } = useLoaderData<LoaderData>();
   return (
     <div className="flex min-w-0 flex-col p-4">
       <h1 className="font-bold text-3xl">{t("home.quickstart")}</h1>
@@ -147,9 +215,7 @@ export default function HomePage() {
 
       <div className="mt-4 flex w-full flex-col gap-y-3">
         {recentItems.recent_lists.length === 0 ? (
-          <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-            {t("home.noRecentLists")}
-          </div>
+          <EmptyRecentBlock>{t("home.noRecentLists")}</EmptyRecentBlock>
         ) : (
           recentItems.recent_lists.map((list: any) => {
             const hasSubject =
@@ -223,6 +289,96 @@ export default function HomePage() {
           })
         )}
       </div>
+
+      <h1 className="mt-4 text-3xl font-bold">{t("home.recentSessions")}</h1>
+      <div className="mt-4 flex w-full flex-col gap-y-3">
+        {recentSessions.length === 0 ? (
+          <EmptyRecentBlock>{t("home.noRecentSessions")}</EmptyRecentBlock>
+        ) : (
+          recentSessions.map((session) => {
+            const subject =
+              subjectsList[session.list.subject as keyof typeof subjectsList];
+            const subjectLabel = subject ? t(subject.labelKey) : null;
+
+            return (
+              <div
+                key={session.id}
+                role="button"
+                tabIndex={0}
+                className="grid w-full grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] items-center gap-x-4 rounded-xl bg-neutral-200 px-4 py-3 transition-all hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 cursor-pointer"
+                onClick={() => {
+                  void navigate(`/app/session/${session.id}`);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    void navigate(`/app/session/${session.id}`);
+                  }
+                }}
+              >
+                <div className="flex min-w-0 items-center gap-x-3">
+                  {subject ? (
+                    <img
+                      src={subject.icon}
+                      alt={subjectLabel ?? ""}
+                      className="h-6 w-6 shrink-0"
+                    />
+                  ) : (
+                    <Clock3 size={20} className="shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <span className="block truncate text-base font-semibold">
+                      {session.list.name ?? t("lists.namePlaceholder")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-x-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-center justify-between gap-x-3 text-sm text-neutral-600 dark:text-neutral-300">
+                      <span>
+                        {t("learn.session.progress", {
+                          completed: session.progress.completed,
+                          total: session.progress.total,
+                        })}
+                      </span>
+                      <span>
+                        {t("learn.session.percentage", {
+                          percentage: session.progress.percentage,
+                        })}
+                      </span>
+                    </div>
+                    <Progress
+                      value={session.progress.percentage}
+                      className="h-2"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={t("home.resumeSession")}
+                    title={t("home.resumeSession")}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-300 text-neutral-700 transition-all hover:bg-neutral-400 dark:bg-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-600"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void navigate(`/app/session/${session.id}`);
+                    }}
+                  >
+                    <Play className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyRecentBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+      {children}
     </div>
   );
 }
