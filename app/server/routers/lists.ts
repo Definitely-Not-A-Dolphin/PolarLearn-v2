@@ -456,7 +456,7 @@ export const ListRouter = createTRPCRouter({
         where: { id: ctx.user.id }
       })
 
-      const { recent_lists: lists } = extractRecentItems(user?.recentItems)
+      const { recent_lists: lists, recent_subjects: recentSubjects } = extractRecentItems(user?.recentItems)
 
       const seen = new Set<string>()
       const deduped = [...lists].reverse().filter((item) => {
@@ -477,7 +477,25 @@ export const ListRouter = createTRPCRouter({
         return rawList ? listRecordSchema.parse(rawList) : null
       }))
 
-      return hydratedLists
+      const missingListIds = new Set(
+        deduped
+          .filter((item, index) => !hydratedLists[index])
+          .map((item) => item.id),
+      )
+
+      if (missingListIds.size > 0) {
+        await ctx.prisma.user.update({
+          where: { id: ctx.user.id },
+          data: {
+            recentItems: {
+              recent_subjects: recentSubjects,
+              recent_lists: lists.filter((item) => !missingListIds.has(item.id)),
+            },
+          },
+        })
+      }
+
+      return hydratedLists.filter((list): list is NonNullable<typeof list> => Boolean(list))
     }),
   getRecentSubjects: protectedProcedure
     .query(async ({ ctx }) => {

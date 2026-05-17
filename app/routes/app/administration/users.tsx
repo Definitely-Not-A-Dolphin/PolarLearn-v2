@@ -1,6 +1,6 @@
 import { useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { Ban, Loader2, LogIn, MessageSquareOff, ShieldAlert, ShieldUser } from "lucide-react";
+import { Ban, Loader2, LogIn, MessageSquareOff, ShieldAlert, ShieldUser, Trash2 } from "lucide-react";
 import { redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { Button } from "@polarnl/polarui-react";
 
@@ -29,6 +29,9 @@ type UsersPage = Omit<Awaited<ReturnType<typeof auth.api.listUsers>>, "users"> &
 type BanScope = "platform" | "forum";
 type PendingBan = {
   scope: BanScope;
+  user: AdminUser;
+};
+type PendingDelete = {
   user: AdminUser;
 };
 
@@ -69,9 +72,11 @@ export default function UsersAdminPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pendingBan, setPendingBan] = useState<PendingBan | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [banReason, setBanReason] = useState("");
   const [banReasonError, setBanReasonError] = useState<string | null>(null);
   const [isBanPending, setIsBanPending] = useState(false);
+  const [isDeletePending, setIsDeletePending] = useState(false);
   const t = i18n.t;
 
   const hasMore = users.length < total;
@@ -114,6 +119,11 @@ export default function UsersAdminPage() {
     setBanReasonError(null);
   };
 
+  const openDeleteDialog = (user: AdminUser) => {
+    setLoadError(null);
+    setPendingDelete({ user });
+  };
+
   const closeBanDialog = () => {
     if (isBanPending) {
       return;
@@ -122,6 +132,14 @@ export default function UsersAdminPage() {
     setPendingBan(null);
     setBanReason("");
     setBanReasonError(null);
+  };
+
+  const closeDeleteDialog = () => {
+    if (isDeletePending) {
+      return;
+    }
+
+    setPendingDelete(null);
   };
 
   const togglePlatformBan = async (user: AdminUser) => {
@@ -161,6 +179,30 @@ export default function UsersAdminPage() {
     }
 
     patchUserInList(user.id, { forumBanned: false, forumBanReason: undefined });
+  };
+
+  const deleteUser = async () => {
+    if (!pendingDelete) {
+      return;
+    }
+
+    setIsDeletePending(true);
+    setLoadError(null);
+
+    try {
+      const response = await authClient.admin.removeUser({ userId: pendingDelete.user.id });
+
+      if (response.error) {
+        setLoadError(response.error.message ?? t("admin.users.actionError"));
+        return;
+      }
+
+      setUsers((currentUsers) => currentUsers.filter((user) => user.id !== pendingDelete.user.id));
+      setTotal((currentTotal) => Math.max(0, currentTotal - 1));
+      setPendingDelete(null);
+    } finally {
+      setIsDeletePending(false);
+    }
   };
 
   const confirmBan = async () => {
@@ -228,6 +270,13 @@ export default function UsersAdminPage() {
         }}
         onCancel={closeBanDialog}
         onConfirm={confirmBan}
+      />
+
+      <DeleteUserDialog
+        pendingDelete={pendingDelete}
+        isPending={isDeletePending}
+        onCancel={closeDeleteDialog}
+        onConfirm={deleteUser}
       />
 
       {loadError ? (
@@ -314,11 +363,11 @@ export default function UsersAdminPage() {
                   </div>
                 </button>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 lg:justify-center">
                   <Button
                     className="min-w-36"
                     color={user.banned ? "green" : "red"}
-                    disabled={user.id === currentUserId || isBanPending}
+                    disabled={user.id === currentUserId || isBanPending || isDeletePending}
                     icon={<Ban className="size-4" />}
                     onClick={() => {
                       void togglePlatformBan(user);
@@ -330,7 +379,7 @@ export default function UsersAdminPage() {
                   <Button
                     className="min-w-32"
                     color={user.forumBanned ? "green" : "orange"}
-                    disabled={user.id === currentUserId || isBanPending}
+                    disabled={user.id === currentUserId || isBanPending || isDeletePending}
                     icon={<MessageSquareOff className="size-4" />}
                     onClick={() => {
                       void toggleForumBan(user);
@@ -343,7 +392,7 @@ export default function UsersAdminPage() {
                     className="min-w-32"
                     color="sky"
                     textColor="white"
-                    disabled={user.id === currentUserId}
+                    disabled={user.id === currentUserId || isBanPending || isDeletePending}
                     icon={<LogIn className="size-4" />}
                     onClick={() => {
                       setLoadError(null);
@@ -361,6 +410,18 @@ export default function UsersAdminPage() {
                     }}
                   >
                     {t("admin.users.actions.impersonate")}
+                  </Button>
+
+                  <Button
+                    className="min-w-32"
+                    color="red"
+                    disabled={user.id === currentUserId || isBanPending || isDeletePending}
+                    icon={<Trash2 className="size-4" />}
+                    onClick={() => {
+                      openDeleteDialog(user);
+                    }}
+                  >
+                    {t("admin.users.actions.delete")}
                   </Button>
                 </div>
 
@@ -455,6 +516,67 @@ function BanReasonDialog({
             {isPending
               ? t("admin.users.banDialog.saving")
               : t("admin.users.banDialog.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteUserDialog({
+  pendingDelete,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  pendingDelete: PendingDelete | null;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+}) {
+  const t = i18n.t;
+  const targetName = pendingDelete?.user.name ?? pendingDelete?.user.email ?? "";
+  const rootData = useRouteLoaderData("root");
+
+  return (
+    <Dialog
+      open={Boolean(pendingDelete)}
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel();
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-red-700 dark:text-red-300">
+            {t("admin.users.deleteDialog.title")}
+          </DialogTitle>
+          <DialogDescription>
+            {t("admin.users.deleteDialog.description", { user: targetName })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <p className="text-sm text-muted-foreground">
+          {t("admin.users.deleteDialog.warning")}
+        </p>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="transparent" disabled={isPending}>
+              {t("common.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            color="red"
+            disabled={isPending}
+            icon={isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            onClick={() => {
+              void onConfirm();
+            }}
+            scheme={rootData!.theme}
+          >
+            {isPending ? t("admin.users.deleteDialog.saving") : t("admin.users.deleteDialog.confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

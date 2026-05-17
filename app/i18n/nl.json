@@ -85,6 +85,39 @@
     "confirm": "Bevestigen",
     "userProfile": "Profiel"
   },
+  "userSettings": {
+    "title": "Instellingen",
+    "description": "Wijzig je accountinstellingen en voorkeuren.",
+    "theme": {
+      "title": "Thema",
+      "description": "Kies tussen het lichte en donkere thema. De app gebruikt deze voorkeur bij de volgende paginaweergave.",
+      "dark": "Donkere modus",
+      "light": "Lichte modus"
+    },
+    "ai": {
+      "title": "AI-functies",
+      "description": "Geef aan of je AI-functies wilt gebruiken in PolarLearn.",
+      "label": "AI-functies inschakelen",
+      "enabled": "AI-functies zijn ingeschakeld.",
+      "disabled": "AI-functies zijn uitgeschakeld."
+    },
+    "export": {
+      "title": "Account exporteren",
+      "description": "Download een JSON-bestand met je accountgegevens, lijsten, quizzen, leersessies, forumposts en groepsgegevens.",
+      "button": "Account exporteren",
+      "exporting": "Exporteren...",
+      "cooldown": "Je kunt opnieuw exporteren op {{date}}.",
+      "success": "Je accountexport wordt gedownload.",
+      "error": "Je account kon niet worden geexporteerd.",
+      "cooldownError": "Je kunt opnieuw exporteren op {{date}}."
+    },
+    "delete": {
+      "title": "Account verwijderen",
+      "description": "Verwijder je account permanent. Je lijsten, sessies, forumposts en andere gekoppelde gegevens worden ook verwijderd.",
+      "warning": "Weet je het zeker? Deze actie kan niet ongedaan worden gemaakt.",
+      "error": "Je account kon niet worden verwijderd."
+    }
+  },
   "topbar": {
     "new": "Nieuw"
   },
@@ -187,7 +220,8 @@
         "platformUnban": "Platform toelaten",
         "forumBan": "Forum ban",
         "forumUnban": "Forum toelaten",
-        "impersonate": "Impersonate"
+        "impersonate": "Impersonate",
+        "delete": "Gebruiker verwijderen"
       },
       "banDialog": {
         "platformTitle": "Platformban toepassen",
@@ -198,6 +232,13 @@
         "reasonRequired": "Een reden is verplicht.",
         "confirm": "Ban toepassen",
         "saving": "Bezig..."
+      },
+      "deleteDialog": {
+        "title": "Gebruiker verwijderen",
+        "description": "Je staat op het punt om {{user}} permanent te verwijderen.",
+        "warning": "Deze actie kan niet ongedaan worden gemaakt. Alle gekoppelde data van deze gebruiker wordt ook verwijderd.",
+        "confirm": "Gebruiker verwijderen",
+        "saving": "Bezig met verwijderen..."
       }
     },
     "lists": {},

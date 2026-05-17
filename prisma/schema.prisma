@@ -49,6 +49,9 @@ model User {
   applyingToGroups     Group[]        @relation("UserGroupApplications")
   moderatingGroups     Group[]        @relation("UserGroupModerators")
   createdGroups        Group[]
+  theme                String?        @default("dark")
+  optinAI              Boolean        @default(false)
+  lastExportedAt       DateTime?
 
   ssoproviders SsoProvider[]
 

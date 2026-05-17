@@ -45,7 +45,8 @@ export default [
       route("app/administration/lists", "routes/app/administration/lists.tsx"),
       route("app/administration/analytics", "routes/app/administration/analytics.tsx"),
       route("app/administration", "routes/app/administration/_index.tsx"),
-    ])
+    ]),
+    route("app/usersettings", "routes/app/usersettings.tsx")
   ]),
   route("app/session/:id", "routes/app/session/[id].tsx")
 ] satisfies RouteConfig;

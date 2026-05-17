@@ -17,8 +17,9 @@ import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
 import { auth } from "./lib/auth/server";
 import { TRPCReactProvider } from "./server/react";
-import type { RootLoaderData, Theme } from "./lib/root-data";
+import { themeSchema, type RootLoaderData, type Theme } from "./lib/root-data";
 import ImpersonationBanner from "./components/impersonation";
+import { prisma } from "./lib/db";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/svg+xml", href: polarlearnLogo },
@@ -56,7 +57,13 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
   const result = await auth.api.getSession({ headers })
   const user = result?.user
   const session = result?.session
-  const theme: Theme = "dark"
+  const userRecord = user
+    ? await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { theme: true },
+    })
+    : null
+  const theme: Theme = themeSchema.parse(userRecord?.theme ?? "dark")
 
   return {
     theme,
