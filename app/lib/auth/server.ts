@@ -6,15 +6,14 @@ import { admin, username } from "better-auth/plugins"
 import { createAuthMiddleware, getIp } from "better-auth/api";
 import { sso } from "@better-auth/sso"
 import { passkey } from "@better-auth/passkey"
-import { readFile } from "node:fs/promises";
 import nunjucks from "nunjucks";
 import { logger as appLogger } from "../logger"
 import { betterAuthTranslations } from "./betterauth-i18n";
 import i18n from "~/i18n";
 import { smtpTransport } from "~/lib/smtp";
 
-const activationEmailTemplateUrl = new URL("./activation-email.html", import.meta.url);
-const forgotPasswordEmailTemplateUrl = new URL("./forgot-password-email.html", import.meta.url);
+import activationEmailTemplate from "./activation-email.html?raw";
+import forgotPasswordEmailTemplate from "./forgot-password-email.html?raw";
 
 export const auth = betterAuth({
   telemetry: {
@@ -37,8 +36,7 @@ export const auth = betterAuth({
         })
         return
       }
-      const template = await readFile(forgotPasswordEmailTemplateUrl, "utf8")
-      const html = nunjucks.renderString(template, {
+      const html = nunjucks.renderString(forgotPasswordEmailTemplate, {
         username: user.name?.trim() || user.email.split("@")[0] || "",
         reset_url: url,
       })
@@ -70,8 +68,7 @@ export const auth = betterAuth({
         throw new Error("NO_SMTP")
       }
 
-      const template = await readFile(activationEmailTemplateUrl, "utf8")
-      const html = nunjucks.renderString(template, {
+      const html = nunjucks.renderString(activationEmailTemplate, {
         username,
         activation_url: url,
       })

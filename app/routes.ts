@@ -46,7 +46,14 @@ export default [
       route("app/administration/analytics", "routes/app/administration/analytics.tsx"),
       route("app/administration", "routes/app/administration/_index.tsx"),
     ]),
-    route("app/usersettings", "routes/app/usersettings.tsx")
+    route("app/usersettings", "routes/app/usersettings.tsx"),
+    layout("routes/app/search/layout.tsx", [
+      route("app/search", "routes/app/search/_index.tsx"),
+      route("app/search/lists", "routes/app/search/lists.tsx"),
+      route("app/search/groups", "routes/app/search/groups.tsx"),
+      route("app/search/forum", "routes/app/search/forum.tsx"),
+      route("app/search/users", "routes/app/search/users.tsx"),
+    ]),
   ]),
   route("app/session/:id", "routes/app/session/[id].tsx")
 ] satisfies RouteConfig;

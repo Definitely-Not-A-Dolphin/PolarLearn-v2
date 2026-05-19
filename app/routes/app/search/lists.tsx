@@ -1,0 +1,170 @@
+import { useEffect, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { List } from "lucide-react";
+import { useLoaderData, useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+
+import { subjects as subjectsList } from "~/lib/subjects";
+import { t } from "~/i18n";
+import { appRouter } from "~/server/main";
+import { createCallerFactory, createTRPCContext } from "~/server/trpc";
+import type { Route } from "./+types/lists";
+import type { SearchList } from "~/lib/search";
+import { useTRPC } from "~/server/react";
+
+const PAGE_SIZE = 10;
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const headers = new Headers(request.headers);
+  const context = await createTRPCContext({ headers });
+  const caller = createCallerFactory(appRouter)(context);
+  const url = new URL(request.url);
+  const q = (url.searchParams.get("q") ?? "").trim();
+
+  if (!q) {
+    return { initialLists: { lists: [], nextCursor: null }, q };
+  }
+
+  const initialLists = await caller.search.searchLists({ q, limit: PAGE_SIZE, cursor: undefined });
+
+  return { initialLists, q };
+}
+
+export default function SearchLists() {
+  const { initialLists, q } = useLoaderData<typeof loader>();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [lists, setLists] = useState<SearchList[]>(initialLists.lists);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialLists.nextCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLists(initialLists.lists);
+    setNextCursor(initialLists.nextCursor);
+    setLoadError(null);
+    setIsLoadingMore(false);
+  }, [initialLists.lists, initialLists.nextCursor, q]);
+
+  const fetchMore = async () => {
+    if (!q || !nextCursor || isLoadingMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    setLoadError(null);
+
+    try {
+      const nextPage = await queryClient.fetchQuery(
+        trpc.search.searchLists.queryOptions({
+          q,
+          limit: PAGE_SIZE,
+          cursor: nextCursor,
+        }),
+      );
+
+      setLists((currentLists) => [...currentLists, ...nextPage.lists]);
+      setNextCursor(nextPage.nextCursor);
+    } catch {
+      setLoadError(t("errors.unknown"));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  return (
+    <div className="flex min-w-0 flex-col">
+      {loadError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {loadError}
+        </div>
+      ) : null}
+
+      <InfiniteScroll
+        dataLength={lists.length}
+        next={() => {
+          void fetchMore();
+        }}
+        hasMore={Boolean(q && nextCursor)}
+        loader={
+          <div className="flex items-center justify-center p-4">
+            <div className="text-muted-foreground">{t("forum.posts.loadingMore")}</div>
+          </div>
+        }
+        endMessage={
+          lists.length > 0 ? (
+            <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+              {t("forum.posts.noMore")}
+            </div>
+          ) : null
+        }
+      >
+        <div className="mt-4 flex w-full flex-col gap-y-3">
+          {lists.length === 0 ? (
+            <div className="rounded-xl bg-neutral-100 px-5 py-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+              {q ? t("search.notFound") : t("search.placeholder")}
+            </div>
+          ) : (
+            lists.map((list) => {
+              const hasSubject = typeof list.subject === "string"
+                && Object.prototype.hasOwnProperty.call(subjectsList, list.subject);
+              const subject = hasSubject
+                ? subjectsList[list.subject as keyof typeof subjectsList]
+                : null;
+              const subjectLabel = subject ? t(subject.labelKey) : null;
+              const authorId = list.user?.id;
+
+              return (
+                <div
+                  key={list.id}
+                  role="button"
+                  tabIndex={0}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl bg-neutral-200 px-4 py-3 transition-all cursor-pointer hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 h-16"
+                  onClick={() => {
+                    void navigate(`/app/viewlist/${list.id}`);
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="flex min-w-0 items-center gap-x-3 text-left"
+                  >
+                    {subject ? (
+                      <img src={subject.icon} alt={subjectLabel ?? ""} className="h-6 w-6 shrink-0" />
+                    ) : (
+                      <List size={20} className="shrink-0" />
+                    )}
+                    <span className="truncate text-base font-semibold">
+                      {list.name ?? t("lists.namePlaceholder")}
+                    </span>
+                  </button>
+
+                  {authorId ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void navigate(`/app/viewuser/${authorId}`);
+                      }}
+                      className="justify-self-center truncate text-sm font-bold text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-300"
+                    >
+                      {list.user?.name ?? list.user?.displayUsername ?? list.user?.username ?? authorId}
+                    </button>
+                  ) : (
+                    <span className="justify-self-center truncate text-sm text-neutral-600 dark:text-neutral-300">
+                      {t("lists.unknownAuthor")}
+                    </span>
+                  )}
+
+                  <span className="flex flex-row items-center gap-4 text-sm text-neutral-600 dark:text-neutral-300">
+                    {new Date(list.updatedAt).toLocaleDateString("nl-NL")}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </InfiniteScroll>
+    </div>
+  );
+}

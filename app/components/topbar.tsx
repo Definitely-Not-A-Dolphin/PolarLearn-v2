@@ -1,7 +1,7 @@
 import { List, Loader2, Plus, MessageCircle, Users, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { CreatePostDialog } from "~/routes/app/forum/CreatePostDialog";
-import { useLocation, useNavigate, useRouteLoaderData } from "react-router";
+import { useLocation, useNavigate, useRouteLoaderData, useSearchParams } from "react-router";
 
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import i18n from "~/i18n";
@@ -12,10 +12,12 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { RootLoaderData } from "~/lib/root-data";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { SearchBar } from "./searchBar";
 
 export function TopBar() {
   const rootData = useRouteLoaderData<RootLoaderData>("root")
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const theme = rootData?.theme ?? "dark"
   const t = i18n.t;
   const userName = rootData?.user.name ?? t("userMenu.guest")
@@ -91,7 +93,12 @@ export function TopBar() {
       {location.pathname.startsWith("/app/group/") && (
         <h1 className="text-2xl font-bold">{t("navigation.group")}</h1>
       )}
-      <div className="grow"></div>
+      {location.pathname === "/app/usersettings" && (
+        <h1 className="text-2xl font-bold">{t("userSettings.title")}</h1>
+      )}
+
+      {!location.pathname.startsWith("/app/search") && <div className="grow" />}
+      <SearchBar query={searchParams.get("q") ?? ""} />
       <Popover>
         <PopoverTrigger>
           <div className="h-10 w-10 flex flex-row items-center justify-center rounded-full bg-neutral-200 cursor-pointer hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all">

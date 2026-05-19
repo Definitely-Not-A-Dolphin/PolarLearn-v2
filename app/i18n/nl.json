@@ -15,6 +15,10 @@
     "resumeSession": "Verder leren",
     "learn": "Leren"
   },
+  "search": {
+    "placeholder": "Zoeken...",
+    "notFound": "Niet gevonden."
+  },
   "favorites": {
     "title": "Mijn favorieten",
     "empty": "Je hebt nog geen favorieten. Klik op het sterretje bij een lijst om deze toe te voegen aan je favorieten!"

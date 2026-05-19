@@ -193,7 +193,6 @@ export default function UserSettings() {
     <div className="p-4">
       <div className="max-w-2xl space-y-4">
         <div>
-          <h1 className="text-3xl font-bold">{t("userSettings.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("userSettings.description")}
           </p>
