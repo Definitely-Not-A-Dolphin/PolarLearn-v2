@@ -281,7 +281,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   try {
     const list = await caller.list.getLatestListData({ listId: id });
 
-    if (list.collaborators.some((collaborator) => collaborator.id !== user.id)) {
+    if (
+      !(
+        list.userId === user.id ||
+        list.collaborators.some((collaborator) => collaborator.id === user.id) ||
+        user.role === "admin"
+      )
+    ) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw new Response("FORBIDDEN", { status: 403 });
     }

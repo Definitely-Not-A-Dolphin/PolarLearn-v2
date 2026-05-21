@@ -123,4 +123,59 @@ export const learningRouter = createTRPCRouter({
         },
       })
     }),
+  getRecentSessions: protectedProcedure
+    .query(async ({ ctx }) => {
+      const recentSessions = await prisma.learnSession.findMany({
+        where: {
+          userId: ctx.user.id,
+          isComplete: false,
+        },
+        orderBy: [
+          { updatedAt: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+        take: 5,
+        select: {
+          id: true,
+          listId: true,
+          updatedAt: true,
+          queue: true,
+          answerLog: true,
+          list: {
+            select: {
+              id: true,
+              name: true,
+              subject: true,
+            },
+          },
+        },
+      })
+
+      return recentSessions.map((session) => {
+        const answerLog = answerLogSchema.parse(session.answerLog)
+        const queue = queueSchema.parse(session.queue)
+        const completed = answerLog.reduce<number>((count, entry) => {
+          if (entry?.isCorrect) {
+            return count + 1
+          }
+
+          return count
+        }, 0)
+        const total = queue.length + completed
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+
+        return {
+          id: session.id,
+          listId: session.listId,
+          updatedAt: session.updatedAt.toISOString(),
+          list: session.list,
+          progress: {
+            completed,
+            total,
+            percentage,
+          },
+        }
+      })
+    })
 })

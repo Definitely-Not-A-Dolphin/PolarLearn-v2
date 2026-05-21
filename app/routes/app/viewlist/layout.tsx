@@ -65,7 +65,8 @@ export async function loader({
     const list: ListData = await caller.list.getLatestListData({ listId: id });
     const canEdit =
       list.userId === userId ||
-      list.collaborators.some((collaborator) => collaborator.id === userId);
+      list.collaborators.some((collaborator) => collaborator.id === userId) ||
+      context.user.role === "admin";
 
     const collaborators = [];
     for (const collaborator of list.collaborators) {
@@ -85,7 +86,7 @@ export async function loader({
       list,
       collaborators,
       canEdit,
-      canDelete: list.userId === userId,
+      canDelete: list.userId === userId || context.user.role === "admin",
       user_liked: list.favoritedBy.some((fav) => fav.id === userId),
     };
   } catch (error) {

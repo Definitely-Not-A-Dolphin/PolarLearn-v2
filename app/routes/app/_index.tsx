@@ -16,7 +16,6 @@ import { useTRPC } from "~/server/react";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import type { Route } from "./+types/_index";
 import { appRouter } from "~/server/main";
-import { prisma } from "~/lib/db";
 
 interface LoaderData {
   recentItems: {
@@ -53,65 +52,14 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
     return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
   const caller = createCallerFactory(appRouter)(context);
-  const recentLists = await caller.list.getRecentLists();
-  const recentSubjects = await caller.list.getRecentSubjects();
-  const recentSessions = await prisma.learnSession.findMany({
-    where: {
-      userId: context.user.id,
-      isComplete: false,
-    },
-    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-    take: 5,
-    select: {
-      id: true,
-      listId: true,
-      updatedAt: true,
-      queue: true,
-      answerLog: true,
-      list: {
-        select: {
-          id: true,
-          name: true,
-          subject: true,
-        },
-      },
-    },
-  });
+  const [recentItems, recentSessions] = await Promise.all([
+    caller.list.getRecentItems(),
+    caller.learning.getRecentSessions(),
+  ]);
 
   return {
-    recentItems: {
-      recent_lists: recentLists,
-      recent_subjects: recentSubjects,
-    },
-    recentSessions: recentSessions.map((session) => {
-      const answerLog = session.answerLog as Array<{ isCorrect?: boolean }>;
-      const completed = answerLog.reduce<number>((count, entry) => {
-        if (
-          entry &&
-          typeof entry === "object" &&
-          "isCorrect" in entry &&
-          (entry as { isCorrect?: boolean }).isCorrect
-        ) {
-          return count + 1;
-        }
-
-        return count;
-      }, 0);
-      const total = session.queue.length + completed;
-      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-      return {
-        id: session.id,
-        listId: session.listId,
-        updatedAt: session.updatedAt.toISOString(),
-        list: session.list,
-        progress: {
-          completed,
-          total,
-          percentage,
-        },
-      };
-    }),
+    recentItems,
+    recentSessions,
   };
 }
 
