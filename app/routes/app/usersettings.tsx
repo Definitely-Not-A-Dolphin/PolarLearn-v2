@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Download, Loader2, Save, Trash2 } from "lucide-react";
-import { CheckWithLabel, Button } from "@polarnl/polarui-react";
+import { AtSign, Download, Eye, EyeOff, Loader2, Lock, Save, Trash2 } from "lucide-react";
+import { CheckWithLabel, Button, Input } from "@polarnl/polarui-react";
 import {
   redirect,
   useLoaderData,
@@ -21,7 +21,6 @@ import type { Route } from "./+types/usersettings";
 
 const EXPORT_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
 
-
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
   const session = await auth.api.getSession({ headers });
@@ -33,12 +32,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { theme: true, optinAI: true, lastExportedAt: true },
+    select: { theme: true, optinAI: true, lastExportedAt: true, username: true, displayUsername: true },
   });
 
   return {
     theme: themeSchema.parse(user?.theme ?? "dark"),
     aiFeatures: user?.optinAI ?? false,
+    username: user?.username ?? null,
+    displayUsername: user?.displayUsername ?? null,
     lastExportedAt: user?.lastExportedAt?.toISOString() ?? null,
     nextExportAvailableAt: user?.lastExportedAt
       ? new Date(user.lastExportedAt.getTime() + EXPORT_COOLDOWN).toISOString()
@@ -78,6 +79,8 @@ export default function UserSettings() {
   const loaderData = useLoaderData<typeof loader>();
   const savedTheme = loaderData?.theme ?? "dark";
   const savedAiFeatures = loaderData?.aiFeatures ?? false;
+  const savedUsername = loaderData?.username ?? "";
+  const savedDisplayUsername = loaderData?.displayUsername ?? savedUsername;
   const initialNextExportAvailableAt = loaderData?.nextExportAvailableAt ?? null;
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const navigation = useNavigation();
@@ -87,6 +90,14 @@ export default function UserSettings() {
 
   const [theme, setTheme] = useState<Theme>(savedTheme);
   const [aiFeatures, setAiFeatures] = useState(savedAiFeatures);
+  const [username, setUsername] = useState(savedUsername);
+  const [displayUsername, setDisplayUsername] = useState(savedDisplayUsername);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [nextExportAvailableAt, setNextExportAvailableAt] = useState<string | null>(initialNextExportAvailableAt);
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -94,11 +105,94 @@ export default function UserSettings() {
   const isPending = navigation.state !== "idle";
   const themeHasChanges = theme !== savedTheme;
   const aiHasChanges = aiFeatures !== savedAiFeatures;
+  const usernameHasChanges = username.trim() !== savedUsername || displayUsername.trim() !== savedDisplayUsername;
   const exportAvailableAt = nextExportAvailableAt ? new Date(nextExportAvailableAt) : null;
   const canExport = !exportAvailableAt || exportAvailableAt <= new Date();
   const exportAvailableLabel = exportAvailableAt
     ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(exportAvailableAt)
     : null;
+
+  const handleUsernameSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isUpdatingUsername) {
+      return;
+    }
+
+    const nextUsername = username.trim();
+    const nextDisplayUsername = displayUsername.trim();
+
+    if (!nextUsername) {
+      toast.error(t("userSettings.account.emptyUsernameError"));
+      return;
+    }
+
+    setIsUpdatingUsername(true);
+
+    try {
+      const result = await authClient.updateUser({
+        username: nextUsername,
+        ...(nextDisplayUsername && nextDisplayUsername !== nextUsername
+          ? { displayUsername: nextDisplayUsername }
+          : {}),
+      });
+
+      if (result?.error) {
+        toast.error(result.error.message ?? t("userSettings.account.error"));
+        return;
+      }
+
+      setUsername(nextUsername);
+      setDisplayUsername(nextDisplayUsername || nextUsername);
+      toast.success(t("userSettings.account.success"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("userSettings.account.error"));
+    } finally {
+      setIsUpdatingUsername(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isChangingPassword) {
+      return;
+    }
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error(t("userSettings.password.requiredError"));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error(t("userSettings.password.mismatchError"));
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const { error } = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
+      });
+
+      if (error) {
+        toast.error(error.message ?? t("userSettings.password.error"));
+        return;
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success(t("userSettings.password.success"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("userSettings.password.error"));
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const handleExportAccount = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -199,6 +293,151 @@ export default function UserSettings() {
         </div>
 
         <div className="space-y-4">
+          <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <form className="space-y-4" onSubmit={handleUsernameSubmit}>
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold">{t("userSettings.account.title")}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("userSettings.account.description")}
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="username">
+                    {t("userSettings.account.usernameLabel")}
+                  </label>
+                  <Input
+                    id="username"
+                    scheme={scheme}
+                    icon={<AtSign />}
+                    value={username}
+                    onChange={(event) => { setUsername(event.target.value); }}
+                    placeholder={t("userSettings.account.usernamePlaceholder")}
+                    autoComplete="username"
+                    disabled={isPending || isUpdatingUsername}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="displayUsername">
+                    {t("userSettings.account.displayUsernameLabel")}
+                  </label>
+                  <Input
+                    id="displayUsername"
+                    scheme={scheme}
+                    value={displayUsername}
+                    onChange={(event) => { setDisplayUsername(event.target.value); }}
+                    placeholder={t("userSettings.account.displayUsernamePlaceholder")}
+                    autoComplete="name"
+                    disabled={isPending || isUpdatingUsername}
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                {t("userSettings.account.helper")}
+              </p>
+
+              <div className="flex justify-end">
+                <Button
+                  scheme={scheme}
+                  type="submit"
+                  disabled={isPending || isUpdatingUsername || !usernameHasChanges}
+                  icon={isUpdatingUsername ? <Loader2 className="animate-spin" /> : <Save />}
+                >
+                  {isUpdatingUsername ? t("common.saving") : t("common.save")}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <form className="space-y-4" onSubmit={handlePasswordSubmit}>
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold">{t("userSettings.password.title")}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("userSettings.password.description")}
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="currentPassword">
+                    {t("userSettings.password.currentPasswordLabel")}
+                  </label>
+                  <Input
+                    id="currentPassword"
+                    scheme={scheme}
+                    icon={<Lock />}
+                    type={showPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(event) => { setCurrentPassword(event.target.value); }}
+                    placeholder={t("userSettings.password.currentPasswordPlaceholder")}
+                    autoComplete="current-password"
+                    disabled={isPending || isChangingPassword}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="newPassword">
+                    {t("userSettings.password.newPasswordLabel")}
+                  </label>
+                  <Input
+                    id="newPassword"
+                    scheme={scheme}
+                    icon={<Lock />}
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(event) => { setNewPassword(event.target.value); }}
+                    placeholder={t("userSettings.password.newPasswordPlaceholder")}
+                    autoComplete="new-password"
+                    disabled={isPending || isChangingPassword}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground" htmlFor="confirmPassword">
+                    {t("userSettings.password.confirmPasswordLabel")}
+                  </label>
+                  <Input
+                    id="confirmPassword"
+                    scheme={scheme}
+                    icon={<Lock />}
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => { setConfirmPassword(event.target.value); }}
+                    placeholder={t("userSettings.password.confirmPasswordPlaceholder")}
+                    autoComplete="new-password"
+                    disabled={isPending || isChangingPassword}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <Button
+                  type="button"
+                  variant="transparent"
+                  scheme={theme}
+                  onClick={() => { setShowPassword((current) => !current); }}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  <span>{showPassword ? t("userSettings.password.hidePassword") : t("userSettings.password.showPassword")}</span>
+                </Button>
+
+                <Button
+                  scheme={scheme}
+                  type="submit"
+                  disabled={isPending || isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  icon={isChangingPassword ? <Loader2 className="animate-spin" /> : <Save />}
+                >
+                  {isChangingPassword ? t("common.saving") : t("common.save")}
+                </Button>
+              </div>
+            </form>
+          </div>
+
           <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
             <form method="post" className="space-y-4">
               <input type="hidden" name="intent" value="settings" />

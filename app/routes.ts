@@ -26,6 +26,7 @@ export default [
     route("app/favorites", "routes/app/favorites.tsx"),
     route("app/mylists", "routes/app/mylists.tsx"),
     layout("routes/app/viewuser/layout.tsx", [
+      route("app/viewuser/:id/admin", "routes/app/viewuser/admin.tsx"),
       route("app/viewuser/:id/folders", "routes/app/viewuser/folders.tsx"),
       route("app/viewuser/:id/groups", "routes/app/viewuser/groups.tsx"),
       route("app/viewuser/:id/lists", "routes/app/viewuser/lists.tsx"),

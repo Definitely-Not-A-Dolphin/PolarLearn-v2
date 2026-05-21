@@ -5,6 +5,8 @@ import { ListRouter } from './routers/lists'
 import { learningRouter } from './routers/learning'
 import { groupsRouter } from './routers/groups'
 import { searchRouter } from './routers/search'
+import { notificationRouter } from './routers/notification'
+import { adminRouter } from './routers/admin'
 
 export const appRouter = createTRPCRouter({
   list: ListRouter,
@@ -12,6 +14,8 @@ export const appRouter = createTRPCRouter({
   learning: learningRouter,
   groups: groupsRouter,
   search: searchRouter,
+  notification: notificationRouter,
+  admin: adminRouter
 })
 
 export type AppRouter = typeof appRouter

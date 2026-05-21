@@ -54,6 +54,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
 
   const passwordContainerRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +70,7 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isLoading) return;
+    if (isLoading || isForgotPasswordLoading) return;
     setIsLoading(true);
 
     try {
@@ -166,12 +167,43 @@ export default function SignInPage() {
             />
             {smtpEnabled ? (
               <button
-                onClick={() => {
+                type="button"
+                onClick={async () => {
+                  if (isLoading || isForgotPasswordLoading) return;
 
+                  const normalizedEmail = email.trim();
+                  if (!normalizedEmail) {
+                    toast.error(t("auth:signIn.forgotPasswordEmailRequired"));
+                    return;
+                  }
+
+                  setIsForgotPasswordLoading(true);
+
+                  try {
+                    const resetPasswordUrl = new URL("/auth/reset-password", window.location.origin).toString();
+                    const { error } = await authClient.requestPasswordReset({
+                      email: normalizedEmail,
+                      redirectTo: resetPasswordUrl,
+                    });
+
+                    if (error) {
+                      toast.error(error.message ?? t("auth:errors.unknown"));
+                      return;
+                    }
+
+                    toast.success(t("auth:signIn.forgotPasswordSent"));
+                  } catch (err: any) {
+                    toast.error(err?.message ?? t("auth:errors.unknown"));
+                  } finally {
+                    setIsForgotPasswordLoading(false);
+                  }
                 }}
-                className="text-md text-sky-400 font-bold block mb-2 cursor-pointer hover:underline"
+                disabled={isLoading || isForgotPasswordLoading}
+                className="text-md text-sky-400 font-bold block mb-2 cursor-pointer hover:underline disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {t("auth:signIn.forgotPassword")}
+                {isForgotPasswordLoading
+                  ? t("auth:signIn.forgotPasswordSending")
+                  : t("auth:signIn.forgotPassword")}
               </button>
             ) : null}
           </div>
@@ -181,7 +213,7 @@ export default function SignInPage() {
             color="sky"
             className="w-full mt-5"
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isForgotPasswordLoading}
             icon={isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
           >
             {isLoading

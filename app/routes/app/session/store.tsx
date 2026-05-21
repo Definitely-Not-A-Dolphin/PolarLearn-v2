@@ -17,7 +17,6 @@ export interface FeedbackState {
 }
 
 export interface LearnStoreInitData {
-
   listId: string
   queue: LearnQueue
   answerLog?: AnswerLogEntry[]
@@ -52,8 +51,6 @@ export const createLearnStore = (initData: LearnStoreInitData) => {
     answerLog: initialAnswerLog,
     isComplete: initData.isComplete ?? initData.queue.length === 0,
     feedback: null,
-
-
     getCurrentQuestion: () => {
       const { queue } = get()
       return queue[0]

@@ -1,11 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { Button, Input } from "@polarnl/polarui-react";
+import { Button, Input, Tabs } from "@polarnl/polarui-react";
 import { redirect, useLoaderData, useRouteLoaderData, useNavigate } from "react-router";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { DragDropContext, Draggable, Droppable, type DraggableProvided, type DraggableStateSnapshot } from "@hello-pangea/dnd";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { Grip, Loader2, Plus, Trash, Save, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { FileText, Grip, Import, Loader2, Plus, Trash, Save, Upload, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import z from "zod";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import SubjectSelector from "~/components/subject-selector";
-import { listItem } from "~/lib/list";
+import { listItem, type ListItem } from "~/lib/list";
 import { buildListDiff, snapshotFromEditableItems } from "~/lib/list-diff";
 import { Subject } from "~/lib/subjects";
 import { SubjectNamesArray } from "~/lib/subjectnames";
@@ -33,6 +33,8 @@ import type { RootLoaderData, Theme } from "~/lib/root-data";
 
 import type { Route } from "./+types/[id]";
 
+gsap.registerPlugin(useGSAP);
+
 const editableListDraftSchema = z.object({
   name: z.string(),
   subject: z.enum(SubjectNamesArray),
@@ -41,8 +43,173 @@ const editableListDraftSchema = z.object({
 });
 
 type EditableListDraft = z.infer<typeof editableListDraftSchema>;
+const EMPTY_PLAINTEXT_IMPORT_ERROR = "EMPTY_PLAINTEXT_IMPORT";
+const INVALID_PLAINTEXT_IMPORT_ERROR = "INVALID_PLAINTEXT_IMPORT";
+const EMPTY_CSV_IMPORT_ERROR = "EMPTY_CSV_IMPORT";
+const INVALID_CSV_IMPORT_ERROR = "INVALID_CSV_IMPORT";
+const CSV_DELIMITERS = [",", ";", "\t"] as const;
 
-function createBlankListItem(): EditableListDraft["items"][number] {
+function countUnquotedOccurrences(line: string, separator: string) {
+  let count = 0;
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+
+    if (character === '"') {
+      if (inQuotes && line[index + 1] === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+
+      continue;
+    }
+
+    if (!inQuotes && character === separator) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function detectCsvSeparator(input: string) {
+  const firstNonEmptyLine = input.split(/\r?\n/).find((line) => line.trim() !== "") ?? "";
+
+  return CSV_DELIMITERS.reduce<{
+    separator: string;
+    count: number;
+  }>((best, separator) => {
+    const count = countUnquotedOccurrences(firstNonEmptyLine, separator);
+
+    if (count > best.count) {
+      return {
+        separator,
+        count,
+      };
+    }
+
+    return best;
+  }, {
+    separator: ",",
+    count: -1,
+  }).separator;
+}
+
+function parseCsvLine(line: string, separator: string) {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+
+    if (character === '"') {
+      if (inQuotes && line[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+
+      continue;
+    }
+
+    if (!inQuotes && character === separator) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (inQuotes) {
+    throw new Error(INVALID_CSV_IMPORT_ERROR);
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function parsePlaintextKeyValueImport(input: string): ListItem[] {
+  const pairs: ListItem[] = [];
+  let sawNonEmptyLine = false;
+
+  for (const rawLine of input.split(/\r?\n/)) {
+    if (rawLine.trim() === "") {
+      continue;
+    }
+
+    sawNonEmptyLine = true;
+
+    const separatorIndex = rawLine.indexOf("=");
+
+    if (separatorIndex < 0) {
+      throw new Error(INVALID_PLAINTEXT_IMPORT_ERROR);
+    }
+
+    const question = rawLine.slice(0, separatorIndex).trim();
+    const answer = rawLine.slice(separatorIndex + 1).trim();
+
+    if (question === "") {
+      throw new Error(INVALID_PLAINTEXT_IMPORT_ERROR);
+    }
+
+    pairs.push({
+      id: globalThis.crypto.randomUUID(),
+      question,
+      answer,
+    });
+  }
+
+  if (!sawNonEmptyLine || pairs.length === 0) {
+    throw new Error(EMPTY_PLAINTEXT_IMPORT_ERROR);
+  }
+
+  return pairs;
+}
+
+function parseCsvKeyValueImport(input: string): ListItem[] {
+  const lines = input.split(/\r?\n/).filter((line) => line.trim() !== "");
+
+  if (lines.length === 0) {
+    throw new Error(EMPTY_CSV_IMPORT_ERROR);
+  }
+
+  const separator = detectCsvSeparator(input);
+  const pairs: ListItem[] = [];
+
+  for (const line of lines) {
+    const cells = parseCsvLine(line, separator);
+
+    if (cells.length < 2) {
+      throw new Error(INVALID_CSV_IMPORT_ERROR);
+    }
+
+    const question = cells[0] ?? "";
+    const answer = cells.slice(1).join(separator).trim();
+
+    if (question === "") {
+      throw new Error(INVALID_CSV_IMPORT_ERROR);
+    }
+
+    pairs.push({
+      id: globalThis.crypto.randomUUID(),
+      question,
+      answer,
+    });
+  }
+
+  if (pairs.length === 0) {
+    throw new Error(EMPTY_CSV_IMPORT_ERROR);
+  }
+
+  return pairs;
+}
+
+function createBlankListItem(): ListItem {
   return {
     id: globalThis.crypto.randomUUID(),
     question: "",
@@ -50,10 +217,9 @@ function createBlankListItem(): EditableListDraft["items"][number] {
   };
 }
 
-function normalizeEditableListItems(items: EditableListDraft["items"]) {
+function normalizeEditableListDraft(draft: EditableListDraft): EditableListDraft {
   const seenIds = new Set<string>();
-
-  return items.map((item) => {
+  const normalizedItems = draft.items.map((item) => {
     const trimmedId = item.id.trim();
     const nextId = trimmedId === "" ? globalThis.crypto.randomUUID() : trimmedId;
 
@@ -71,10 +237,6 @@ function normalizeEditableListItems(items: EditableListDraft["items"]) {
       id: nextId,
     };
   });
-}
-
-function normalizeEditableListDraft(draft: EditableListDraft): EditableListDraft {
-  const normalizedItems = normalizeEditableListItems(draft.items);
 
   return {
     ...draft,
@@ -82,85 +244,16 @@ function normalizeEditableListDraft(draft: EditableListDraft): EditableListDraft
   };
 }
 
-function areEditableListItemsEquivalent(left: EditableListDraft["items"][number], right: EditableListDraft["items"][number]) {
-  return left.question === right.question
-    && left.answer === right.answer;
-}
-
 function areEditableListDraftsEquivalent(left: EditableListDraft, right: EditableListDraft) {
   return left.name === right.name
     && left.subject === right.subject
     && left.items.length === right.items.length
     && left.items.every((leftItem, index) => {
-      return areEditableListItemsEquivalent(leftItem, right.items[index]);
+      const rightItem = right.items[index];
+
+      return leftItem.question === rightItem.question
+        && leftItem.answer === rightItem.answer;
     });
-}
-
-interface DiffOverviewRow {
-  leftText: string;
-  rightText: string;
-  status: "equal" | "changed" | "added" | "removed";
-}
-
-function getDiffItem(items: EditableListDraft["items"], index: number) {
-  if (index < 0 || index >= items.length) {
-    return undefined;
-  }
-
-  return items[index];
-}
-
-function formatDiffItem(item: EditableListDraft["items"][number] | undefined, index: number, prefix: string) {
-  const itemNumber = String(index + 1);
-
-  if (!item) {
-    return prefix + " pair " + itemNumber + ": ∅";
-  }
-
-  const question = item.question.trim() || "—";
-  const answer = item.answer.trim() || "—";
-
-  return prefix + " pair " + itemNumber + ": " + question + " | " + answer;
-}
-
-function buildDiffOverviewRows(baseDraft: EditableListDraft, importedDraft: EditableListDraft) {
-  const rows: DiffOverviewRow[] = [
-    {
-      leftText: `- name: ${baseDraft.name.trim() || "—"}`,
-      rightText: `+ name: ${importedDraft.name.trim() || "—"}`,
-      status: baseDraft.name === importedDraft.name ? "equal" : "changed",
-    },
-    {
-      leftText: `- subject: ${subjects.getSubjectNameById(baseDraft.subject)}`,
-      rightText: `+ subject: ${subjects.getSubjectNameById(importedDraft.subject)}`,
-      status: baseDraft.subject === importedDraft.subject ? "equal" : "changed",
-    },
-  ];
-
-  const maxItems = Math.max(baseDraft.items.length, importedDraft.items.length);
-
-  for (let index = 0; index < maxItems; index += 1) {
-    const baseItem = getDiffItem(baseDraft.items, index);
-    const importedItem = getDiffItem(importedDraft.items, index);
-
-    let status: DiffOverviewRow["status"] = "equal";
-
-    if (baseItem === undefined) {
-      status = "added";
-    } else if (importedItem === undefined) {
-      status = "removed";
-    } else if (baseItem.question !== importedItem.question || baseItem.answer !== importedItem.answer) {
-      status = "changed";
-    }
-
-    rows.push({
-      leftText: formatDiffItem(baseItem, index, "-"),
-      rightText: formatDiffItem(importedItem, index, "+"),
-      status,
-    });
-  }
-
-  return rows;
 }
 
 const subjects = new Subject();
@@ -206,17 +299,15 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
 }
 
-type LoaderData = Awaited<ReturnType<typeof loader>>
+type LoaderData = Exclude<Awaited<ReturnType<typeof loader>>, Response>
 
 export default function EditListPage() {
-  const { list } = useLoaderData<typeof loader>();
+  const { list } = useLoaderData<LoaderData>();
 
   return <EditListEditor key={list.id} list={list} />
 }
 
 function EditListEditor({ list }: { list: LoaderData["list"] }) {
-  gsap.registerPlugin(useGSAP);
-
   const t = i18n.t;
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
@@ -234,12 +325,71 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
   const [removingDraftItemIds, setRemovingDraftItemIds] = useState<string[]>([]);
   const [isSubjectSelectorOpen, setIsSubjectSelectorOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importTabIndex, setImportTabIndex] = useState(0);
+  const [importPlainText, setImportPlainText] = useState("");
+  const [importCsvText, setImportCsvText] = useState("");
+  const [importCsvFileName, setImportCsvFileName] = useState<string | null>(null);
   const [commitMessage, setCommitMessage] = useState("");
   const itemNodeRefs = useRef(new Map<string, HTMLDivElement>());
   const inputNodeRefs = useRef(new Map<string, HTMLInputElement>());
+  const importCsvInputRef = useRef<HTMLInputElement>(null);
   const previousDraftItemIdsRef = useRef(draft.items.map((item) => item.id));
   const trpc = useTRPC();
   const navigate = useNavigate();
+  const updateDraftItem = (
+    itemId: string,
+    updater: (item: ListItem) => ListItem,
+  ) => {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      items: currentDraft.items.map((item) => (
+        item.id === itemId
+          ? updater(item)
+          : item
+      )),
+    }));
+  };
+
+  const removeDraftItem = (itemId: string) => {
+    if (removingDraftItemIds.includes(itemId)) {
+      return;
+    }
+
+    const node = itemNodeRefs.current.get(itemId);
+
+    if (!node) {
+      setDraft((currentDraft) => ({
+        ...currentDraft,
+        items: currentDraft.items.length === 1
+          ? currentDraft.items
+          : currentDraft.items.filter((item) => item.id !== itemId),
+      }));
+      return;
+    }
+
+    setRemovingDraftItemIds((currentRemovingItemIds) => [...currentRemovingItemIds, itemId]);
+    gsap.killTweensOf(node);
+
+    gsap.to(node, {
+      height: 0,
+      opacity: 0,
+      y: -12,
+      scale: 0.98,
+      duration: 0.28,
+      ease: "power2.in",
+      onComplete: () => {
+        setDraft((currentDraft) => ({
+          ...currentDraft,
+          items: currentDraft.items.length === 1
+            ? currentDraft.items
+            : currentDraft.items.filter((item) => item.id !== itemId),
+        }));
+        setRemovingDraftItemIds((currentRemovingItemIds) => currentRemovingItemIds.filter((id) => id !== itemId));
+        itemNodeRefs.current.delete(itemId);
+      },
+    });
+  };
 
   const updateListMetaMutation = useMutation({
     ...trpc.list.updateListMeta.mutationOptions(),
@@ -330,17 +480,6 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
     }
   }, [draft, initialDraft, isDraftPersistenceReady, localDraftStorageKey]);
 
-  const discardLocalDraft = () => {
-    try {
-      window.localStorage.removeItem(localDraftStorageKey);
-    } catch {
-      // Ignore storage failures and just continue with the server draft.
-    }
-
-    setImportedDraft(null);
-    setIsDraftPersistenceReady(true);
-  };
-
   const handleCommit = async () => {
     const nextCommitMessage = commitMessage.trim();
 
@@ -384,16 +523,6 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
     }
   };
 
-  const applyLocalDraft = () => {
-    if (!importedDraft) {
-      return;
-    }
-
-    setDraft(normalizeEditableListDraft(importedDraft));
-    setImportedDraft(null);
-    setIsDraftPersistenceReady(true);
-  };
-
   const appendDraftItem = (focusNewItem: boolean) => {
     const newItem = createBlankListItem();
 
@@ -409,6 +538,17 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         input?.focus();
         input?.select();
       });
+    }
+  };
+
+  const resetImportDialogState = () => {
+    setImportTabIndex(0);
+    setImportPlainText("");
+    setImportCsvText("");
+    setImportCsvFileName(null);
+
+    if (importCsvInputRef.current) {
+      importCsvInputRef.current.value = "";
     }
   };
 
@@ -446,14 +586,31 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
   }, [draft.items.length]);
 
   return (
-    <main className="p-6">
+    <main className="px-4 py-4 sm:p-6">
       <DraftImportDialog
         open={Boolean(importedDraft)}
         baseDraft={initialDraft}
         importedDraft={importedDraft}
         theme={theme}
-        onDiscardLocalDraft={discardLocalDraft}
-        onApplyLocalDraft={applyLocalDraft}
+        onDiscardLocalDraft={() => {
+          try {
+            window.localStorage.removeItem(localDraftStorageKey);
+          } catch {
+            // Ignore storage failures and just continue with the server draft.
+          }
+
+          setImportedDraft(null);
+          setIsDraftPersistenceReady(true);
+        }}
+        onApplyLocalDraft={() => {
+          if (!importedDraft) {
+            return;
+          }
+
+          setDraft(normalizeEditableListDraft(importedDraft));
+          setImportedDraft(null);
+          setIsDraftPersistenceReady(true);
+        }}
       />
       <SaveDialog
         open={isSaveDialogOpen}
@@ -470,21 +627,156 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         }}
         onSave={() => { void handleCommit(); }}
       />
-      <div className="relative flex flex-row items-center">
-        <Button variant="transparent" scheme={theme} icon={<X />} onClick={() => {
-          void navigate(`/app`);
-        }}>
-          {t("common.close")}
-        </Button>
-        <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
-          {t("lists.edit.title")}
-        </h1>
-        <div className="grow" />
-        <Button variant="transparent" scheme={theme} icon={<Save />} onClick={() => {
-          setIsSaveDialogOpen(true);
-        }}>
-          {t("lists.edit.save")}
-        </Button>
+      <ImportDialog
+        open={isImportDialogOpen}
+        theme={theme}
+        activeTabIndex={importTabIndex}
+        plainTextValue={importPlainText}
+        csvFileName={importCsvFileName}
+        canImport={importTabIndex === 0 ? importPlainText.trim() !== "" : importCsvText.trim() !== ""}
+        onOpenChange={(open) => {
+          setIsImportDialogOpen(open);
+
+          if (!open) {
+            resetImportDialogState();
+          }
+        }}
+        onActiveTabChange={setImportTabIndex}
+        onPlainTextChange={setImportPlainText}
+        onCsvFileSelected={(file) => {
+          void (async () => {
+            if (!file.name.toLowerCase().endsWith(".csv")) {
+              toast.error("Alleen CSV-bestanden zijn toegestaan.");
+
+              setImportCsvText("");
+              setImportCsvFileName(null);
+
+              if (importCsvInputRef.current) {
+                importCsvInputRef.current.value = "";
+              }
+
+              return;
+            }
+
+            try {
+              const content = await file.text();
+
+              setImportCsvText(content);
+              setImportCsvFileName(file.name);
+
+              if (importCsvInputRef.current) {
+                importCsvInputRef.current.value = "";
+              }
+            } catch {
+              toast.error("CSV-bestand kon niet worden gelezen.");
+              setImportCsvText("");
+              setImportCsvFileName(null);
+
+              if (importCsvInputRef.current) {
+                importCsvInputRef.current.value = "";
+              }
+            }
+          })();
+        }}
+        onImport={() => {
+          try {
+            const importedItems = importTabIndex === 0
+              ? parsePlaintextKeyValueImport(importPlainText)
+              : parseCsvKeyValueImport(importCsvText);
+
+            setDraft((currentDraft) => ({
+              ...currentDraft,
+              items: [...currentDraft.items, ...importedItems],
+            }));
+            toast.success(`${importedItems.length} items succesvol geïmporteerd`);
+            setIsImportDialogOpen(false);
+            resetImportDialogState();
+          } catch (error) {
+            const message = importTabIndex === 0
+              ? error instanceof Error && error.message === EMPTY_PLAINTEXT_IMPORT_ERROR
+                ? "Plak eerst een of meer key=value-regels."
+                : error instanceof Error && error.message === INVALID_PLAINTEXT_IMPORT_ERROR
+                  ? "De geplakte tekst moet regels in het formaat key=value bevatten."
+                  : "Importeren van platte tekst is mislukt."
+              : error instanceof Error && error.message === EMPTY_CSV_IMPORT_ERROR
+                ? "Kies eerst een CSV-bestand."
+                : error instanceof Error && error.message === INVALID_CSV_IMPORT_ERROR
+                  ? "Het CSV-bestand moet twee kolommen bevatten."
+                  : "Importeren van CSV is mislukt.";
+
+            toast.error(message);
+
+          }
+        }}
+        csvInputRef={importCsvInputRef}
+      />
+      <div>
+        <div className="space-y-3 sm:hidden">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={<X />}
+              onClick={() => {
+                void navigate(`/app`);
+              }}
+              className="justify-self-start"
+            >
+              {t("common.close")}
+            </Button>
+            <h1 className="pointer-events-none min-w-0 text-center text-2xl font-bold leading-tight">
+              {t("lists.edit.title")}
+            </h1>
+            <div aria-hidden="true" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={<Import />}
+              onClick={() => {
+                setIsImportDialogOpen(true);
+              }}
+              className="w-full justify-center"
+            >
+              Importeren
+            </Button>
+            <Button
+              variant="transparent"
+              scheme={theme}
+              icon={<Save />}
+              onClick={() => {
+                setIsSaveDialogOpen(true);
+              }}
+              className="w-full justify-center"
+            >
+              {t("lists.edit.save")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative hidden flex-row items-center sm:flex">
+          <Button variant="transparent" scheme={theme} icon={<X />} onClick={() => {
+            void navigate(`/app`);
+          }}>
+            {t("common.close")}
+          </Button>
+          <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
+            {t("lists.edit.title")}
+          </h1>
+          <div className="grow" />
+          <Button variant="transparent" scheme={theme} icon={<Import />} onClick={() => {
+            setIsImportDialogOpen(true);
+          }}>
+            Importeren
+          </Button>
+          <Button variant="transparent" scheme={theme} icon={<Save />} onClick={() => {
+            setIsSaveDialogOpen(true);
+          }}>
+            {t("lists.edit.save")}
+          </Button>
+        </div>
       </div>
       <div className="mt-4">
         <p className="font-bold">{t("lists.edit.nameLabel")}</p>
@@ -557,147 +849,20 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                     isDragDisabled={removingDraftItemIds.includes(item.id)}
                   >
                     {(draggableProvided, draggableSnapshot) => (
-                      <div
-                        ref={(node) => {
-                          draggableProvided.innerRef(node);
-
-                          if (node) {
-                            itemNodeRefs.current.set(item.id, node);
-                            return;
-                          }
-
-                          itemNodeRefs.current.delete(item.id);
-                        }}
-                        {...draggableProvided.draggableProps}
-                        className={`overflow-hidden ${removingDraftItemIds.includes(item.id) ? "pointer-events-none" : ""}`}
-                      >
-                        <div
-                          className={`flex min-h-20 items-center rounded-lg border border-border bg-card px-2 py-4 transition-shadow ${draggableSnapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
-                        >
-                          <p className="pr-2 font-bold">{index + 1}</p>
-                          <Input
-                            ref={(node) => {
-                              if (node) {
-                                inputNodeRefs.current.set(item.id, node);
-                                return;
-                              }
-
-                              inputNodeRefs.current.delete(item.id);
-                            }}
-                            scheme={theme}
-                            placeholder={t("lists.create.keyInputPlaceholder")}
-                            value={item.question}
-                            onChange={(event) => {
-                              setDraft((currentDraft) => ({
-                                ...currentDraft,
-                                items: currentDraft.items.map((currentItem) => (
-                                  currentItem.id === item.id
-                                    ? { ...currentItem, question: event.target.value }
-                                    : currentItem
-                                )),
-                              }));
-                            }}
-                            className="min-w-0 flex-1"
-                          />
-                          <Input
-                            scheme={theme}
-                            placeholder={t("lists.create.valueInputPlaceholder")}
-                            value={item.answer}
-                            onChange={(event) => {
-                              setDraft((currentDraft) => ({
-                                ...currentDraft,
-                                items: currentDraft.items.map((currentItem) => (
-                                  currentItem.id === item.id
-                                    ? { ...currentItem, answer: event.target.value }
-                                    : currentItem
-                                )),
-                              }));
-                            }}
-                            onKeyDown={(event) => {
-                              if (index !== draft.items.length - 1 || event.key !== "Tab" || event.shiftKey) {
-                                return;
-                              }
-
-                              event.preventDefault();
-                              appendDraftItem(true);
-                            }}
-                            className="ml-2 min-w-0 flex-1"
-                          />
-                          <Button
-                            type="button"
-                            tabIndex={-1}
-                            title={t("lists.edit.removeItem")}
-                            onClick={() => {
-                              if (removingDraftItemIds.includes(item.id)) {
-                                return;
-                              }
-
-                              const node = itemNodeRefs.current.get(item.id);
-
-                              if (!node) {
-                                setDraft((currentDraft) => {
-                                  if (currentDraft.items.length === 1) {
-                                    return currentDraft;
-                                  }
-
-                                  return {
-                                    ...currentDraft,
-                                    items: currentDraft.items.filter((currentItem) => currentItem.id !== item.id),
-                                  };
-                                });
-
-                                return;
-                              }
-
-                              setRemovingDraftItemIds((currentRemovingItemIds) => [...currentRemovingItemIds, item.id]);
-                              gsap.killTweensOf(node);
-
-                              gsap.to(node, {
-                                height: 0,
-                                opacity: 0,
-                                y: -12,
-                                scale: 0.98,
-                                duration: 0.28,
-                                ease: "power2.in",
-                                onComplete: () => {
-                                  setDraft((currentDraft) => {
-                                    if (currentDraft.items.length === 1) {
-                                      return currentDraft;
-                                    }
-
-                                    return {
-                                      ...currentDraft,
-                                      items: currentDraft.items.filter((currentItem) => currentItem.id !== item.id),
-                                    };
-                                  });
-                                  setRemovingDraftItemIds((currentRemovingItemIds) => currentRemovingItemIds.filter((id) => id !== item.id));
-                                  itemNodeRefs.current.delete(item.id);
-                                },
-                              });
-                            }}
-                            disabled={draft.items.length === 1 || removingDraftItemIds.includes(item.id)}
-                            variant="transparent"
-                            scheme={theme}
-                            className="mx-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15"
-                          >
-                            <span className="flex items-center justify-center leading-none">
-                              <Trash className="h-5 w-5" tabIndex={-1} />
-                            </span>
-                          </Button>
-                          <Button
-                            {...(draggableProvided.dragHandleProps ?? {})}
-                            type="button"
-                            tabIndex={-1}
-                            variant="transparent"
-                            scheme={theme}
-                            className="mr-1 flex h-10 w-10 min-h-0 min-w-0 shrink-0 cursor-grab items-center justify-center rounded-md p-0 leading-none transition hover:bg-muted active:cursor-grabbing"
-                          >
-                            <span className="flex items-center justify-center leading-none">
-                              <Grip className="h-5 w-5" tabIndex={-1} />
-                            </span>
-                          </Button>
-                        </div>
-                      </div>
+                      <EditableListItemRow
+                        item={item}
+                        index={index}
+                        totalItems={draft.items.length}
+                        theme={theme}
+                        isRemoving={removingDraftItemIds.includes(item.id)}
+                        provided={draggableProvided}
+                        snapshot={draggableSnapshot}
+                        onItemUpdate={updateDraftItem}
+                        onAppendItem={() => { appendDraftItem(true); }}
+                        onRemoveItem={removeDraftItem}
+                        itemNodeRefs={itemNodeRefs}
+                        inputNodeRefs={inputNodeRefs}
+                      />
                     )}
                   </Draggable>
                 ))}
@@ -722,6 +887,134 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
       </div>
     </main>
   )
+}
+
+function EditableListItemRow({
+  item,
+  index,
+  totalItems,
+  theme,
+  isRemoving,
+  provided,
+  snapshot,
+  onItemUpdate,
+  onAppendItem,
+  onRemoveItem,
+  itemNodeRefs,
+  inputNodeRefs,
+}: {
+  item: ListItem;
+  index: number;
+  totalItems: number;
+  theme: Theme;
+  isRemoving: boolean;
+  provided: DraggableProvided;
+  snapshot: DraggableStateSnapshot;
+  onItemUpdate: (itemId: string, updater: (item: ListItem) => ListItem) => void;
+  onAppendItem: () => void;
+  onRemoveItem: (itemId: string) => void;
+  itemNodeRefs: RefObject<Map<string, HTMLDivElement>>;
+  inputNodeRefs: RefObject<Map<string, HTMLInputElement>>;
+}) {
+  const t = i18n.t;
+  const isLastItem = index === totalItems - 1;
+
+  return (
+    <div
+      ref={(node) => {
+        provided.innerRef(node);
+
+        if (node) {
+          itemNodeRefs.current.set(item.id, node);
+          return;
+        }
+
+        itemNodeRefs.current.delete(item.id);
+      }}
+      {...provided.draggableProps}
+      className={`overflow-hidden ${isRemoving ? "pointer-events-none" : ""}`}
+    >
+      <div
+        className={`flex min-h-20 items-start rounded-lg border border-border bg-card px-3 py-3 transition-shadow sm:items-center ${snapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
+      >
+        <p className="flex w-6 shrink-0 justify-center pt-3 font-bold sm:pr-2 sm:pt-0">
+          {index + 1}
+        </p>
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+          <Input
+            ref={(node) => {
+              if (node) {
+                inputNodeRefs.current.set(item.id, node);
+                return;
+              }
+
+              inputNodeRefs.current.delete(item.id);
+            }}
+            scheme={theme}
+            placeholder={t("lists.create.keyInputPlaceholder")}
+            value={item.question}
+            onChange={(event) => {
+              onItemUpdate(item.id, (currentItem) => ({
+                ...currentItem,
+                question: event.target.value,
+              }));
+            }}
+            className="min-w-0 flex-1"
+          />
+          <Input
+            scheme={theme}
+            placeholder={t("lists.create.valueInputPlaceholder")}
+            value={item.answer}
+            onChange={(event) => {
+              onItemUpdate(item.id, (currentItem) => ({
+                ...currentItem,
+                answer: event.target.value,
+              }));
+            }}
+            onKeyDown={(event) => {
+              if (!isLastItem || event.key !== "Tab" || event.shiftKey) {
+                return;
+              }
+
+              event.preventDefault();
+              onAppendItem();
+            }}
+            className="min-w-0 flex-1 sm:ml-2"
+          />
+        </div>
+        <div className="ml-2 flex shrink-0 flex-col items-center gap-1 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            tabIndex={-1}
+            title={t("lists.edit.removeItem")}
+            onClick={() => {
+              onRemoveItem(item.id);
+            }}
+            disabled={totalItems === 1 || isRemoving}
+            variant="transparent"
+            scheme={theme}
+            className="flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15 sm:mx-1"
+          >
+            <span className="flex items-center justify-center leading-none">
+              <Trash className="h-5 w-5" tabIndex={-1} />
+            </span>
+          </Button>
+          <Button
+            {...(provided.dragHandleProps ?? {})}
+            type="button"
+            tabIndex={-1}
+            variant="transparent"
+            scheme={theme}
+            className="flex h-10 w-10 min-h-0 min-w-0 shrink-0 cursor-grab items-center justify-center rounded-md p-0 leading-none transition hover:bg-muted active:cursor-grabbing"
+          >
+            <span className="flex items-center justify-center leading-none">
+              <Grip className="h-5 w-5" tabIndex={-1} />
+            </span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SaveDialog({
@@ -781,6 +1074,146 @@ function SaveDialog({
   )
 }
 
+function ImportDialog({
+  open,
+  onOpenChange,
+  theme,
+  activeTabIndex,
+  onActiveTabChange,
+  plainTextValue,
+  onPlainTextChange,
+  csvFileName,
+  csvInputRef,
+  onCsvFileSelected,
+  canImport,
+  onImport,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  theme: Theme;
+  activeTabIndex: number;
+  onActiveTabChange: (index: number) => void;
+  plainTextValue: string;
+  onPlainTextChange: (value: string) => void;
+  csvFileName: string | null;
+  csvInputRef: RefObject<HTMLInputElement | null>;
+  onCsvFileSelected: (file: File) => void;
+  canImport: boolean;
+  onImport: () => void;
+}) {
+  const t = i18n.t;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-bold text-xl">Items importeren</DialogTitle>
+          <DialogDescription>
+            Plak key=value-regels of upload een CSV-bestand met twee kolommen.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs
+          scheme={theme}
+          tabs={["Platte tekst", "CSV-upload"]}
+          activeIndex={activeTabIndex}
+          onActiveIndexChange={onActiveTabChange}
+        />
+
+        {activeTabIndex === 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Elke regel moet het formaat <span className="font-mono text-foreground">key=value</span> hebben.
+            </p>
+            <textarea
+              value={plainTextValue}
+              onChange={(event) => {
+                onPlainTextChange(event.target.value);
+              }}
+              placeholder={"key=value\na=b"}
+              className="min-h-56 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none transition placeholder:text-muted-foreground focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div
+              className="rounded-lg border-2 border-dashed border-border bg-muted/20 p-6 text-center transition hover:border-sky-500/60 hover:bg-muted/40"
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+
+                const csvFile = Array.from(event.dataTransfer.files).find((file) => file.name.toLowerCase().endsWith(".csv"));
+
+                if (!csvFile) {
+                  toast.error("Alleen CSV-bestanden zijn toegestaan.");
+                  return;
+                }
+
+                onCsvFileSelected(csvFile);
+              }}
+            >
+              <input
+                ref={csvInputRef}
+                id="editlist-import-csv-file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => {
+                  const csvFile = event.target.files?.[0];
+
+                  if (!csvFile) {
+                    return;
+                  }
+
+                  onCsvFileSelected(csvFile);
+                }}
+                className="hidden"
+              />
+              <label
+                htmlFor="editlist-import-csv-file"
+                className="flex cursor-pointer flex-col items-center gap-2"
+              >
+                <Upload className="size-8 text-muted-foreground" />
+                <span className="font-medium">Klik om een CSV-bestand te kiezen</span>
+                <span className="text-sm text-muted-foreground">of sleep het hierheen</span>
+                {csvFileName ? (
+                  <span className="mt-2 text-xs text-muted-foreground">
+                    Geselecteerd bestand: {csvFileName}
+                  </span>
+                ) : null}
+              </label>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+              <FileText className="size-4 shrink-0" />
+              <span>Een CSV-bestand met twee kolommen, zonder headers, werkt het best.</span>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="transparent" scheme={theme}>
+              {t("navigation.cancel")}
+            </Button>
+          </DialogClose>
+          <Button
+            color="sky"
+            textColor="white"
+            onClick={() => {
+              onImport();
+            }}
+            disabled={!canImport}
+            icon={<Import />}
+          >
+            Importeren
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function DraftImportDialog({
   open,
   baseDraft,
@@ -802,7 +1235,60 @@ function DraftImportDialog({
       return [];
     }
 
-    return buildDiffOverviewRows(baseDraft, importedDraft);
+    const rows: Array<{
+      leftText: string;
+      rightText: string;
+      status: "equal" | "changed" | "added" | "removed";
+    }> = [
+        {
+          leftText: `- name: ${baseDraft.name.trim() || "—"}`,
+          rightText: `+ name: ${importedDraft.name.trim() || "—"}`,
+          status: baseDraft.name === importedDraft.name ? "equal" : "changed",
+        },
+        {
+          leftText: `- subject: ${subjects.getSubjectNameById(baseDraft.subject)}`,
+          rightText: `+ subject: ${subjects.getSubjectNameById(importedDraft.subject)}`,
+          status: baseDraft.subject === importedDraft.subject ? "equal" : "changed",
+        },
+      ];
+
+    const maxItems = Math.max(baseDraft.items.length, importedDraft.items.length);
+
+    for (let index = 0; index < maxItems; index += 1) {
+      const baseItem = baseDraft.items[index];
+      const importedItem = importedDraft.items[index];
+
+      let status: "equal" | "changed" | "added" | "removed" = "equal";
+
+      if (baseItem === undefined) {
+        status = "added";
+      } else if (importedItem === undefined) {
+        status = "removed";
+      } else if (baseItem.question !== importedItem.question || baseItem.answer !== importedItem.answer) {
+        status = "changed";
+      }
+
+      const formatItem = (item: ListItem | undefined, prefix: string) => {
+        const itemNumber = String(index + 1);
+
+        if (!item) {
+          return prefix + " pair " + itemNumber + ": ∅";
+        }
+
+        const question = item.question.trim() || "—";
+        const answer = item.answer.trim() || "—";
+
+        return prefix + " pair " + itemNumber + ": " + question + " | " + answer;
+      };
+
+      rows.push({
+        leftText: formatItem(baseItem, "-"),
+        rightText: formatItem(importedItem, "+"),
+        status,
+      });
+    }
+
+    return rows;
   }, [baseDraft, importedDraft]);
 
   if (!importedDraft) {
@@ -838,9 +1324,9 @@ function DraftImportDialog({
         </DialogHeader>
 
         <div className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
-          <div className="grid grid-cols-2 border-b border-border bg-muted/40 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 border-b border-border bg-muted/40 text-sm text-muted-foreground sm:grid-cols-2">
             <div className="px-4 py-3">{t("lists.edit.importDraft.currentVersion")}</div>
-            <div className="border-l border-border px-4 py-3">{t("lists.edit.importDraft.localDraft")}</div>
+            <div className="px-4 py-3 sm:border-l sm:border-border">{t("lists.edit.importDraft.localDraft")}</div>
           </div>
           <div className="max-h-[62vh] overflow-auto">
             {rawPatchOperations.map((row, index) => {
@@ -859,12 +1345,12 @@ function DraftImportDialog({
               return (
                 <div
                   key={String(index) + "-" + row.leftText}
-                  className="grid grid-cols-2 border-b border-border/60 font-mono text-[13px] leading-6 text-foreground last:border-b-0"
+                  className="grid grid-cols-1 border-b border-border/60 font-mono text-[13px] leading-6 text-foreground last:border-b-0 sm:grid-cols-2"
                 >
                   <div className={`px-4 py-3 ${leftTone}`}>
                     {row.leftText}
                   </div>
-                  <div className={`border-l border-border px-4 py-3 ${rightTone}`}>
+                  <div className={`px-4 py-3 sm:border-l sm:border-border ${rightTone}`}>
                     {row.rightText}
                   </div>
                 </div>

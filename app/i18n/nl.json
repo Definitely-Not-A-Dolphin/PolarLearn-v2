@@ -92,6 +92,34 @@
   "userSettings": {
     "title": "Instellingen",
     "description": "Wijzig je accountinstellingen en voorkeuren.",
+    "account": {
+      "title": "Gebruikersnaam",
+      "description": "Pas je openbare gebruikersnaam en weergavenaam aan.",
+      "usernameLabel": "Gebruikersnaam",
+      "usernamePlaceholder": "je-gebruikersnaam",
+      "displayUsernameLabel": "Weergavenaam",
+      "displayUsernamePlaceholder": "Je zichtbare naam",
+      "helper": "Je weergavenaam wordt getoond op openbare plekken in de app.",
+      "emptyUsernameError": "Voer een gebruikersnaam in.",
+      "success": "Je gebruikersnaam is opgeslagen.",
+      "error": "Je gebruikersnaam kon niet worden opgeslagen."
+    },
+    "password": {
+      "title": "Wachtwoord",
+      "description": "Wijzig je wachtwoord met je huidige wachtwoord.",
+      "currentPasswordLabel": "Huidig wachtwoord",
+      "currentPasswordPlaceholder": "Voer je huidige wachtwoord in",
+      "newPasswordLabel": "Nieuw wachtwoord",
+      "newPasswordPlaceholder": "Voer een nieuw wachtwoord in",
+      "confirmPasswordLabel": "Bevestig nieuw wachtwoord",
+      "confirmPasswordPlaceholder": "Herhaal het nieuwe wachtwoord",
+      "showPassword": "Wachtwoord tonen",
+      "hidePassword": "Wachtwoord verbergen",
+      "requiredError": "Vul je huidige wachtwoord, nieuwe wachtwoord en bevestiging in.",
+      "mismatchError": "De nieuwe wachtwoorden komen niet overeen.",
+      "success": "Je wachtwoord is bijgewerkt.",
+      "error": "Je wachtwoord kon niet worden bijgewerkt."
+    },
     "theme": {
       "title": "Thema",
       "description": "Kies tussen het lichte en donkere thema. De app gebruikt deze voorkeur bij de volgende paginaweergave.",
@@ -221,11 +249,29 @@
       },
       "actions": {
         "platformBan": "Platform ban",
-        "platformUnban": "Platform toelaten",
+        "platformUnban": "Platform deblokkeren",
         "forumBan": "Forum ban",
-        "forumUnban": "Forum toelaten",
-        "impersonate": "Impersonate",
-        "delete": "Gebruiker verwijderen"
+        "forumUnban": "Forum deblokkeren",
+        "impersonate": "Impersoneren",
+        "delete": "Gebruiker verwijderen",
+        "resetPassword": "Wachtwoord opnieuw instellen",
+        "sendNotification": "Bericht versturen",
+        "demote": "Degradeer naar gebruiker",
+        "appoint": "Toewijzen naar administrator",
+        "forceVerifyEmail": "E-mail forceren als geverifieerd"
+      },
+      "resetPasswordDialog": {
+        "title": "Wachtwoord opnieuw instellen",
+        "description": "Stel een nieuw wachtwoord in voor {{user}}.",
+        "warning": "Alle bestaande sessies van deze gebruiker worden ingetrokken.",
+        "newPasswordLabel": "Nieuw wachtwoord",
+        "newPasswordPlaceholder": "Voer een nieuw wachtwoord in",
+        "confirmPasswordLabel": "Bevestig wachtwoord",
+        "confirmPasswordPlaceholder": "Herhaal het nieuwe wachtwoord",
+        "passwordMismatch": "De wachtwoorden komen niet overeen.",
+        "confirm": "Wachtwoord opslaan",
+        "saving": "Wachtwoord opslaan...",
+        "success": "Wachtwoord succesvol gewijzigd"
       },
       "banDialog": {
         "platformTitle": "Platformban toepassen",
@@ -243,9 +289,50 @@
         "warning": "Deze actie kan niet ongedaan worden gemaakt. Alle gekoppelde data van deze gebruiker wordt ook verwijderd.",
         "confirm": "Gebruiker verwijderen",
         "saving": "Bezig met verwijderen..."
-      }
+      },
+      "unbanDialog": {
+        "title": "Platformban opheffen",
+        "description": "Weet je zeker dat je {{user}} wilt deblokkeren op het platform?",
+        "confirm": "Deblokkeren"
+      },
+      "forumUnbanDialog": {
+        "title": "Forumban opheffen",
+        "description": "Weet je zeker dat je {{user}} wilt deblokkeren op het forum?",
+        "confirm": "Deblokkeren"
+      },
+      "notificationDialog": {
+        "title": "Bericht verzenden",
+        "description": "Stuur een bericht naar {{user}}.",
+        "iconLabel": "Pictogram",
+        "messageLabel": "Bericht",
+        "placeholder": "Schrijf je bericht...",
+        "send": "Verzenden",
+        "sending": "Verzenden...",
+        "sent": "Bericht verzonden",
+        "sendError": "Kon bericht niet verzenden",
+        "contentRequired": "Bericht-tekst is vereist"
+      },
+      "notificationIcons": {
+        "info": "Info",
+        "warning": "Waarschuwing",
+        "success": "Succes",
+        "bell": "Bel",
+        "star": "Ster",
+        "mail": "Mail"
+      },
+      "forumBanApplied": "Forumban toegepast",
+      "forumBanLifted": "Forumban opgeheven",
+      "banSuccess": "Gebruiker geblokkeerd",
+      "unbanSuccess": "Gebruiker gedeblokkeerd",
+      "deleteSuccess": "Gebruiker verwijderd",
+      "promotedToAdmin": "Gebruiker gepromoveerd tot beheerder",
+      "demotedFromAdmin": "Beheerrechten ingetrokken",
+      "emailVerifiedSuccess": "E-mail geverifieerd"
     },
-    "lists": {},
+    "lists": {
+      "description": "Overzicht van alle lijsten in PolarLearn.",
+      "empty": "Er zijn nog geen lijsten."
+    },
     "analytics": {}
   },
   "lists": {

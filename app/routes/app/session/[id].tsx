@@ -20,15 +20,8 @@ import { answerLogSchema, queueSchema } from "~/lib/learn";
 import type { RootLoaderData } from "~/lib/root-data";
 
 type SessionLoaderData = Awaited<ReturnType<typeof loader>>
-interface LearnSessionData {
-  id: string
-  listId: string
-  queue: z.infer<typeof queueSchema>
-  answerLog: z.infer<typeof answerLogSchema>
-  isComplete: boolean
-}
 
-export async function loader({ params, request }: Route.LoaderArgs): Promise<{ session: LearnSessionData }> {
+export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id
 
   if (!id) {
@@ -51,7 +44,7 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<{ s
 }
 
 export default function LearnPage() {
-  const { session } = useLoaderData<SessionLoaderData>()
+  const { session } = useLoaderData<typeof loader>()
   const rootData = useRouteLoaderData<RootLoaderData>("root")
   const theme = rootData?.theme === "dark" ? "dark" : "light"
 
@@ -78,7 +71,6 @@ function TopBar({ theme }: { theme: "light" | "dark" }) {
   const { answerLog, getProgress } = store
   const progress = getProgress()
 
-  // Calculate correct and incorrect counts
   const correctCount = answerLog.filter((entry) => entry.isCorrect).length
   const incorrectCount = answerLog.filter((entry) => !entry.isCorrect).length
 

@@ -12,13 +12,6 @@ import { prisma } from "~/lib/db";
 import type { Route } from "./+types/layout";
 import i18n from "~/i18n";
 
-const tabs = [
-  { label: i18n.t("navigation.lists"), path: "lists" },
-  { label: i18n.t("navigation.groups"), path: "groups" },
-  { label: i18n.t("navigation.folders"), path: "folders" },
-  { label: i18n.t("navigation.posts"), path: "posts" },
-];
-
 export async function loader({ params }: Route.LoaderArgs) {
   const userId = params.id;
   if (!userId) {
@@ -32,6 +25,13 @@ export async function loader({ params }: Route.LoaderArgs) {
       name: true,
       displayUsername: true,
       image: true,
+      role: true,
+      email: true,
+      emailVerified: true,
+      banned: true,
+      banReason: true,
+      forumBanned: true,
+      forumBanReason: true,
       lists: {
         orderBy: {
           updatedAt: "desc",
@@ -94,9 +94,22 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 export default function Layout() {
   const { user } = useLoaderData<typeof loader>();
+  // build tabs dynamically so we can include admin tab only for admin users
+  const tabs = [
+    { label: i18n.t("navigation.lists"), path: "lists" },
+    { label: i18n.t("navigation.groups"), path: "groups" },
+    { label: i18n.t("navigation.folders"), path: "folders" },
+    { label: i18n.t("navigation.posts"), path: "posts" },
+  ];
+
+  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const viewerRole = rootData?.user?.role;
+
+  if (viewerRole === "admin") {
+    tabs.push({ label: i18n.t("navigation.administration"), path: "admin" });
+  }
   const location = useLocation();
   const navigate = useNavigate();
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
 
   const basePath = `/app/viewuser/${user.id}`;
@@ -128,8 +141,8 @@ export default function Layout() {
             {user.displayUsername ?? user.name ?? "User"}
           </h1>
           {user.name &&
-          user.displayUsername &&
-          user.name !== user.displayUsername ? (
+            user.displayUsername &&
+            user.name !== user.displayUsername ? (
             <p className="truncate text-sm text-muted-foreground">
               @{user.name}
             </p>
