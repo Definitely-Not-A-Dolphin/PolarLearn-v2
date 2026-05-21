@@ -2,6 +2,7 @@ import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
 
 import { protectedProcedure, publicProcedure } from '~/server/trpc'
+import { logger as appLogger } from '~/lib/logger'
 
 export const groupsRouter = {
   getJoinedGroups: protectedProcedure.query(async ({ ctx }) => {
@@ -82,6 +83,14 @@ export const groupsRouter = {
           },
         },
       },
+    })
+    appLogger.info({
+      event: "group.created",
+      userId: ctx.user.id,
+      groupId: group.id,
+      groupName: group.name,
+      approvalRequired: group.approvalRequired,
+      onlyModsCanAddLists: group.onlyModsCanAddLists,
     })
     return group
   }),
@@ -194,6 +203,12 @@ export const groupsRouter = {
         },
       },
     })
+    appLogger.info({
+      event: "group.list.added",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      listId: input.listId,
+    })
     return 'OK'
   }),
   removeListFromGroup: protectedProcedure.input(
@@ -228,6 +243,12 @@ export const groupsRouter = {
       },
     })
 
+    appLogger.info({
+      event: "group.list.removed",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      listId: input.listId,
+    })
     return 'OK'
   }),
   joinGroup: protectedProcedure.input(
@@ -266,6 +287,11 @@ export const groupsRouter = {
           },
         },
       })
+      appLogger.info({
+        event: "group.join.requested",
+        userId: ctx.user.id,
+        groupId: input.id,
+      })
       return 'PENDING'
     }
     await ctx.prisma.group.update({
@@ -279,6 +305,11 @@ export const groupsRouter = {
           },
         },
       },
+    })
+    appLogger.info({
+      event: "group.join",
+      userId: ctx.user.id,
+      groupId: input.id,
     })
     return 'OK'
   }),
@@ -328,6 +359,12 @@ export const groupsRouter = {
       },
     })
 
+    appLogger.info({
+      event: "group.member.approved",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      targetUserId: input.userId,
+    })
     return 'OK'
   }),
   rejectGroupMember: protectedProcedure.input(
@@ -371,6 +408,12 @@ export const groupsRouter = {
       },
     })
 
+    appLogger.info({
+      event: "group.member.rejected",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      targetUserId: input.userId,
+    })
     return 'OK'
   }),
   toggleGroupModerator: protectedProcedure.input(
@@ -432,6 +475,13 @@ export const groupsRouter = {
         },
     })
 
+    appLogger.info({
+      event: "group.moderator.toggled",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      targetUserId: input.userId,
+      promoted: !isModerator,
+    })
     return isModerator ? 'UNPROMOTED' : 'PROMOTED'
   }),
   kickGroupMember: protectedProcedure.input(
@@ -488,6 +538,12 @@ export const groupsRouter = {
       },
     })
 
+    appLogger.info({
+      event: "group.member.kicked",
+      userId: ctx.user.id,
+      groupId: input.groupId,
+      targetUserId: input.userId,
+    })
     return 'OK'
   }),
   leaveGroup: protectedProcedure.input(
@@ -514,6 +570,11 @@ export const groupsRouter = {
           },
         },
       },
+    })
+    appLogger.info({
+      event: "group.left",
+      userId: ctx.user.id,
+      groupId: input.id,
     })
     return 'OK'
   }),
@@ -554,6 +615,17 @@ export const groupsRouter = {
         description: input.description ?? group.description,
         approvalRequired: input.approvalRequired ?? group.approvalRequired,
         onlyModsCanAddLists: input.onlyModsCanAddLists ?? group.onlyModsCanAddLists,
+      },
+    })
+    appLogger.info({
+      event: "group.updated",
+      userId: ctx.user.id,
+      groupId: input.id,
+      changedFields: {
+        name: input.name !== undefined,
+        description: input.description !== undefined,
+        approvalRequired: input.approvalRequired !== undefined,
+        onlyModsCanAddLists: input.onlyModsCanAddLists !== undefined,
       },
     })
     return updatedGroup

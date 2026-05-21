@@ -7,14 +7,31 @@ import { initTRPC, TRPCError } from '@trpc/server'
 
 import { prisma } from '~/lib/db'
 import { auth } from '~/lib/auth/server'
+function extractIpFromHeaders(headers: Headers): string | null {
+  const headerKeys = ['cf-connecting-ip', 'true-client-ip', 'x-forwarded-for', 'x-real-ip'] as const
+  for (const header of headerKeys) {
+    const value = headers.get(header)
+    if (value) {
+      if (header === 'x-forwarded-for') {
+        return value.split(',')[0]?.trim() ?? null
+      }
+      return value
+    }
+  }
+  return null
+}
 
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+export const createTRPCContext = async (opts: { headers: Headers; request?: Request }) => {
   const authSession = await auth.api.getSession({
     headers: opts.headers
   })
+  const ipAddress = opts.request
+    ? extractIpFromHeaders(opts.request.headers)
+    : extractIpFromHeaders(opts.headers)
   return {
     prisma,
-    user: authSession?.user
+    user: authSession?.user,
+    ipAddress,
   }
 }
 type Context = Awaited<ReturnType<typeof createTRPCContext>>
@@ -42,7 +59,8 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   }
   return next({
     ctx: {
-      user: ctx.user
+      user: ctx.user,
+      ipAddress: ctx.ipAddress,
     }
   })
 })

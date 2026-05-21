@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
+import { logger as appLogger } from "~/lib/logger";
 import {
   getPostsInputSchema,
   getPostsOutputSchema,
@@ -130,6 +131,14 @@ export const forumRouter = createTRPCRouter({
           },
         },
       });
+      appLogger.info({
+        event: "forum.post.created",
+        userId: ctx.user.id,
+        postId: post.id,
+        category,
+        subject: subject ?? null,
+        title,
+      });
       return createPostOutputSchema.parse(post);
     }),
   editPost: protectedProcedure
@@ -158,6 +167,17 @@ export const forumRouter = createTRPCRouter({
           category: category ?? undefined,
         },
       });
+      appLogger.info({
+        event: "forum.post.updated",
+        userId: ctx.user.id,
+        postId: id,
+        changedFields: {
+          title: title !== undefined,
+          content: content !== undefined,
+          subject: subject !== undefined,
+          category: category !== undefined,
+        },
+      });
       return editPostOutputSchema.parse(updatedPost);
     }),
   deletePost: protectedProcedure
@@ -179,6 +199,11 @@ export const forumRouter = createTRPCRouter({
       await ctx.prisma.forumPost.update({
         where: { id },
         data: { deleted: true },
+      });
+      appLogger.info({
+        event: "forum.post.deleted",
+        userId: ctx.user.id,
+        postId: id,
       });
       return "OK";
     }),
@@ -216,6 +241,17 @@ export const forumRouter = createTRPCRouter({
           votes,
           cachedTotalVotes,
         },
+      });
+
+      appLogger.info({
+        event: "forum.post.voted",
+        userId: ctx.user.id,
+        postId: id,
+        vote,
+        previousVote: currentVote ?? null,
+        toggledOff: currentVote === vote,
+        votes,
+        cachedTotalVotes,
       });
 
       return { votes, cachedTotalVotes };
@@ -259,6 +295,14 @@ export const forumRouter = createTRPCRouter({
           },
         },
       });
+      appLogger.info({
+        event: "forum.reply.created",
+        userId: ctx.user.id,
+        replyId: reply.id,
+        parentPostId: postId,
+        category: parentPost.category,
+        subject: parentPost.subject,
+      });
       return postSchema.parse(reply);
     }),
   pinPost: protectedProcedure
@@ -279,6 +323,12 @@ export const forumRouter = createTRPCRouter({
       await ctx.prisma.forumPost.update({
         where: { id },
         data: { pinned: !post.pinned },
+      });
+      appLogger.info({
+        event: "forum.post.pinned_toggled",
+        userId: ctx.user.id,
+        postId: id,
+        nextPinned: !post.pinned,
       });
       return "OK";
     }),

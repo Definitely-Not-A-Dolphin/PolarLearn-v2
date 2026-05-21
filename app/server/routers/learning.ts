@@ -1,10 +1,12 @@
 import { TRPCError } from '@trpc/server'
+import crypto from 'crypto'
 
 import { createTRPCRouter, protectedProcedure } from '~/server/trpc'
 import { z } from 'zod'
 import { answerLogSchema, createLearningQueue, modes, queueSchema } from '~/lib/learn'
 import { listSnapshot } from '~/lib/list'
 import { prisma } from '~/lib/db'
+import { logger as appLogger } from '~/lib/logger'
 
 export const learningRouter = createTRPCRouter({
   generateLearnSession: protectedProcedure
@@ -54,6 +56,15 @@ export const learningRouter = createTRPCRouter({
           answerLog: [],
           isComplete: false,
         },
+      })
+
+      appLogger.info({
+        event: "learn.session.created",
+        userId: ctx.user.id,
+        sessionId: session.id,
+        listId: input.listId,
+        mode: input.mode ?? "quiz",
+        queueSize: queue.length,
       })
 
       return { id: session.id }
@@ -122,6 +133,18 @@ export const learningRouter = createTRPCRouter({
           isComplete: input.isComplete,
         },
       })
+
+      if (input.isComplete) {
+        const correctCount = input.answerLog.filter((entry) => entry?.isCorrect).length
+        appLogger.info({
+          event: "learn.session.completed",
+          userId: ctx.user.id,
+          sessionId: input.sessionId,
+          listId: session.listId,
+          totalAnswers: input.answerLog.length,
+          correctAnswers: correctCount,
+        })
+      }
     }),
   getRecentSessions: protectedProcedure
     .query(async ({ ctx }) => {

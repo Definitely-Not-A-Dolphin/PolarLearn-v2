@@ -2,6 +2,7 @@ import z from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import crypto from "crypto";
 import jsonpatch, { type Operation } from "fast-json-patch";
+import { logger as appLogger } from "~/lib/logger";
 import { SubjectNamesArray } from "~/lib/subjectnames";
 import { listSnapshot, type ListItem, type ListSnapshot } from "~/lib/list";
 import { buildListDiff, listDiffSchema, listPatchOperationSchema, snapshotFromEditableItems, type ListDiff } from "~/lib/list-diff";
@@ -597,6 +598,11 @@ export const ListRouter = createTRPCRouter({
           },
         },
       })
+      appLogger.info({
+        event: "list.recent_item_removed",
+        userId: ctx.user.id,
+        listId: input.listId,
+      })
       return 'OK'
     }),
   deleteList: protectedProcedure
@@ -642,6 +648,12 @@ export const ListRouter = createTRPCRouter({
             recent_lists: existingRecentLists.filter((list) => list.id !== input.id),
           },
         },
+      })
+
+      appLogger.info({
+        event: "list.deleted",
+        userId: ctx.user.id,
+        listId: input.id,
       })
 
       return 'OK'
@@ -764,6 +776,16 @@ export const ListRouter = createTRPCRouter({
           },
         },
       })
+      appLogger.info({
+        event: "list.commit.created",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.branch,
+        baseCommitId: input.baseCommitId,
+        commitId: newCommitId,
+        commitMessage: input.commitMessage,
+        diffChangeCount: commitDiff.changes.length,
+      })
       return 'OK'
     }),
   createBranch: protectedProcedure
@@ -818,6 +840,13 @@ export const ListRouter = createTRPCRouter({
         data: {
           versionData: newHistory,
         }
+      })
+      appLogger.info({
+        event: "list.branch.created",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.newBranchName,
+        baseBranch: input.baseBranchName,
       })
       return 'OK'
     }),
@@ -903,6 +932,13 @@ export const ListRouter = createTRPCRouter({
           },
         },
       })
+      appLogger.info({
+        event: "list.created",
+        userId: ctx.user.id,
+        listId: parsedList.id,
+        name: parsedList.name,
+        subject: parsedList.subject,
+      })
       return parsedList
     }),
   createPullRequest: protectedProcedure
@@ -969,6 +1005,13 @@ export const ListRouter = createTRPCRouter({
           versionData: newHistory,
         }
       })
+      appLogger.info({
+        event: "list.pull_request.opened",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.branch,
+        title: input.title,
+      })
       return 'OK'
     }),
   closePullRequest: protectedProcedure
@@ -1031,6 +1074,12 @@ export const ListRouter = createTRPCRouter({
         data: {
           versionData: newHistory,
         }
+      })
+      appLogger.info({
+        event: "list.pull_request.closed",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.branch,
       })
       return 'OK'
     }),
@@ -1095,6 +1144,12 @@ export const ListRouter = createTRPCRouter({
         data: {
           versionData: newHistory,
         }
+      })
+      appLogger.info({
+        event: "list.pull_request.reopened",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.branch,
       })
       return 'OK'
     }),
@@ -1248,6 +1303,13 @@ export const ListRouter = createTRPCRouter({
       await ctx.prisma.learnSession.deleteMany({
         where: { listId: input.id },
       })
+      appLogger.info({
+        event: "list.pull_request.merged",
+        userId: ctx.user.id,
+        listId: input.id,
+        branch: input.branch,
+        mergeCommitCreated: Boolean(mergeCommitId),
+      })
       return 'OK'
     }),
   updateListMeta: protectedProcedure
@@ -1289,6 +1351,16 @@ export const ListRouter = createTRPCRouter({
           subject: input.subject ?? list.subject,
         }
       })
+      appLogger.info({
+        event: "list.meta.updated",
+        userId: ctx.user.id,
+        listId: input.id,
+        changedFields: {
+          name: input.name !== undefined,
+          description: input.description !== undefined,
+          subject: input.subject !== undefined,
+        },
+      })
       return listRecordSchema.parse(updatedList)
     }),
   starList: protectedProcedure
@@ -1320,6 +1392,12 @@ export const ListRouter = createTRPCRouter({
             [hasFavorited ? 'disconnect' : 'connect']: { id: ctx.user.id },
           },
         }
+      })
+      appLogger.info({
+        event: "list.star.toggled",
+        userId: ctx.user.id,
+        listId: input.id,
+        starred: !hasFavorited,
       })
       return 'OK'
     }),

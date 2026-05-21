@@ -1,6 +1,7 @@
 import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
 
+import { logger as appLogger } from '~/lib/logger'
 import { protectedProcedure } from '~/server/trpc'
 
 export const adminRouter = {
@@ -20,6 +21,13 @@ export const adminRouter = {
           forumBanned: input.banned,
           forumBanReason: input.banned ? (input.reason ?? null) : null,
         },
+      })
+      appLogger.info({
+        event: 'admin.forum_ban.updated',
+        userId: ctx.user.id,
+        targetUserId: input.userId,
+        banned: input.banned,
+        reasonProvided: Boolean(input.reason),
       })
       return input.banned ? 'BANNED' : 'UNBANNED'
     }),

@@ -1,7 +1,9 @@
 import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
+import crypto from 'crypto'
 import z from 'zod'
 
 import { protectedProcedure, publicProcedure } from '~/server/trpc'
+import { logger as appLogger } from '~/lib/logger'
 
 export const notificationRouter = {
   getNotifications: protectedProcedure.query(async ({ ctx }) => {
@@ -51,6 +53,13 @@ export const notificationRouter = {
           icon: input.icon,
           navigate: input.navigate
         }
+      })
+      appLogger.info({
+        event: "admin.notification.sent",
+        userId: ctx.user.id,
+        targetUserId: input.userId,
+        content: input.content,
+        icon: input.icon,
       })
       return 'OK'
     })

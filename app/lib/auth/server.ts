@@ -112,9 +112,9 @@ export const auth = betterAuth({
     },
     ipAddress: {
       ipAddressHeaders: [
-        "x-forwarded-for",
         "cf-connecting-ip",
         "true-client-ip",
+        "x-forwarded-for",
         "x-real-ip"
       ],
       disableIpTracking: false,
@@ -157,12 +157,13 @@ export const auth = betterAuth({
     }),
     // eslint-disable-next-line @typescript-eslint/require-await
     after: createAuthMiddleware(async (ctx) => {
+      const request = ctx.request
+      const ipAddress = request ? getIp(request, ctx.context.options) : null
+      const userAgent = request?.headers.get("user-agent") ?? null
+
       switch (ctx.path) {
         case "/sign-in/email": {
           const newSession = ctx.context.newSession
-          const request = ctx.request
-          const ipAddress = request ? getIp(request, ctx.context.options) : null
-          const userAgent = request?.headers.get("user-agent") ?? null
           const body = ctx.body as Record<string, unknown> | undefined
           const attemptedCredentials = {
             email: typeof body?.email === "string" ? body.email : null,
@@ -185,6 +186,137 @@ export const auth = betterAuth({
             path: ctx.path,
             userId: newSession.user.id,
             email: newSession.user.email,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/sign-up/email": {
+          const newSession = ctx.context.newSession
+          if (!newSession) return
+
+          appLogger.info({
+            event: "auth.signup",
+            path: ctx.path,
+            userId: newSession.user.id,
+            email: newSession.user.email,
+            name: newSession.user.name,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/reset-password": {
+          const adminSession = ctx.context.session
+          if (!adminSession) return
+
+          const body = ctx.body as Record<string, unknown> | undefined
+          appLogger.info({
+            event: "auth.password.reset",
+            path: ctx.path,
+            userId: adminSession.user.id,
+            email: adminSession.user.email,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/ban-user": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string; banReason?: string } | undefined
+          appLogger.info({
+            event: "admin.user.banned",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            banReason: body?.banReason ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/unban-user": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string } | undefined
+          appLogger.info({
+            event: "admin.user.unbanned",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/set-role": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string; role?: string } | undefined
+          appLogger.info({
+            event: "admin.user.role_changed",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            newRole: body?.role ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/remove-user": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string } | undefined
+          appLogger.info({
+            event: "admin.user.deleted",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/impersonate-user": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string } | undefined
+          appLogger.info({
+            event: "admin.user.impersonated",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/set-user-password": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string } | undefined
+          appLogger.info({
+            event: "admin.user.password_reset",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            ipAddress,
+            userAgent,
+          })
+          return
+        }
+        case "/admin/update-user": {
+          const session = ctx.context.session
+          if (!session) return
+          const body = ctx.body as { userId?: string; data?: Record<string, unknown> } | undefined
+          appLogger.info({
+            event: "admin.user.updated",
+            path: ctx.path,
+            userId: session.user.id,
+            targetUserId: body?.userId ?? null,
+            updatedFields: Object.keys(body?.data ?? {}),
             ipAddress,
             userAgent,
           })
