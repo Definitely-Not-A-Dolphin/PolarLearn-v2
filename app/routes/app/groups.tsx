@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
 
   try {

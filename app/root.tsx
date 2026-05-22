@@ -15,7 +15,7 @@ import { initI18n } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
-import { auth } from "./lib/auth/server";
+import { getRequestSession } from "./server/trpc";
 import { TRPCReactProvider } from "./server/react";
 import { themeSchema, type RootLoaderData, type Theme } from "./lib/root-data";
 import ImpersonationBanner from "./components/impersonation";
@@ -54,7 +54,7 @@ export function meta({ }: Route.MetaArgs) {
 
 export async function loader(loaderArgs: { request: Request }): Promise<RootLoaderData> {
   const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
+  const result = await getRequestSession({ headers, request: loaderArgs.request })
   const user = result?.user
   const session = result?.session
   const userRecord = user

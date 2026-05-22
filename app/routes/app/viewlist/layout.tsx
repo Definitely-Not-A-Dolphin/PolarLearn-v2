@@ -53,7 +53,7 @@ export async function loader({
     throw new Response("", { status: 400 });
   }
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
 
   if (!context.user) {
     const url = new URL(request.url);

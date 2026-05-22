@@ -6,12 +6,12 @@ import { toast } from "sonner";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
 import { getRandomQuote } from "~/lib/quotes";
-import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
+import { getRequestSession } from "~/server/trpc";
 
 export async function loader({ request }: { request: Request }) {
   const headers = new Headers(request.headers);
-  const result = await auth.api.getSession({ headers });
+  const result = await getRequestSession({ headers, request });
   if (result?.user) return redirect("/app");
 
   const url = new URL(request.url);

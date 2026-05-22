@@ -8,8 +8,8 @@ import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
 import type { Route } from "./+types/sign-up";
-import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
+import { getRequestSession } from "~/server/trpc";
 
 function getSafeNextPath(requestUrl: string) {
   const next = new URL(requestUrl).searchParams.get("next");
@@ -22,7 +22,7 @@ function getSafeNextPath(requestUrl: string) {
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
-  const result = await auth.api.getSession({ headers });
+  const result = await getRequestSession({ headers, request: loaderArgs.request });
   const next = getSafeNextPath(loaderArgs.request.url);
   if (result?.user) return redirect(next);
 

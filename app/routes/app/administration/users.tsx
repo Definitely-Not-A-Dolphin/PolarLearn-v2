@@ -10,12 +10,13 @@ import { auth } from "~/lib/auth/server";
 import type { UserModel } from "~/prisma/models";
 import type { Route } from "./+types/users";
 import i18n from "~/i18n";
+import { getRequestSession } from "~/server/trpc";
 
 const PAGE_SIZE = 50;
 
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
-  const session = await auth.api.getSession({ headers });
+  const session = await getRequestSession({ headers, request });
 
   if (!session?.user) {
     const url = new URL(request.url);

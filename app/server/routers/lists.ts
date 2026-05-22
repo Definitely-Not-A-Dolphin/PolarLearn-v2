@@ -478,17 +478,25 @@ export const ListRouter = createTRPCRouter({
             in: deduped.map((item) => item.id),
           },
         },
-        include: {
-          user: true,
-          ...listRecordInclude,
+        select: {
+          id: true,
+          name: true,
+          subject: true,
+          updatedAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              displayUsername: true,
+              username: true,
+            },
+          },
         },
       })
 
       const rawListsById = new Map(rawLists.map((list) => [list.id, list]))
       const hydratedLists = deduped.map((item) => {
-        const rawList = rawListsById.get(item.id)
-
-        return rawList ? listRecordSchema.parse(rawList) : null
+        return rawListsById.get(item.id) ?? null
       })
 
       const missingListIds = new Set(

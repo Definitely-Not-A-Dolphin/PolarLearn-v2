@@ -2,15 +2,15 @@ import { List } from "lucide-react";
 import { redirect, useLoaderData, useNavigate } from "react-router";
 
 import i18n from "~/i18n";
-import { auth } from "~/lib/auth/server";
 import { prisma } from "~/lib/db";
 import { subjects as subjectsList } from "~/lib/subjects";
 import type { SearchList } from "~/lib/search";
 import type { Route } from "./+types/lists";
+import { getRequestSession } from "~/server/trpc";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
-  const session = await auth.api.getSession({ headers });
+  const session = await getRequestSession({ headers, request });
 
   if (!session?.user) {
     const url = new URL(request.url);

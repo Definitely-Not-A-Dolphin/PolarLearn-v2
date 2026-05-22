@@ -27,7 +27,7 @@ export function meta(): Route.MetaDescriptors {
 
 export async function loader({ request }: Route.LoaderArgs): Promise<{ initialPosts: GetPostsOutput }> {
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
 
   const initialPosts = await caller.forum.getPosts({

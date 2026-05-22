@@ -46,7 +46,7 @@ interface LoaderData {
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request: loaderArgs.request });
   if (!context.user) {
     const url = new URL(loaderArgs.request.url);
     return redirect(`/auth/sign-in?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);

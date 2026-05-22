@@ -13,17 +13,17 @@ import { toast } from "sonner";
 import i18n from "~/i18n";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { authClient } from "~/lib/auth/client";
-import { auth } from "~/lib/auth/server";
 import { exportAccountAction } from "~/lib/export";
 import { prisma } from "~/lib/db";
 import { themeSchema, type Theme, type RootLoaderData } from "~/lib/root-data";
 import type { Route } from "./+types/usersettings";
+import { getRequestSession } from "~/server/trpc";
 
 const EXPORT_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
 
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
-  const session = await auth.api.getSession({ headers });
+  const session = await getRequestSession({ headers, request });
 
   if (!session?.user) {
     const url = new URL(request.url);
@@ -49,7 +49,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export async function action({ request }: Route.ActionArgs) {
   const headers = new Headers(request.headers);
-  const session = await auth.api.getSession({ headers });
+  const session = await getRequestSession({ headers, request });
 
   if (!session?.user) {
     const url = new URL(request.url);

@@ -3,8 +3,8 @@
 import { unstable_getRequest as getRequest } from "react-router";
 import z from "zod";
 
-import { auth } from "~/lib/auth/server";
 import { prisma } from "~/lib/db";
+import { getRequestSession } from "~/server/trpc";
 
 const EXPORT_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
 
@@ -32,7 +32,10 @@ const ActionResultSchema = z.object({
 
 export async function exportAccountAction(): Promise<z.infer<typeof ActionResultSchema>> {
   const request = getRequest();
-  const session = await auth.api.getSession({ headers: new Headers(request.headers) });
+  const session = await getRequestSession({
+    headers: new Headers(request.headers),
+    request,
+  });
 
   if (!session?.user) {
     return {

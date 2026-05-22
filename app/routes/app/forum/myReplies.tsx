@@ -27,7 +27,7 @@ export async function loader({
   request,
 }: Route.LoaderArgs): Promise<LoaderData> {
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
 
   if (!context.user) {
     const url = new URL(request.url);

@@ -11,8 +11,8 @@ import { getRandomQuote } from "~/lib/quotes";
 import entree from "~/img/entree.svg";
 import i18n from "~/i18n";
 import type { Route } from "./+types/sign-in";
-import { auth } from "~/lib/auth/server";
 import type { RootLoaderData } from "~/lib/root-data";
+import { getRequestSession } from "~/server/trpc";
 
 gsap.registerPlugin(useGSAP);
 
@@ -29,7 +29,7 @@ function getSafeNextPath(requestUrl: string) {
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
-  const result = await auth.api.getSession({ headers });
+  const result = await getRequestSession({ headers, request: loaderArgs.request });
   const next = getSafeNextPath(loaderArgs.request.url);
   if (result?.user) return redirect(next);
 

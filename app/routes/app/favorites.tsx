@@ -1,4 +1,3 @@
-import { auth } from "~/lib/auth/server";
 import { redirect, useLoaderData, useNavigate } from "react-router";
 import i18n from "~/i18n";
 import { List, ListX } from "lucide-react";
@@ -6,6 +5,7 @@ import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area"
 import { prisma } from "~/lib/db";
 import { subjects as subjectsList } from "~/lib/subjects";
 import type { Route } from "./+types/favorites";
+import { getRequestSession } from "~/server/trpc";
 
 interface LoaderData {
   lists: {
@@ -24,7 +24,7 @@ interface LoaderData {
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
+  const result = await getRequestSession({ headers, request: loaderArgs.request })
   const user = result?.user
   if (!user) {
     return redirect('/app')

@@ -80,7 +80,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
 
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
 
   const post = await caller.forum.getPost({ id: postId });

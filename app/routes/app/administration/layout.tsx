@@ -3,7 +3,7 @@ import { Tabs } from "@polarnl/polarui-react";
 import { t } from "~/i18n";
 import type { RootLoaderData } from "~/lib/root-data";
 import type { Route } from "./+types/layout";
-import { auth } from "~/lib/auth/server";
+import { getRequestSession } from "~/server/trpc";
 
 const tabs = [
   { label: t("admin.tabs.general"), path: "general" },
@@ -14,7 +14,7 @@ const tabs = [
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
-  const result = await auth.api.getSession({ headers })
+  const result = await getRequestSession({ headers, request: loaderArgs.request })
   const user = result?.user
   if (!user || user.role !== "admin") {
     return redirect('/app')

@@ -62,7 +62,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw new Response("", { status: 400 });
   }
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
   const group = await caller.groups.getGroupData({ id });
   const recentLists = context.user ? await caller.list.getRecentLists() : [];

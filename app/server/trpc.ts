@@ -7,6 +7,10 @@ import { initTRPC, TRPCError } from '@trpc/server'
 
 import { prisma } from '~/lib/db'
 import { auth } from '~/lib/auth/server'
+
+type AuthSession = Awaited<ReturnType<typeof auth.api.getSession>>
+const authSessionByRequest = new WeakMap<Request, Promise<AuthSession>>()
+
 function extractIpFromHeaders(headers: Headers): string | null {
   const headerKeys = ['cf-connecting-ip', 'true-client-ip', 'x-forwarded-for', 'x-real-ip'] as const
   for (const header of headerKeys) {
@@ -21,10 +25,36 @@ function extractIpFromHeaders(headers: Headers): string | null {
   return null
 }
 
-export const createTRPCContext = async (opts: { headers: Headers; request?: Request }) => {
-  const authSession = await auth.api.getSession({
+export const getRequestSession = async (opts: {
+  headers: Headers
+  request?: Request
+  session?: AuthSession
+}): Promise<AuthSession> => {
+  if (opts.session !== undefined) {
+    return opts.session
+  }
+
+  if (opts.request) {
+    const cachedSession = authSessionByRequest.get(opts.request)
+
+    if (cachedSession) {
+      return cachedSession
+    }
+
+    const sessionPromise = auth.api.getSession({
+      headers: opts.headers
+    })
+    authSessionByRequest.set(opts.request, sessionPromise)
+    return sessionPromise
+  }
+
+  return auth.api.getSession({
     headers: opts.headers
   })
+}
+
+export const createTRPCContext = async (opts: { headers: Headers; request?: Request; session?: AuthSession }) => {
+  const authSession = await getRequestSession(opts)
   const ipAddress = opts.request
     ? extractIpFromHeaders(opts.request.headers)
     : extractIpFromHeaders(opts.headers)

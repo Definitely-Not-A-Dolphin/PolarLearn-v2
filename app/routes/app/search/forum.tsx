@@ -31,7 +31,7 @@ type LoaderData = {
 
 export async function loader({ request }: Route.LoaderArgs): Promise<LoaderData> {
   const headers = new Headers(request.headers);
-  const context = await createTRPCContext({ headers });
+  const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").trim();
