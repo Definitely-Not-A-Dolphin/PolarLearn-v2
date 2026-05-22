@@ -83,11 +83,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const context = await createTRPCContext({ headers, request });
   const caller = createCallerFactory(appRouter)(context);
 
-  const post = await caller.forum.getPost({ id: postId });
-  const initialReplies = await caller.forum.getPostReplies({
-    postId,
-    limit: REPLIES_PER_PAGE,
-  });
+  const [post, initialReplies] = await Promise.all([
+    caller.forum.getPost({ id: postId }),
+    caller.forum.getPostReplies({
+      postId,
+      limit: REPLIES_PER_PAGE,
+    }),
+  ]);
 
   return { post, initialReplies };
 }

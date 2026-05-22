@@ -338,14 +338,6 @@ export const forumRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const { postId, cursor, limit } = input;
 
-      const parentPost = await ctx.prisma.forumPost.findUnique({
-        where: { id: postId },
-        select: { id: true, deleted: true },
-      });
-      if (!parentPost || parentPost.deleted) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Post not found" });
-      }
-
       const replies = await ctx.prisma.forumPost.findMany({
         where: {
           replyToId: postId,

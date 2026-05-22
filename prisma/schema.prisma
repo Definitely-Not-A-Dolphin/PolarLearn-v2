@@ -339,7 +339,9 @@ model ForumPost {
   updatedAt DateTime @updatedAt
 
   @@index([authorId])
-  @@index([replyToId])
+  @@index([deleted])
+  @@index([isReply, deleted, createdAt])
+  @@index([replyToId, deleted, pinned, createdAt, id])
   @@index([category, createdAt])
 }
 
