@@ -946,7 +946,7 @@ function EditableListItemRow({
         <p className="flex w-6 shrink-0 justify-center pt-3 font-bold md:pr-2 md:pt-0">
           {index + 1}
         </p>
-        <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">
           <Input
             ref={(node) => {
               if (node) {
@@ -965,7 +965,7 @@ function EditableListItemRow({
                 question: event.target.value,
               }));
             }}
-            className="min-w-0 flex-1"
+            className="min-w-0"
           />
           <Input
             scheme={theme}
@@ -985,10 +985,10 @@ function EditableListItemRow({
               event.preventDefault();
               onAppendItem();
             }}
-            className="min-w-0 flex-1 md:ml-2"
+            className="min-w-0"
           />
         </div>
-        <div className="ml-2 flex shrink-0 flex-col items-center gap-1 md:flex-row md:items-center">
+        <div className="ml-2 grid shrink-0 grid-cols-1 place-items-center gap-1 self-start md:grid-cols-2 md:self-center">
           <Button
             type="button"
             tabIndex={-1}
