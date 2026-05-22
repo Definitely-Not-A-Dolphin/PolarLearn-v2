@@ -14,7 +14,7 @@ export const listDataSchema = z.object({
       answer: z.string(),
     })
   ),
-  collaborators: z.array(z.object({ id: z.string() })),
+  collaborators: z.array(z.object({ id: z.string(), name: z.string().nullable().optional() })),
   favoritedBy: z.array(z.object({ id: z.string() })),
   versionData: z.record(z.string(), z.unknown()),
 });

@@ -18,7 +18,6 @@ import {
 import { Button, Tabs } from "@polarnl/polarui-react";
 import { Subject } from "~/lib/subjects";
 import i18n from "~/i18n";
-import { prisma } from "~/lib/db";
 import {
   Loader2,
   Pencil,
@@ -68,19 +67,10 @@ export async function loader({
       list.collaborators.some((collaborator) => collaborator.id === userId) ||
       context.user.role === "admin";
 
-    const collaborators = [];
-    for (const collaborator of list.collaborators) {
-      const collaboratorId =
-        typeof collaborator === "string" ? collaborator : collaborator.id;
-      const user = await prisma.user.findUnique({
-        where: {
-          id: collaboratorId,
-        },
-      });
-      if (user) {
-        collaborators.push({ name: user.name || "?", id: user.id });
-      }
-    }
+    const collaborators = list.collaborators.map((c) => ({
+      name: c.name || "?",
+      id: c.id,
+    }));
 
     return {
       list,

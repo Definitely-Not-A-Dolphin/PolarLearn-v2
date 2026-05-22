@@ -89,6 +89,10 @@ export const auth = betterAuth({
       enabled: true
     },
     additionalFields: {
+      theme: {
+        type: "string",
+        nullable: true,
+      },
       forumBanned: {
         type: "boolean",
       },

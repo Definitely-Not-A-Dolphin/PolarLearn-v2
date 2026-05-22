@@ -275,6 +275,7 @@ model List {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([subject])
 }
 
 // NOTE: This schema has to be **IDENTICAL** to the Zustand store for seamless resuning of sessions.
@@ -293,6 +294,8 @@ model LearnSession {
 
   @@index([userId])
   @@index([listId])
+  @@index([userId, isComplete])
+  @@index([userId, listId])
 }
 
 model Quiz {
@@ -309,6 +312,7 @@ model Quiz {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+  @@index([userId, read])
 }
 
 model ForumPost {
@@ -339,6 +343,7 @@ model ForumPost {
 
   @@index([authorId])
   @@index([replyToId])
+  @@index([category, createdAt])
 }
 
 model Group {

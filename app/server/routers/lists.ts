@@ -75,7 +75,9 @@ type BranchRecord = z.infer<typeof branchRecordSchema>
 type ListRecord = z.infer<typeof listRecordSchema>
 
 const listRecordInclude = {
-  collaborators: true,
+  collaborators: {
+    select: { id: true, name: true, displayUsername: true, username: true },
+  },
   favoritedBy: {
     select: { id: true },
   },
@@ -311,10 +313,24 @@ export const ListRouter = createTRPCRouter({
         where: {
           id: input.listId,
         },
-        include: {
-          user: true,
-          ...listRecordInclude,
-        }
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          subject: true,
+          userId: true,
+          items: true,
+          versionData: true,
+          createdAt: true,
+          updatedAt: true,
+          user: {
+            select: { id: true, name: true, displayUsername: true, username: true },
+          },
+          collaborators: {
+            select: { id: true, name: true, displayUsername: true, username: true },
+          },
+          favoritedBy: { select: { id: true } },
+        },
       })
 
       if (!rawList) {
@@ -333,33 +349,29 @@ export const ListRouter = createTRPCRouter({
         })
       }
 
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        select: { recentItems: true },
-      })
-
-      const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
-
-      const newRecentLists = constructNewRecentLists(existingRecentLists, {
-        id: list.id,
-        updatedAt: new Date().toISOString(),
-      })
-
-      const shouldUpdateRecentItems =
-        existingRecentLists[0]?.id !== list.id ||
-        existingRecentSubjects[0] !== list.subject
-
-      if (shouldUpdateRecentItems) {
-        void ctx.prisma.user.update({
+      try {
+        const user = await ctx.prisma.user.findUnique({
           where: { id: ctx.user.id },
-          data: {
-            recentItems: {
-              recent_subjects: constructNewRecentSubjects(existingRecentSubjects, list.subject),
-              recent_lists: newRecentLists,
+          select: { recentItems: true },
+        })
+
+        const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
+
+        if (existingRecentLists[0]?.id !== list.id || existingRecentSubjects[0] !== list.subject) {
+          await ctx.prisma.user.update({
+            where: { id: ctx.user.id },
+            data: {
+              recentItems: {
+                recent_subjects: constructNewRecentSubjects(existingRecentSubjects, list.subject),
+                recent_lists: constructNewRecentLists(existingRecentLists, {
+                  id: list.id,
+                  updatedAt: new Date().toISOString(),
+                }),
+              },
             },
-          },
-        }).catch(() => {})
-      }
+          })
+        }
+      } catch { }
 
       return {
         ...list,
@@ -459,14 +471,17 @@ export const ListRouter = createTRPCRouter({
     }),
   getRecentItems: protectedProcedure
     .query(async ({ ctx }) => {
-      const user = await ctx.prisma.user.findFirst({
-        where: { id: ctx.user.id }
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
       })
 
       const { recent_lists: lists, recent_subjects: recentSubjects } = extractRecentItems(user?.recentItems)
 
+      const recentListsSlice = lists.slice(0, 20)
+
       const seen = new Set<string>()
-      const deduped = [...lists].reverse().filter((item) => {
+      const deduped = [...recentListsSlice].reverse().filter((item) => {
         if (seen.has(item.id)) return false
         seen.add(item.id)
         return true
@@ -518,7 +533,7 @@ export const ListRouter = createTRPCRouter({
       }
 
       const seenSubjects = new Set<string>()
-      const dedupedSubjects = [...recentSubjects].reverse().filter((subject) => {
+      const dedupedSubjects = [...recentSubjects].slice(0, 10).reverse().filter((subject) => {
         if (seenSubjects.has(subject)) return false
         seenSubjects.add(subject)
         return true
@@ -531,14 +546,17 @@ export const ListRouter = createTRPCRouter({
     }),
   getRecentLists: protectedProcedure
     .query(async ({ ctx }) => {
-      const user = await ctx.prisma.user.findFirst({
-        where: { id: ctx.user.id }
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { recentItems: true },
       })
 
       const { recent_lists: lists, recent_subjects: recentSubjects } = extractRecentItems(user?.recentItems)
 
+      const recentListsSlice = lists.slice(0, 20)
+
       const seen = new Set<string>()
-      const deduped = [...lists].reverse().filter((item) => {
+      const deduped = [...recentListsSlice].reverse().filter((item) => {
         if (seen.has(item.id)) return false
         seen.add(item.id)
         return true
@@ -551,7 +569,9 @@ export const ListRouter = createTRPCRouter({
           },
         },
         include: {
-          user: true,
+          user: {
+            select: { id: true, name: true, displayUsername: true, username: true },
+          },
           ...listRecordInclude,
         },
       })

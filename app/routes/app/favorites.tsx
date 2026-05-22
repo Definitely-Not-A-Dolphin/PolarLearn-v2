@@ -30,15 +30,11 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
     return redirect('/app')
   }
 
-  const rawUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  })
-
   const lists = await prisma.list.findMany({
     where: {
       favoritedBy: {
         some: {
-          id: rawUser?.id,
+          id: user.id,
         }
       },
     },

@@ -30,6 +30,7 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Ses
     orderBy: {
       updatedAt: "desc",
     },
+    take: 50,
     select: {
       id: true,
       createdAt: true,

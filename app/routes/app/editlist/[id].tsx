@@ -717,7 +717,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         csvInputRef={importCsvInputRef}
       />
       <div>
-        <div className="space-y-3 sm:hidden">
+        <div className="space-y-3 md:hidden">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
             <Button
               variant="transparent"
@@ -762,7 +762,7 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
           </div>
         </div>
 
-        <div className="relative hidden flex-row items-center sm:flex">
+        <div className="relative hidden flex-row items-center md:flex">
           <Button variant="transparent" scheme={theme} icon={<X />} onClick={() => {
             void navigate(`/app`);
           }}>
@@ -941,12 +941,12 @@ function EditableListItemRow({
       className={`overflow-hidden ${isRemoving ? "pointer-events-none" : ""}`}
     >
       <div
-        className={`flex min-h-20 items-start rounded-lg border border-border bg-card px-3 py-3 transition-shadow sm:items-center ${snapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
+        className={`flex min-h-20 items-start rounded-lg border border-border bg-card px-3 py-3 transition-shadow md:items-center ${snapshot.isDragging ? "shadow-lg ring-1 ring-sky-500/60" : ""}`}
       >
-        <p className="flex w-6 shrink-0 justify-center pt-3 font-bold sm:pr-2 sm:pt-0">
+        <p className="flex w-6 shrink-0 justify-center pt-3 font-bold md:pr-2 md:pt-0">
           {index + 1}
         </p>
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row">
           <Input
             ref={(node) => {
               if (node) {
@@ -985,10 +985,10 @@ function EditableListItemRow({
               event.preventDefault();
               onAppendItem();
             }}
-            className="min-w-0 flex-1 sm:ml-2"
+            className="min-w-0 flex-1 md:ml-2"
           />
         </div>
-        <div className="ml-2 flex shrink-0 flex-col items-center gap-1 sm:flex-row sm:items-center">
+        <div className="ml-2 flex shrink-0 flex-col items-center gap-1 md:flex-row md:items-center">
           <Button
             type="button"
             tabIndex={-1}
@@ -999,7 +999,7 @@ function EditableListItemRow({
             disabled={totalItems === 1 || isRemoving}
             variant="transparent"
             scheme={theme}
-            className="flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15 sm:mx-1"
+            className="flex h-10 w-10 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-md p-0 leading-none text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15 md:mx-1"
           >
             <span className="flex items-center justify-center leading-none">
               <Trash className="h-5 w-5" tabIndex={-1} />
