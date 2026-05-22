@@ -310,9 +310,6 @@ model Quiz {
   collaborators User[]   @relation("QuizCollaborators")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  @@index([userId])
-  @@index([userId, read])
 }
 
 model ForumPost {
