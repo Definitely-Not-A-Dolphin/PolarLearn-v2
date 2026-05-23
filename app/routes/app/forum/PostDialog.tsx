@@ -65,7 +65,9 @@ export function PostDialog({
   isAdmin,
 }: PostDialogProps) {
   const rootData = useRouteLoaderData<RootLoaderData>("root");
-  const canSubmitPost = isEdit || Boolean(rootData?.user?.id);
+  const isForumBanned = rootData?.user?.forumBanned === true;
+  const forumBanReason = rootData?.user?.forumBanReason?.trim();
+  const canSubmitPost = isEdit || (Boolean(rootData?.user?.id) && !isForumBanned);
   const availableCategories = getAvailableForumCategories(isAdmin);
 
   const SelectedCategoryIcon = forumCategoryInfo[category].icon;
@@ -79,7 +81,9 @@ export function PostDialog({
       ? t("common.saving")
       : t("forum.createPost.posting")
     : !canSubmitPost
-      ? t("forum.createPost.loginToPost")
+      ? isForumBanned
+        ? t("forum.banned.submitBlocked")
+        : t("forum.createPost.loginToPost")
       : isEdit
         ? t("common.save")
         : t("forum.createPost.post");
@@ -173,7 +177,6 @@ export function PostDialog({
                   open={isSubjectSelectorOpen}
                   onOpenChange={setIsSubjectSelectorOpen}
                   subjects={subjects}
-                  disabled={isPending || !canSubmitPost}
                 />
               </div>
             </div>
@@ -199,7 +202,11 @@ export function PostDialog({
 
         {!canSubmitPost ? (
           <p className="px-4 text-sm text-muted-foreground">
-            {t("forum.createPost.loginToPostDescription")}
+            {isForumBanned
+              ? t("forum.banned.description", {
+                reason: forumBanReason || t("forum.banned.noReason"),
+              })
+              : t("forum.createPost.loginToPostDescription")}
           </p>
         ) : null}
 

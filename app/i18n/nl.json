@@ -283,6 +283,10 @@
         "confirm": "Ban toepassen",
         "saving": "Bezig..."
       },
+      "banReasons": {
+        "platform": "Platformban reden:",
+        "forum": "Forumban reden:"
+      },
       "deleteDialog": {
         "title": "Gebruiker verwijderen",
         "description": "Je staat op het punt om {{user}} permanent te verwijderen.",
@@ -517,6 +521,7 @@
       "signupDisabled": "Registraties zijn momenteel uitgeschakeld.",
       "unknown": "Er is een onbekende fout opgetreden. Probeer het later opnieuw.",
       "usernameInvalid": "De gebruikersnaam is ongeldig.",
+      "bannedUser": "Dit account is uitgeschakeld vanwege schending van onze voorwaarden van gebruik. Reden: {{reason}}",
       "usernameTooShort": "De gebruikersnaam/e-mail is in een ongeldig formaat. Probeer een andere gebruikersnaam of e-mail."
     }
   },
@@ -539,6 +544,11 @@
   },
   "forum": {
     "loginPrompt": "Log in om een post te plaatsen en je reacties te zien.",
+    "banned": {
+      "description": "Je bent geblokkeerd op het forum. Reden: {{reason}}. Je kan nog wel gewoon het forum bekijken, maar je kunt geen nieuwe posts of reacties plaatsen.",
+      "noReason": "Geen reden opgegeven.",
+      "submitBlocked": "Forum geblokkeerd"
+    },
     "postFallbackTitle": "Post",
     "metaTitle": "Forum | PolarLearn",
     "metaDescription": "Bekijk forumposts, praat mee en blijf op de hoogte van PolarLearn.",

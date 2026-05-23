@@ -28,6 +28,24 @@ import {
   publicProcedure,
 } from "~/server/trpc";
 
+function getForumBanMessage(reason: string | null | undefined) {
+  return reason?.trim() || "You are banned from the forum";
+}
+
+function assertCanParticipateInForum(user: {
+  forumBanned?: boolean | null
+  forumBanReason?: string | null
+}) {
+  if (!user.forumBanned) {
+    return
+  }
+
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: getForumBanMessage(user.forumBanReason),
+  });
+}
+
 export const forumRouter = createTRPCRouter({
   getPosts: publicProcedure
     .input(getPostsInputSchema)
@@ -108,9 +126,7 @@ export const forumRouter = createTRPCRouter({
     .input(createPostInputSchema)
     .output(createPostOutputSchema)
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.forumBanned) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertCanParticipateInForum(ctx.user)
       const { title, content, subject, category } = input;
       if (category === "announcement" && ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN" });
@@ -260,9 +276,7 @@ export const forumRouter = createTRPCRouter({
     .input(replyToPostInputSchema)
     .output(postSchema)
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.forumBanned) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      assertCanParticipateInForum(ctx.user)
       const { postId, content } = input;
       const parentPost = await ctx.prisma.forumPost.findUnique({
         where: { id: postId },

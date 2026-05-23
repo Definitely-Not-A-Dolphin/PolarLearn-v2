@@ -44,8 +44,9 @@ export function CreatePostDialog({
       onOpenChange(false);
       void navigate(`/app/forum/posts/${data.id}`)
     },
-    onError: () => {
-      toast.error(t("forum.post.error"));
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : t("forum.post.error");
+      toast.error(message);
     },
   });
 

@@ -9,6 +9,8 @@ export const rootUserSchema = z.object({
   image: z.string().nullable(),
   email: z.string().nullable(),
   role: z.string().nullable(),
+  forumBanned: z.boolean().nullable(),
+  forumBanReason: z.string().nullable(),
 });
 
 export type RootUser = z.infer<typeof rootUserSchema>;

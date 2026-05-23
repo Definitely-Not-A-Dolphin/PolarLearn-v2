@@ -31,6 +31,7 @@ export default function Layout() {
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "dark";
   const isLoggedIn = Boolean(rootData?.user?.id);
+  const forumBanReason = rootData?.user?.forumBanReason?.trim();
   const visibleTabs = isLoggedIn ? tabs : tabs.slice(0, 1);
 
   const normalizedPath = location.pathname.replace(/\/+$/, "");
@@ -55,6 +56,13 @@ export default function Layout() {
         <p className="mt-2 text-sm text-muted-foreground">
           {t("forum.loginPrompt")}
         </p>
+      ) : null}
+      {rootData?.user?.forumBanned ? (
+        <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t("forum.banned.description", {
+            reason: forumBanReason || t("forum.banned.noReason"),
+          })}
+        </div>
       ) : null}
       <div className="mt-4 flex flex-row items-center gap-3">
         <Tabs

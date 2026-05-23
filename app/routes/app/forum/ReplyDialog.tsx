@@ -30,7 +30,9 @@ export function ReplyDialog({
 }) {
   const rootData = useRouteLoaderData<RootLoaderData>("root");
   const theme = rootData?.theme ?? "light";
-  const canReply = Boolean(rootData?.user?.id);
+  const isForumBanned = rootData?.user?.forumBanned === true;
+  const forumBanReason = rootData?.user?.forumBanReason?.trim();
+  const canReply = Boolean(rootData?.user?.id) && !isForumBanned;
   const rpc = useTRPC();
 
   const [content, setContent] = useState("");
@@ -43,12 +45,17 @@ export function ReplyDialog({
       onReplySuccess(reply);
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error(t("forum.reply.error"));
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : t("forum.reply.error");
+      toast.error(message);
     },
   });
   const isPostingReply = replyMutation.isPending;
-  const submitLabel = canReply ? t("forum.reply.submit") : t("forum.reply.loginToReply");
+  const submitLabel = canReply
+    ? t("forum.reply.submit")
+    : isForumBanned
+      ? t("forum.banned.submitBlocked")
+      : t("forum.reply.loginToReply");
 
   const handleSubmit = () => {
     if (!canReply) {
@@ -77,7 +84,11 @@ export function ReplyDialog({
 
         {!canReply ? (
           <p className="text-sm text-muted-foreground">
-            {t("forum.reply.loginToReplyDescription")}
+            {isForumBanned
+              ? t("forum.banned.description", {
+                reason: forumBanReason || t("forum.banned.noReason"),
+              })
+              : t("forum.reply.loginToReplyDescription")}
           </p>
         ) : null}
 

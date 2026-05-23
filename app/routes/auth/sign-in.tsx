@@ -94,7 +94,9 @@ export default function SignInPage() {
 
       if (error) {
         if (error.status === 403) {
-          if (smtpEnabled) {
+          if (error.code === "BANNED_USER") {
+            toast.error(error.message ?? t("auth.errors.accountDisabled"));
+          } else if (smtpEnabled) {
             toast.success(t("auth.signIn.notActivated"));
           } else {
             toast.error(t("errors.unknown"));

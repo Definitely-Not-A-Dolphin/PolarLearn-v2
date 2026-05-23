@@ -10,16 +10,25 @@ export const adminRouter = {
       userId: z.string(),
       banned: z.boolean(),
       reason: z.string().optional(),
+    }).superRefine((input, ctx) => {
+      if (input.banned && !input.reason?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["reason"],
+          message: "A ban reason is required",
+        })
+      }
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'no' })
       }
+      const reason = input.reason?.trim()
       await ctx.prisma.user.update({
         where: { id: input.userId },
         data: {
           forumBanned: input.banned,
-          forumBanReason: input.banned ? (input.reason ?? null) : null,
+          forumBanReason: input.banned ? (reason ?? null) : null,
         },
       })
       appLogger.info({
@@ -27,7 +36,7 @@ export const adminRouter = {
         userId: ctx.user.id,
         targetUserId: input.userId,
         banned: input.banned,
-        reasonProvided: Boolean(input.reason),
+        reasonProvided: Boolean(reason),
       })
       return input.banned ? 'BANNED' : 'UNBANNED'
     }),

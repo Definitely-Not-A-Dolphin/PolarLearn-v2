@@ -136,6 +136,7 @@ export default function PostPage() {
   const theme = rootData?.theme ?? "light";
   const currentUserId = rootData?.user.id ?? null;
   const currentUserRole = rootData?.user.role ?? null;
+  const isForumBanned = rootData?.user.forumBanned === true;
   const isAdmin = currentUserRole === "admin";
   const isOwner = Boolean(currentUserId && author?.id === currentUserId);
   const canManagePost = isOwner || isAdmin;
@@ -399,9 +400,13 @@ export default function PostPage() {
             }
             setReplyDialogOpen(true);
           }}
-          disabled={!rootData?.user?.id}
+          disabled={!rootData?.user?.id || isForumBanned}
         >
-          {rootData?.user?.id ? i18n.t("forum.reply.buttonLabel") : i18n.t("forum.reply.loginToReply")}
+          {rootData?.user?.id
+            ? isForumBanned
+              ? i18n.t("forum.banned.submitBlocked")
+              : i18n.t("forum.reply.buttonLabel")
+            : i18n.t("forum.reply.loginToReply")}
         </Button>
 
         <div className="flex flex-wrap items-center gap-1">

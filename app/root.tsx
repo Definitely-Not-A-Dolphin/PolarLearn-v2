@@ -55,7 +55,9 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
   const result = await getRequestSession({ headers, request: loaderArgs.request })
   const user = result?.user
   const session = result?.session
-  const theme: Theme = themeSchema.parse((user as Record<string, unknown> | undefined)?.theme ?? "dark")
+  const userRecord = user as Record<string, unknown> | undefined
+  const sessionRecord = session as Record<string, unknown> | undefined
+  const theme: Theme = themeSchema.parse(userRecord?.theme ?? "dark")
 
   return {
     theme,
@@ -65,9 +67,13 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
       name: user?.name ?? null,
       image: user?.image ?? null,
       email: user?.email ?? null,
-      role: user?.role ?? null,
+      role: typeof userRecord?.role === "string" ? userRecord.role : null,
+      forumBanned: userRecord?.forumBanned === true,
+      forumBanReason: typeof userRecord?.forumBanReason === "string"
+        ? userRecord.forumBanReason
+        : null,
     },
-    impersonatedBy: session?.impersonatedBy ?? null,
+    impersonatedBy: typeof sessionRecord?.impersonatedBy === "string" ? sessionRecord.impersonatedBy : null,
   };
 }
 

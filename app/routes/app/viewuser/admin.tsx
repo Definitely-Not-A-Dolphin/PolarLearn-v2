@@ -255,6 +255,8 @@ export default function ViewUserAdminPage() {
   const isBanned = !!target.banned;
   const isForumBanned = !!target.forumBanned;
   const isVerified = !!target.emailVerified;
+  const platformBanReason = typeof target.banReason === "string" ? target.banReason.trim() : "";
+  const forumBanReason = typeof target.forumBanReason === "string" ? target.forumBanReason.trim() : "";
 
   const actionButtonClass = "w-full justify-start";
 
@@ -286,6 +288,23 @@ export default function ViewUserAdminPage() {
           </Badge>
         ) : null}
       </div>
+
+      {platformBanReason || forumBanReason ? (
+        <div className="space-y-2 rounded-lg border border-border bg-card px-4 py-3 text-sm">
+          {platformBanReason ? (
+            <p>
+              <span className="font-semibold">{t("admin.users.banReasons.platform")}</span>{" "}
+              {platformBanReason}
+            </p>
+          ) : null}
+          {forumBanReason ? (
+            <p>
+              <span className="font-semibold">{t("admin.users.banReasons.forum")}</span>{" "}
+              {forumBanReason}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button
