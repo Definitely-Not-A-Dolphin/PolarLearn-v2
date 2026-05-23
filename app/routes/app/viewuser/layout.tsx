@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import type { RootLoaderData } from "~/lib/root-data";
 import { prisma } from "~/lib/db";
 import type { Route } from "./+types/layout";
-import i18n from "~/i18n";
+import i18n, { t } from "~/i18n";
+import { Badge } from "~/components/ui/badge";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const userId = params.id;
@@ -139,6 +140,14 @@ export default function Layout() {
         <div className="min-w-0">
           <h1 className="truncate text-3xl font-bold">
             {user.displayUsername ?? user.name ?? "User"}
+            {user.role === "admin" ? (
+              <Badge
+                variant="outline"
+                className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
+              >
+                {t("userMenu.admin")}
+              </Badge>
+            ) : null}
           </h1>
           {user.name &&
             user.displayUsername &&

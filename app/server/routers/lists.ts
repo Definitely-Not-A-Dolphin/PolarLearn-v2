@@ -9,6 +9,7 @@ import { buildListDiff, listDiffSchema, listPatchOperationSchema, snapshotFromEd
 import { TRPCError } from "@trpc/server";
 import { t } from "~/i18n";
 import { RecentListsSchema, extractRecentItems, RecentSubjectsSchema } from "~/lib/list";
+import { listDataSchema } from "~/lib/viewlist";
 
 export { listPatchOperationSchema };
 
@@ -57,16 +58,8 @@ export const versionData = z.object({
   commits: z.record(z.string(), versionCommitSchema)
 })
 
-const listRecordSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  subject: z.enum(SubjectNamesArray),
-  userId: z.string(),
-  items: listSnapshot,
+const listRecordSchema = listDataSchema.extend({
   versionData,
-  collaborators: z.array(z.object({ id: z.string() })),
-  favoritedBy: z.array(z.object({ id: z.string() })),
 }).loose()
 
 type VersionCommit = z.infer<typeof versionCommitSchema>

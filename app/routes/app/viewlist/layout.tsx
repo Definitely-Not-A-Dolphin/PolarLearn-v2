@@ -68,7 +68,7 @@ export async function loader({
       context.user.role === "admin";
 
     const collaborators = list.collaborators.map((c) => ({
-      name: c.name || "?",
+      name: c.displayUsername ?? c.name ?? c.username ?? c.id,
       id: c.id,
     }));
 

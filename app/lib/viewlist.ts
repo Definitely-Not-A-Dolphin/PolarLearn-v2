@@ -1,4 +1,5 @@
 import z from "zod";
+import { listSnapshot } from "~/lib/list";
 import { SubjectNamesArray } from "~/lib/subjectnames";
 
 export const listDataSchema = z.object({
@@ -7,14 +8,13 @@ export const listDataSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   subject: z.enum(SubjectNamesArray),
-  items: z.array(
-    z.object({
-      id: z.string(),
-      question: z.string(),
-      answer: z.string(),
-    })
-  ),
-  collaborators: z.array(z.object({ id: z.string(), name: z.string().nullable().optional() })),
+  items: listSnapshot,
+  collaborators: z.array(z.object({
+    id: z.string(),
+    name: z.string().nullable().optional(),
+    displayUsername: z.string().nullable().optional(),
+    username: z.string().nullable().optional(),
+  })),
   favoritedBy: z.array(z.object({ id: z.string() })),
   versionData: z.record(z.string(), z.unknown()),
 });
