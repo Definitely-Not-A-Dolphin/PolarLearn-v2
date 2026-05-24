@@ -6,20 +6,10 @@ import { prisma } from "~/lib/db";
 import { subjects as subjectsList } from "~/lib/subjects";
 import type { Route } from "./+types/favorites";
 import { getRequestSession } from "~/server/trpc";
+import type { ListResult } from "~/lib/list";
 
 interface LoaderData {
-  lists: {
-    id: string,
-    name: string | null,
-    subject: string | null,
-    updatedAt: Date,
-    user: {
-      id: string,
-      displayUsername: string | null,
-      username: string | null,
-      name: string | null,
-    } | null,
-  }[]
+  lists: ListResult[]
 }
 
 export async function loader(loaderArgs: Route.LoaderArgs) {

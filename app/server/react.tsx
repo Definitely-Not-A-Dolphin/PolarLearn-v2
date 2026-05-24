@@ -7,31 +7,7 @@ import { createTRPCContext } from '@trpc/tanstack-react-query'
 
 import type { AppRouter } from '~/server/main'
 
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000
-      }
-    }
-  })
-}
 let browserQueryClient: QueryClient | undefined = undefined
-function getQueryClient() {
-  if (typeof window === 'undefined') {
-    return makeQueryClient()
-  } else {
-    browserQueryClient ??= makeQueryClient()
-    return browserQueryClient
-  }
-}
-
-function getBaseUrl() {
-  if (typeof window === 'undefined') {
-    return process.env.APP_BASE
-  }
-  return window.location.origin
-}
 
 const links = [
   loggerLink({
@@ -41,14 +17,32 @@ const links = [
   }),
   httpBatchLink({
     transformer: SuperJSON,
-    url: getBaseUrl() + '/api/rpc',
+    url: (typeof window === 'undefined' ? process.env.APP_BASE : window.location.origin) + '/api/rpc',
   })
 ]
 
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>()
 
 export function TRPCReactProvider({ children }: { children: React.ReactNode }) {
-  const queryClient = getQueryClient()
+  const [queryClient] = useState(() => {
+    if (typeof window === 'undefined') {
+      return new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000
+          }
+        }
+      })
+    }
+    browserQueryClient ??= new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 60 * 1000
+        }
+      }
+    })
+    return browserQueryClient
+  })
   const [trpcClient] = useState(() =>
     createTRPCClient<AppRouter>({
       links

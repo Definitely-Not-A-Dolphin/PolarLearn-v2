@@ -8,7 +8,6 @@ import { getRandomQuote } from "~/lib/quotes";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
 import type { Route } from "./+types/sign-up";
-import type { RootLoaderData } from "~/lib/root-data";
 import { getRequestSession } from "~/server/trpc";
 
 function getSafeNextPath(requestUrl: string) {
@@ -37,7 +36,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 
 export default function SignUpPage() {
   const { quote, smtpEnabled, next } = useLoaderData<typeof loader>();
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
   const navigate = useNavigate();
@@ -51,9 +50,9 @@ export default function SignUpPage() {
 
   let scoreText = "";
   if (password) {
-    if (score < 2) scoreText = t("auth:signUp.passwordStrength.weak");
-    else if (score < 4) scoreText = t("auth:signUp.passwordStrength.medium");
-    else scoreText = t("auth:signUp.passwordStrength.strong");
+    if (score < 2) scoreText = t("auth.signUp.passwordStrength.weak");
+    else if (score < 4) scoreText = t("auth.signUp.passwordStrength.medium");
+    else scoreText = t("auth.signUp.passwordStrength.strong");
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,22 +75,22 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        toast.error(error.message ?? t("auth:errors.authError"));
+        toast.error(error.message ?? t("auth.errors.authError"));
         return;
       }
 
       if (smtpEnabled) {
-        toast.success(t("auth:signUp.okEmail"));
+        toast.success(t("auth.signUp.okEmail"));
         void navigate(`/auth/sign-in?next=${encodeURIComponent(next)}`);
       } else {
-        toast.success(t("auth:signUp.ok"));
+        toast.success(t("auth.signUp.ok"));
         void navigate(next);
       }
     } catch (err) {
       toast.error(
         err instanceof Error
-          ? err.message ?? t("auth:errors.unknown")
-          : t("auth:errors.unknown")
+          ? err.message ?? t("auth.errors.unknown")
+          : t("auth.errors.unknown")
       );
     } finally {
       setIsLoading(false);
@@ -109,21 +108,21 @@ export default function SignUpPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:signUp.title")}</h1>
-        <p className="text-lg mb-8 text-neutral-300">{t("auth:signUp.subtitle")}</p>
+        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth.signUp.title")}</h1>
+        <p className="text-lg mb-8 text-neutral-300">{t("auth.signUp.subtitle")}</p>
         <form onSubmit={(e) => { void handleSubmit(e); }}>
           <label
             htmlFor="username"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:signUp.username")}
+            {t("auth.signUp.username")}
           </label>
           <Input
             id="username"
             name="username"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<User />}
-            placeholder={t("auth:signUp.usernamePlaceholder")}
+            placeholder={t("auth.signUp.usernamePlaceholder")}
             className="w-full mb-5"
           />
 
@@ -131,14 +130,14 @@ export default function SignUpPage() {
             htmlFor="email"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:signUp.email")}
+            {t("auth.signUp.email")}
           </label>
           <Input
             id="email"
             name="email"
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
-            placeholder={t("auth:signUp.emailPlaceholder")}
+            placeholder={t("auth.signUp.emailPlaceholder")}
             className="w-full mb-5"
           />
 
@@ -146,7 +145,7 @@ export default function SignUpPage() {
             htmlFor="password"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:signUp.password")}
+            {t("auth.signUp.password")}
           </label>
           <div className="relative mb-3">
             <Input
@@ -155,7 +154,7 @@ export default function SignUpPage() {
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type={showPassword ? "text" : "password"}
-              placeholder={t("auth:signUp.passwordPlaceholder")}
+              placeholder={t("auth.signUp.passwordPlaceholder")}
               className="w-full pr-10"
               value={password}
               onChange={(e) => { setPassword(e.target.value); }}
@@ -206,18 +205,18 @@ export default function SignUpPage() {
             disabled={isLoading}
             icon={isLoading ? <Loader2 className="animate-spin" /> : undefined}
           >
-            {t("auth:signUp.button")} →
+            {t("auth.signUp.button")} →
           </Button>
 
           <div className="w-full items-center justify-center mt-6 flex gap-1">
             <p className="font-medium text-sm text-neutral-400">
-              {t("auth:signUp.haveAccount")}
+              {t("auth.signUp.haveAccount")}
             </p>
             <Link
               to={`/auth/sign-in?next=${encodeURIComponent(next)}`}
               className="text-sm text-sky-400 font-bold hover:underline"
             >
-              {t("auth:actions.login")}
+              {t("auth.actions.login")}
             </Link>
           </div>
         </form>

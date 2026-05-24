@@ -11,14 +11,11 @@ import { getRandomQuote } from "~/lib/quotes";
 import entree from "~/img/entree.svg";
 import i18n from "~/i18n";
 import type { Route } from "./+types/sign-in";
-import type { RootLoaderData } from "~/lib/root-data";
 import { getRequestSession } from "~/server/trpc";
 
 gsap.registerPlugin(useGSAP);
 
-// Please dont remove this!
-// This prevents remote redirects to an attacker website
-function getSafeNextPath(requestUrl: string) {
+export function getSafeNextPath(requestUrl: string) {
   const next = new URL(requestUrl).searchParams.get("next");
 
   if (!next) return "/app";
@@ -26,6 +23,7 @@ function getSafeNextPath(requestUrl: string) {
 
   return next;
 }
+
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
@@ -45,7 +43,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 
 export default function SignInPage() {
   const { quote, enableEntreeFederatedSignIn, smtpEnabled, next } = useLoaderData<typeof loader>();
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
   const navigate = useNavigate();
@@ -126,19 +124,19 @@ export default function SignInPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col">
-        <h1 className="text-5xl font-bold">{t("auth:signIn.title")}</h1>
-        <p className="text-xl mt-3">{t("auth:signIn.subtitle")}</p>
+        <h1 className="text-5xl font-bold">{t("auth.signIn.title")}</h1>
+        <p className="text-xl mt-3">{t("auth.signIn.subtitle")}</p>
         <form onSubmit={(e) => { void handleSubmit(e); }}>
           <label
             htmlFor="email"
             className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:signIn.email")}
+            {t("auth.signIn.email")}
           </label>
           <Input
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Mail />}
-            placeholder={t("auth:signIn.emailPlaceholder")}
+            placeholder={t("auth.signIn.emailPlaceholder")}
             className="w-full"
             value={email}
             onChange={(e) => { setEmail(e.target.value); }}
@@ -155,13 +153,13 @@ export default function SignInPage() {
               htmlFor="password"
               className={`block mt-5 mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
             >
-              {t("auth:signIn.password")}
+              {t("auth.signIn.password")}
             </label>
             <Input
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type="password"
-              placeholder={t("auth:signIn.passwordPlaceholder")}
+              placeholder={t("auth.signIn.passwordPlaceholder")}
               className="w-full mb-2"
               value={password}
               onChange={(e) => { setPassword(e.target.value); }}
@@ -175,7 +173,7 @@ export default function SignInPage() {
 
                   const normalizedEmail = email.trim();
                   if (!normalizedEmail) {
-                    toast.error(t("auth:signIn.forgotPasswordEmailRequired"));
+                    toast.error(t("auth.signIn.forgotPasswordEmailRequired"));
                     return;
                   }
 
@@ -189,13 +187,13 @@ export default function SignInPage() {
                     });
 
                     if (error) {
-                      toast.error(error.message ?? t("auth:errors.unknown"));
+                      toast.error(error.message ?? t("auth.errors.unknown"));
                       return;
                     }
 
-                    toast.success(t("auth:signIn.forgotPasswordSent"));
+                    toast.success(t("auth.signIn.forgotPasswordSent"));
                   } catch (err: any) {
-                    toast.error(err?.message ?? t("auth:errors.unknown"));
+                    toast.error(err?.message ?? t("auth.errors.unknown"));
                   } finally {
                     setIsForgotPasswordLoading(false);
                   }
@@ -204,8 +202,8 @@ export default function SignInPage() {
                 className="text-md text-sky-400 font-bold block mb-2 cursor-pointer hover:underline disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isForgotPasswordLoading
-                  ? t("auth:signIn.forgotPasswordSending")
-                  : t("auth:signIn.forgotPassword")}
+                  ? t("auth.signIn.forgotPasswordSending")
+                  : t("auth.signIn.forgotPassword")}
               </button>
             ) : null}
           </div>
@@ -219,19 +217,19 @@ export default function SignInPage() {
             icon={isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
           >
             {isLoading
-              ? t("auth:signIn.loading")
+              ? t("auth.signIn.loading")
               : showPassword
-                ? t("auth:actions.login")
-                : t("auth:signIn.continue")}
+                ? t("auth.actions.login")
+                : t("auth.signIn.continue")}
           </Button>
 
           <div className="w-full items-center justify-center mt-4 flex gap-1">
-            <p className="font-bold">{t("auth:signIn.noAccount")}</p>
+            <p className="font-bold">{t("auth.signIn.noAccount")}</p>
             <Link
               to="/auth/sign-up"
               className="text-md text-sky-400 font-bold hover:underline"
             >
-              {t("auth:signIn.createOne")}
+              {t("auth.signIn.createOne")}
             </Link>
           </div>
 
@@ -241,7 +239,7 @@ export default function SignInPage() {
                 <div className="flex items-center my-4">
                   <hr className="grow border-neutral-600" />
                   <span className="mx-4 text-gray-500 dark:text-gray-400 font-bold">
-                    {t("auth:signIn.separator")}
+                    {t("auth.signIn.separator")}
                   </span>
                   <hr className="grow border-neutral-600" />
                 </div>
@@ -252,7 +250,7 @@ export default function SignInPage() {
                   color={theme === "dark" ? "dark" : "light"}
                   icon={<Image src={entree} width={23} height={23} />}
                 >
-                  {t("auth:signIn.entree")}
+                  {t("auth.signIn.entree")}
                 </Button>
               </>
             ) : null}

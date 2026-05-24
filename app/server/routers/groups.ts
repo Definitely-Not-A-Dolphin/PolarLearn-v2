@@ -4,6 +4,24 @@ import z from 'zod'
 import { protectedProcedure, publicProcedure } from '~/server/trpc'
 import { logger as appLogger } from '~/lib/logger'
 
+const groupIdInput = z.object({ id: z.string() })
+const groupListInput = z.object({ groupId: z.string(), listId: z.string() })
+const groupUserInput = z.object({ groupId: z.string(), userId: z.string() })
+const createGroupInput = z.object({
+  name: z.string().min(3).max(50),
+  description: z.string().max(255).optional(),
+  image: z.string().url().optional(),
+  approvalRequired: z.boolean().optional(),
+  onlyModsCanAddLists: z.boolean().optional(),
+})
+const updateGroupInput = z.object({
+  id: z.string(),
+  name: z.string().min(3).max(50).optional(),
+  description: z.string().max(255).optional(),
+  approvalRequired: z.boolean().optional(),
+  onlyModsCanAddLists: z.boolean().optional(),
+})
+
 export const groupsRouter = {
   getJoinedGroups: protectedProcedure.query(async ({ ctx }) => {
     const groups = await ctx.prisma.group.findMany({
@@ -27,9 +45,7 @@ export const groupsRouter = {
     return groups
   }),
   getListsInGroup: protectedProcedure.input(
-    z.object({
-      id: z.string(),
-    })
+    groupIdInput
   ).query(async ({ ctx, input }) => {
     const lists = await ctx.prisma.list.findMany({
       where: {
@@ -51,13 +67,7 @@ export const groupsRouter = {
     return lists
   }),
   createGroup: protectedProcedure.input(
-    z.object({
-      name: z.string().min(3).max(50),
-      description: z.string().max(255).optional(),
-      image: z.string().url().optional(),
-      approvalRequired: z.boolean().optional(),
-      onlyModsCanAddLists: z.boolean().optional(),
-    })
+    createGroupInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.create({
       data: {
@@ -95,9 +105,7 @@ export const groupsRouter = {
     return group
   }),
   getGroupData: publicProcedure.input(
-    z.object({
-      id: z.string(),
-    })
+    groupIdInput
   ).query(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -148,10 +156,7 @@ export const groupsRouter = {
     return group
   }),
   addListToGroup: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      listId: z.string(),
-    })
+    groupListInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -212,10 +217,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   removeListFromGroup: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      listId: z.string(),
-    })
+    groupListInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: { id: input.groupId },
@@ -252,9 +254,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   joinGroup: protectedProcedure.input(
-    z.object({
-      id: z.string(),
-    })
+    groupIdInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -314,10 +314,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   approveGroupMember: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      userId: z.string(),
-    })
+    groupUserInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -368,10 +365,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   rejectGroupMember: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      userId: z.string(),
-    })
+    groupUserInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -417,10 +411,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   toggleGroupModerator: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      userId: z.string(),
-    })
+    groupUserInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -485,10 +476,7 @@ export const groupsRouter = {
     return isModerator ? 'UNPROMOTED' : 'PROMOTED'
   }),
   kickGroupMember: protectedProcedure.input(
-    z.object({
-      groupId: z.string(),
-      userId: z.string(),
-    })
+    groupUserInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -547,9 +535,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   leaveGroup: protectedProcedure.input(
-    z.object({
-      id: z.string(),
-    })
+    groupIdInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {
@@ -579,13 +565,7 @@ export const groupsRouter = {
     return 'OK'
   }),
   updateGroup: protectedProcedure.input(
-    z.object({
-      id: z.string(),
-      name: z.string().min(3).max(50).optional(),
-      description: z.string().max(255).optional(),
-      approvalRequired: z.boolean().optional(),
-      onlyModsCanAddLists: z.boolean().optional(),
-    })
+    updateGroupInput
   ).mutation(async ({ ctx, input }) => {
     const group = await ctx.prisma.group.findUnique({
       where: {

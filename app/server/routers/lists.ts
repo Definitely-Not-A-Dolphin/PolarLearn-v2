@@ -8,10 +8,14 @@ import { listSnapshot, type ListItem, type ListSnapshot } from "~/lib/list";
 import { buildListDiff, listDiffSchema, listPatchOperationSchema, snapshotFromEditableItems, type ListDiff } from "~/lib/list-diff";
 import { TRPCError } from "@trpc/server";
 import { t } from "~/i18n";
-import { RecentListsSchema, extractRecentItems, RecentSubjectsSchema } from "~/lib/list";
+import { extractRecentItems } from "~/lib/list";
 import { listDataSchema } from "~/lib/viewlist";
 
 export { listPatchOperationSchema };
+
+const listIdInput = z.object({ id: z.string() })
+const listBranchQueryInput = z.object({ listId: z.string(), branch: z.string().optional() })
+const listBranchMutationInput = z.object({ id: z.string(), branch: z.string() })
 
 function generateCommitHash(diff: Diff): string {
   return crypto.createHash("sha256")
@@ -37,6 +41,17 @@ const branchRecordSchema = z.object({
   cachedSnapshot: listSnapshot,
 })
 
+const branchInfoSchema = branchRecordSchema.pick({
+  owner: true,
+  baseCommitId: true,
+  headCommitId: true,
+  parentBranch: true,
+  isPR: true,
+  PR: true,
+}).extend({
+  name: z.string(),
+})
+
 export const branch = z.record(z.string(), branchRecordSchema)
 
 export const diff = z.object({
@@ -51,6 +66,10 @@ const versionCommitSchema = z.object({
   message: z.string(),
   createdAt: z.string(),
   diff,
+})
+
+const commitHistoryEntrySchema = versionCommitSchema.extend({
+  id: z.string(),
 })
 
 export const versionData = z.object({
@@ -264,22 +283,6 @@ function mergeSnapshots(base: ListSnapshot, main: ListSnapshot, branch: ListSnap
   return mergedSnapshot
 }
 
-function constructNewRecentLists(
-  existing: z.infer<typeof RecentListsSchema>,
-  newEntry: z.infer<typeof RecentListsSchema>[number]
-): z.infer<typeof RecentListsSchema> {
-  const filtered = existing.filter((item) => item.id !== newEntry.id)
-  return [newEntry, ...filtered]
-}
-
-function constructNewRecentSubjects(
-  existing: z.infer<typeof RecentSubjectsSchema>,
-  newEntry: z.infer<typeof RecentSubjectsSchema>[number]
-): z.infer<typeof RecentSubjectsSchema> {
-  const filtered = existing.filter((subject) => subject !== newEntry)
-  return [newEntry, ...filtered]
-}
-
 function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSnapshot {
   try {
     const result = jsonpatch.applyPatch(
@@ -297,10 +300,7 @@ function applyListDiffToSnapshot(snapshot: ListSnapshot, listDiff: Diff): ListSn
 
 export const ListRouter = createTRPCRouter({
   getLatestListData: protectedProcedure
-    .input(z.object({
-      listId: z.string(),
-      branch: z.string().optional(),
-    }))
+    .input(listBranchQueryInput)
     .query(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -355,11 +355,8 @@ export const ListRouter = createTRPCRouter({
             where: { id: ctx.user.id },
             data: {
               recentItems: {
-                recent_subjects: constructNewRecentSubjects(existingRecentSubjects, list.subject),
-                recent_lists: constructNewRecentLists(existingRecentLists, {
-                  id: list.id,
-                  updatedAt: new Date().toISOString(),
-                }),
+                recent_subjects: [list.subject, ...existingRecentSubjects.filter((subject) => subject !== list.subject)],
+                recent_lists: [{ id: list.id, updatedAt: new Date().toISOString() }, ...existingRecentLists.filter((item) => item.id !== list.id)],
               },
             },
           })
@@ -372,10 +369,7 @@ export const ListRouter = createTRPCRouter({
       }
     }),
   getBranchHistory: protectedProcedure
-    .input(z.object({
-      listId: z.string(),
-      branch: z.string().optional(),
-    }))
+    .input(listBranchQueryInput)
     .query(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -418,14 +412,7 @@ export const ListRouter = createTRPCRouter({
           })
         }
 
-        history.push(z.object({
-          id: z.string(),
-          parentId: z.string().nullish(),
-          author: z.string(),
-          message: z.string(),
-          createdAt: z.string(),
-          diff,
-        }).parse({
+        history.push(commitHistoryEntrySchema.parse({
           id: currentCommitId,
           parentId: commit.parentId,
           author: commit.author,
@@ -442,15 +429,7 @@ export const ListRouter = createTRPCRouter({
           ...list,
           items: structuredClone(selectedBranch.cachedSnapshot),
         },
-        branch: z.object({
-          name: z.string(),
-          owner: z.string(),
-          baseCommitId: z.string(),
-          headCommitId: z.string(),
-          parentBranch: z.string().optional(),
-          isPR: z.boolean().optional(),
-          PR: pullRequestSchema.optional(),
-        }).parse({
+        branch: branchInfoSchema.parse({
           name: resolvedBranchName,
           owner: selectedBranch.owner,
           baseCommitId: selectedBranch.baseCommitId,
@@ -627,9 +606,7 @@ export const ListRouter = createTRPCRouter({
       return 'OK'
     }),
   deleteList: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
+    .input(listIdInput)
     .mutation(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -783,10 +760,7 @@ export const ListRouter = createTRPCRouter({
 
       const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
 
-      const newRecentLists = constructNewRecentLists(existingRecentLists, {
-        id: list.id,
-        updatedAt: new Date().toISOString(),
-      })
+      const newRecentLists = [{ id: list.id, updatedAt: new Date().toISOString() }, ...existingRecentLists.filter((item) => item.id !== list.id)]
 
       await ctx.prisma.user.update({
         where: { id: ctx.user.id },
@@ -939,10 +913,7 @@ export const ListRouter = createTRPCRouter({
 
       const { recent_lists: existingRecentLists, recent_subjects: existingRecentSubjects } = extractRecentItems(user?.recentItems)
 
-      const newRecentLists = constructNewRecentLists(existingRecentLists, {
-        id: parsedList.id,
-        updatedAt: new Date().toISOString(),
-      })
+      const newRecentLists = [{ id: parsedList.id, updatedAt: new Date().toISOString() }, ...existingRecentLists.filter((item) => item.id !== parsedList.id)]
 
       await ctx.prisma.user.update({
         where: { id: ctx.user.id },
@@ -1036,10 +1007,7 @@ export const ListRouter = createTRPCRouter({
       return 'OK'
     }),
   closePullRequest: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      branch: z.string(),
-    }))
+    .input(listBranchMutationInput)
     .mutation(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -1105,10 +1073,7 @@ export const ListRouter = createTRPCRouter({
       return 'OK'
     }),
   reopenPullRequest: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      branch: z.string(),
-    }))
+    .input(listBranchMutationInput)
     .mutation(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -1175,10 +1140,7 @@ export const ListRouter = createTRPCRouter({
       return 'OK'
     }),
   mergePullRequest: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      branch: z.string(),
-    }))
+    .input(listBranchMutationInput)
     .mutation(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {
@@ -1385,9 +1347,7 @@ export const ListRouter = createTRPCRouter({
       return listRecordSchema.parse(updatedList)
     }),
   starList: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
+    .input(listIdInput)
     .mutation(async ({ ctx, input }) => {
       const rawList = await ctx.prisma.list.findFirst({
         where: {

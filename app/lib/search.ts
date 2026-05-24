@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 import { forumCategorySchema, getPostsOutputSchema } from "~/lib/forum";
+import {
+  listResultSchema,
+  listResultUserSchema,
+  type ListResult,
+  type ListResultUser,
+} from "~/lib/list";
 
 export const searchPageInputSchema = z.object({
   q: z.string().trim().min(1),
@@ -31,27 +37,14 @@ export const searchUsersOutputSchema = z.object({
 
 export type SearchUsersOutput = z.infer<typeof searchUsersOutputSchema>;
 
-export const searchListUserSchema = z.object({
-  id: z.string(),
-  displayUsername: z.string().nullable(),
-  username: z.string().nullable(),
-  name: z.string().nullable(),
-});
-
-export type SearchListUser = z.infer<typeof searchListUserSchema>;
-
-export const searchListSchema = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
-  subject: z.string().nullable(),
-  updatedAt: z.date(),
-  user: searchListUserSchema.nullable(),
-});
-
-export type SearchList = z.infer<typeof searchListSchema>;
+// Aliases for backward compatibility -- canonical schemas live in ~/lib/list
+export const searchListUserSchema = listResultUserSchema;
+export type SearchListUser = ListResultUser;
+export const searchListSchema = listResultSchema;
+export type SearchList = ListResult;
 
 export const searchListsOutputSchema = z.object({
-  lists: z.array(searchListSchema),
+  lists: z.array(listResultSchema),
   nextCursor: z.string().nullable(),
 });
 

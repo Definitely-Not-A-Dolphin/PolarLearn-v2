@@ -15,9 +15,9 @@ import { initI18n } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
+import { prisma } from "./lib/db";
 import { getRequestSession } from "./server/trpc";
 import { TRPCReactProvider } from "./server/react";
-import { themeSchema, type RootLoaderData, type Theme } from "./lib/root-data";
 import ImpersonationBanner from "./components/impersonation";
 export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/svg+xml", href: polarlearnLogo },
@@ -50,14 +50,36 @@ export function meta({ }: Route.MetaArgs) {
   ]
 }
 
-export async function loader(loaderArgs: { request: Request }): Promise<RootLoaderData> {
+export async function loader(loaderArgs: { request: Request }) {
   const headers = new Headers(loaderArgs.request.headers)
   const result = await getRequestSession({ headers, request: loaderArgs.request })
   const user = result?.user
   const session = result?.session
   const userRecord = user as Record<string, unknown> | undefined
   const sessionRecord = session as Record<string, unknown> | undefined
-  const theme: Theme = themeSchema.parse(userRecord?.theme ?? "dark")
+  const theme = userRecord?.theme as 'light' | 'dark'
+  const notifications = user?.id
+    ? await prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        content: true,
+        icon: true,
+        navigate: true,
+        read: true,
+        createdAt: true,
+      },
+    })
+    : []
+  const unreadNotificationsCount = user?.id
+    ? await prisma.notification.count({
+      where: {
+        userId: user.id,
+        read: false,
+      },
+    })
+    : 0
 
   return {
     theme,
@@ -74,6 +96,12 @@ export async function loader(loaderArgs: { request: Request }): Promise<RootLoad
         : null,
     },
     impersonatedBy: typeof sessionRecord?.impersonatedBy === "string" ? sessionRecord.impersonatedBy : null,
+    notifications: notifications.map((notification) => ({
+      ...notification,
+      navigate: notification.navigate ?? null,
+      createdAt: notification.createdAt.toISOString(),
+    })),
+    unreadNotificationsCount,
   };
 }
 

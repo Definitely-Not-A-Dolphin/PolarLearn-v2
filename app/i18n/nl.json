@@ -588,7 +588,8 @@
       "unpin": "Losmaken",
       "pinnedUpdated": "Post is met succes {{action}}!",
       "pin": "Vastzetten",
-      "deleted": "Post verwijderd!"
+      "deleted": "Post verwijderd!",
+      "notification": "Je post \"{{title}}\" heeft een nieuwe reactie van {{username}}."
     },
     "createPost": {
       "title": "Nieuwe post",

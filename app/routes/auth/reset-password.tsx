@@ -43,12 +43,12 @@ export default function ResetPasswordPage() {
     if (isLoading) return;
 
     if (!token) {
-      toast.error(t("auth:resetPassword.missingToken"));
+      toast.error(t("auth.resetPassword.missingToken"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error(t("auth:resetPassword.passwordMismatch"));
+      toast.error(t("auth.resetPassword.passwordMismatch"));
       return;
     }
 
@@ -61,14 +61,14 @@ export default function ResetPasswordPage() {
       });
 
       if (error) {
-        toast.error(error.message ?? t("auth:errors.unknown"));
+        toast.error(error.message ?? t("auth.errors.unknown"));
         return;
       }
 
-      toast.success(t("auth:resetPassword.success"));
+      toast.success(t("auth.resetPassword.success"));
       void navigate("/auth/sign-in");
     } catch (err: any) {
-      toast.error(err?.message ?? t("auth:errors.unknown"));
+      toast.error(err?.message ?? t("auth.errors.unknown"));
     } finally {
       setIsLoading(false);
     }
@@ -85,14 +85,14 @@ export default function ResetPasswordPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth:resetPassword.title")}</h1>
-        <p className="text-lg mb-6 text-neutral-300">{t("auth:resetPassword.subtitle")}</p>
+        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth.resetPassword.title")}</h1>
+        <p className="text-lg mb-6 text-neutral-300">{t("auth.resetPassword.subtitle")}</p>
 
         {invalidToken ? (
           <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200 mb-6">
             {error === "INVALID_TOKEN"
-              ? t("auth:resetPassword.invalidToken")
-              : t("auth:resetPassword.missingToken")}
+              ? t("auth.resetPassword.invalidToken")
+              : t("auth.resetPassword.missingToken")}
           </div>
         ) : null}
 
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
             htmlFor="newPassword"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:resetPassword.newPassword")}
+            {t("auth.resetPassword.newPassword")}
           </label>
           <div className="relative mb-5">
             <Input
@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
               scheme={theme === "dark" ? "dark" : "light"}
               icon={<Lock />}
               type={showPassword ? "text" : "password"}
-              placeholder={t("auth:resetPassword.newPasswordPlaceholder")}
+              placeholder={t("auth.resetPassword.newPasswordPlaceholder")}
               className="w-full pr-10"
               value={newPassword}
               onChange={(e) => { setNewPassword(e.target.value); }}
@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
             htmlFor="confirmPassword"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
-            {t("auth:resetPassword.confirmPassword")}
+            {t("auth.resetPassword.confirmPassword")}
           </label>
           <Input
             id="confirmPassword"
@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
             scheme={theme === "dark" ? "dark" : "light"}
             icon={<Lock />}
             type={showPassword ? "text" : "password"}
-            placeholder={t("auth:resetPassword.confirmPasswordPlaceholder")}
+            placeholder={t("auth.resetPassword.confirmPasswordPlaceholder")}
             className="w-full mb-6"
             value={confirmPassword}
             onChange={(e) => { setConfirmPassword(e.target.value); }}
@@ -154,18 +154,18 @@ export default function ResetPasswordPage() {
             disabled={isLoading || invalidToken}
             icon={isLoading ? <Loader2 className="animate-spin" /> : undefined}
           >
-            {isLoading ? t("auth:resetPassword.loading") : t("auth:resetPassword.submit")}
+            {isLoading ? t("auth.resetPassword.loading") : t("auth.resetPassword.submit")}
           </Button>
 
           <div className="w-full items-center justify-center mt-6 flex gap-1">
             <p className="font-medium text-sm text-neutral-400">
-              {t("auth:resetPassword.backToSignInText")}
+              {t("auth.resetPassword.backToSignInText")}
             </p>
             <Link
               to="/auth/sign-in"
               className="text-sm text-sky-400 font-bold hover:underline"
             >
-              {t("auth:resetPassword.backToSignIn")}
+              {t("auth.resetPassword.backToSignIn")}
             </Link>
           </div>
         </form>

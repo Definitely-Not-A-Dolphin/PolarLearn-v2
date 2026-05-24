@@ -30,12 +30,8 @@ export const listDiffSchema = z.object({
 
 export type ListDiff = z.infer<typeof listDiffSchema>;
 
-export function isEmptyListItem(item: ListItem): boolean {
-  return item.question.trim() === "" && item.answer.trim() === "";
-}
-
 export function snapshotFromEditableItems(items: ListItem[]): ListSnapshot {
-  return items.filter((item) => !isEmptyListItem(item));
+  return items.filter((item) => !(item.question.trim() === "" && item.answer.trim() === ""));
 }
 
 export function buildListDiff(beforeSnapshot: ListSnapshot, afterSnapshot: ListSnapshot): ListDiff {

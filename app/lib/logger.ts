@@ -26,16 +26,6 @@ const colorForLevel: Record<string, string> = {
 
 const colorize = (value: unknown, color: string) => `${color}${String(value)}${ANSI.reset}`
 
-const renderMessage = (message: unknown) => {
-  if (typeof message === "string") return message
-
-  try {
-    return JSON.stringify(message)
-  } catch {
-    return String(message)
-  }
-}
-
 const loggerLevel = process.env.LOG_LEVEL ?? "info"
 
 const consoleFormat = winston.format.combine(
@@ -46,7 +36,7 @@ const consoleFormat = winston.format.combine(
     return [
       colorize(timestamp, ANSI.gray),
       colorize(level, levelColor),
-      colorize(renderMessage(message), levelColor)
+      colorize(typeof message === "string" ? message : JSON.stringify(message), levelColor)
     ].join(" ")
   })
 )

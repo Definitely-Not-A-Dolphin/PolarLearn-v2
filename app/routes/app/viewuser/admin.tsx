@@ -5,7 +5,7 @@ import {
   ShieldUser, Loader2, MailCheck,
   UserRound,
   Lock, Unlock, FileWarning, Bell,
-  Info, AlertTriangle, CheckCircle, Star, ExternalLink,
+  CheckCircle, ExternalLink,
   Gavel,
 } from "lucide-react";
 import { Button, Input } from "@polarnl/polarui-react";
@@ -18,6 +18,7 @@ import {
 } from "~/components/ui/dialog";
 import { Badge } from "~/components/ui/badge";
 import { authClient } from "~/lib/auth/client";
+import { notificationIcons } from "~/lib/notifications";
 import { useTRPC } from "~/server/react";
 import i18n from "~/i18n";
 
@@ -29,14 +30,6 @@ export default function ViewUserAdminPage() {
   const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
-  const NOTIFICATION_ICONS = [
-    { value: "info", label: t("admin.users.notificationIcons.info"), icon: Info },
-    { value: "warning", label: t("admin.users.notificationIcons.warning"), icon: AlertTriangle },
-    { value: "success", label: t("admin.users.notificationIcons.success"), icon: CheckCircle },
-    { value: "bell", label: t("admin.users.notificationIcons.bell"), icon: Bell },
-    { value: "star", label: t("admin.users.notificationIcons.star"), icon: Star },
-    { value: "mail", label: t("admin.users.notificationIcons.mail"), icon: MailCheck },
-  ] as const;
   const revalidator = useRevalidator();
   const trpc = useTRPC();
 
@@ -671,7 +664,7 @@ export default function ViewUserAdminPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("admin.users.notificationDialog.iconLabel")}</label>
               <div className="flex flex-wrap gap-2">
-                {NOTIFICATION_ICONS.map((iconDef) => {
+                {notificationIcons.map((iconDef) => {
                   const IconComp = iconDef.icon;
                   return (
                     <button
@@ -684,7 +677,7 @@ export default function ViewUserAdminPage() {
                       onClick={() => setNotifIcon(iconDef.value)}
                     >
                       <IconComp className="size-4" />
-                      {iconDef.label}
+                      {t(iconDef.labelKey)}
                     </button>
                   );
                 })}

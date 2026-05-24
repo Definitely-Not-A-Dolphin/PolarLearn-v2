@@ -4,10 +4,9 @@ import { useRouteLoaderData } from "react-router";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "~/lib/auth/client";
-import type { RootLoaderData } from "~/lib/root-data";
 
 export default function ImpersonationBanner() {
-  const loaderData = useRouteLoaderData("root") as RootLoaderData | undefined
+  const loaderData = useRouteLoaderData("root")
   const bannerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 

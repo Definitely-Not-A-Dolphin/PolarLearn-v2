@@ -40,7 +40,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { authClient } from "~/lib/auth/client";
 import pl_logo from "~/img/polarlearn.svg";
 import { ChevronsUpDown, LogOut } from "lucide-react";
-import type { RootLoaderData } from "~/lib/root-data";
 
 function SidebarTooltip({
   label,
@@ -90,7 +89,7 @@ export function AppSidebar() {
   const normalizePath = (path: string) => path.replace(/\/+$/, "") || "/";
   const currentPath = normalizePath(location.pathname);
 
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const user = rootData?.user;
 

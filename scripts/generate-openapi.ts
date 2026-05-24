@@ -14,21 +14,6 @@ const outputPath = path.resolve(__dirname, '..', 'openapi.json');
 const title = 'PolarLearn tRPC API';
 const version = 'v2.0-PRE-2';
 
-type OpenAPIDocument = Awaited<ReturnType<typeof generateOpenAPIDocument>>;
-
-function prefixOpenApiPaths(doc: OpenAPIDocument, prefix: string) {
-  const normalizedPrefix = prefix.replace(/\/$/, '');
-
-  doc.paths = Object.fromEntries(
-    Object.entries(doc.paths ?? {}).map(([pathName, pathItem]) => [
-      pathName.startsWith(normalizedPrefix) ? pathName : `${normalizedPrefix}${pathName}`,
-      pathItem,
-    ]),
-  );
-
-  delete doc.servers;
-}
-
 async function main() {
   const doc = await generateOpenAPIDocument(routerPath, {
     exportName: 'AppRouter',
@@ -36,7 +21,14 @@ async function main() {
     version,
   });
 
-  prefixOpenApiPaths(doc, '/api/rpc');
+  const normalizedPrefix = '/api/rpc'.replace(/\/$/, '');
+  doc.paths = Object.fromEntries(
+    Object.entries(doc.paths ?? {}).map(([pathName, pathItem]) => [
+      pathName.startsWith(normalizedPrefix) ? pathName : `${normalizedPrefix}${pathName}`,
+      pathItem,
+    ]),
+  );
+  delete doc.servers;
 
   mkdirSync(path.dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, `${JSON.stringify(doc, null, 2)}\n`);

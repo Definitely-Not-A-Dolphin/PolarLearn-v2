@@ -9,10 +9,10 @@ export default function HomeLayout() {
     <TooltipProvider>
       <SidebarProvider
         defaultOpen={false}
-        className="min-h-[calc(100svh_-_var(--impersonation-banner-height))]"
+        className="min-h-[calc(100svh-var(--impersonation-banner-height))]"
       >
         <AppSidebar />
-        <SidebarInset className="bg-neutral-50 dark:bg-neutral-900 min-h-[calc(100svh_-_var(--impersonation-banner-height))] border-none outline-none ring-0">
+        <SidebarInset className="bg-neutral-50 dark:bg-neutral-900 min-h-[calc(100svh-var(--impersonation-banner-height))] border-none outline-none ring-0">
           <TopBar />
           <Outlet />
         </SidebarInset>

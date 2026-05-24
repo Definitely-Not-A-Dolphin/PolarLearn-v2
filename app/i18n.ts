@@ -18,37 +18,21 @@ for (const path in modules) {
 let currentLanguage = DEFAULT_LANG;
 let initialized = false;
 
-function resolvePath(source: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce<unknown>((current, segment) => {
+function translate(key: string, options?: { defaultValue?: string } & Record<string, unknown>): string {
+  const languageResource = resources[currentLanguage] ?? resources[DEFAULT_LANG];
+  const value = key.split(".").reduce<unknown>((current, segment) => {
     if (!current || typeof current !== "object") {
       return undefined;
     }
-
     return (current as Record<string, unknown>)[segment];
-  }, source);
-}
-
-function interpolate(value: string, options?: Record<string, unknown>): string {
-  if (!options) {
-    return value;
-  }
-
-  return value.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
-    const replacement = options[key];
-    return replacement === undefined || replacement === null
-      ? ""
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
-      : String(replacement);
-  });
-}
-
-function translate(key: string, options?: { defaultValue?: string } & Record<string, unknown>): string {
-  const normalizedKey = key.includes(":") ? key.replace(":", ".") : key;
-  const languageResource = resources[currentLanguage] ?? resources[DEFAULT_LANG];
-  const value = resolvePath(languageResource, normalizedKey) as TranslationValue | undefined;
+  }, languageResource) as TranslationValue | undefined;
 
   if (typeof value === "string") {
-    return interpolate(value, options);
+    if (!options) return value;
+    return value.replace(/\{\{(\w+)\}\}/g, (_match, k: string) => {
+      const replacement = options[k];
+      return replacement === undefined || replacement === null ? "" : String(replacement);
+    });
   }
 
   return options?.defaultValue ?? key;

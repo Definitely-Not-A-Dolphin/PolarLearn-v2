@@ -24,20 +24,6 @@ export const answerLogEntrySchema = z.object({
 
 export const answerLogSchema = z.array(answerLogEntrySchema)
 
-export const sessionSummarySchema = z.object({
-  id: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  status: z.literal("finished"),
-  correct: z.number(),
-  incorrect: z.number(),
-  total: z.number(),
-  scorePercentage: z.number(),
-  grade: z.number(),
-})
-
-export type SessionSummary = z.infer<typeof sessionSummarySchema>
-
 function shuffleArray<T>(values: T[]): T[] {
   const shuffled = [...values]
 

@@ -15,105 +15,6 @@ import { smtpTransport } from "~/lib/smtp";
 import activationEmailTemplate from "./activation-email.html?raw";
 import forgotPasswordEmailTemplate from "./forgot-password-email.html?raw";
 
-const signInRequestByContext = new WeakMap<object, { email: string | null }>()
-
-function getStringBodyField(body: unknown, field: string) {
-  if (!body || typeof body !== "object") {
-    return null
-  }
-
-  const value = (body as Record<string, unknown>)[field]
-  return typeof value === "string" ? value : null
-}
-
-async function trackSignInRequest(request: Request, ctx: object) {
-  const path = new URL(request.url).pathname
-  if (!path.endsWith("/sign-in/email")) return
-
-  let body: unknown
-  try {
-    body = await request.clone().json()
-  } catch {
-    return
-  }
-
-  signInRequestByContext.set(ctx, {
-    email: getStringBodyField(body, "email")?.trim() ?? null,
-  })
-}
-
-async function buildBannedUserResponse(response: Response, ctx: object) {
-  const signInRequest = signInRequestByContext.get(ctx)
-  signInRequestByContext.delete(ctx)
-
-  if (!signInRequest || response.status !== 403) return
-
-  let body: unknown
-  try {
-    body = await response.clone().json()
-  } catch {
-    return
-  }
-
-  if (!body || typeof body !== "object") return
-
-  const responseBody = body as Record<string, unknown>
-  if (responseBody.code !== "BANNED_USER") return
-
-  const identifier = signInRequest.email?.trim()
-  if (!identifier) return
-
-  const bannedUser = await prisma.user.findFirst({
-    where: {
-      banned: true,
-      OR: [
-        {
-          email: {
-            equals: identifier,
-            mode: "insensitive",
-          },
-        },
-        {
-          username: {
-            equals: identifier,
-            mode: "insensitive",
-          },
-        },
-      ],
-    },
-    select: {
-      banReason: true,
-    },
-  })
-  const reason = bannedUser?.banReason?.trim()
-  const message = reason
-    ? i18n.t("auth.errors.bannedUser", { reason })
-    : i18n.t("auth.errors.accountDisabled")
-
-  const headers = new Headers(response.headers)
-  headers.set("content-type", "application/json")
-
-  return {
-    response: new Response(
-      JSON.stringify({
-        ...responseBody,
-        message,
-      }),
-      {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-      },
-    ),
-  }
-}
-
-const banReasonResponsePlugin = {
-  id: "polarlearn-ban-reason",
-  onRequest: trackSignInRequest,
-  onResponse: buildBannedUserResponse,
-}
-
 export const auth = betterAuth({
   telemetry: {
     enabled: false // fuck you
@@ -238,7 +139,7 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async (ctx) => {
       switch (ctx.path) {
         case "/admin/ban-user": {
-          const reason = getStringBodyField(ctx.body, "banReason")?.trim()
+          const reason = typeof ctx.body === "object" && ctx.body !== null ? (ctx.body as Record<string, unknown>).banReason : undefined
           if (!reason) {
             throw APIError.from("BAD_REQUEST", {
               code: "BAN_REASON_REQUIRED",
@@ -284,6 +185,38 @@ export const auth = betterAuth({
           }
 
           if (!newSession) {
+            // Enrich BANNED_USER error with the ban reason from the database
+            const returned = ctx.context.returned
+            const returnedBody = typeof returned === "object" && returned !== null && "body" in returned
+              ? (returned as Record<string, unknown>).body
+              : null
+            const errorCode = typeof returnedBody === "object" && returnedBody !== null
+              ? (returnedBody as Record<string, unknown>).code
+              : null
+
+            if (errorCode === "BANNED_USER") {
+              const email = attemptedCredentials.email
+              if (email) {
+                const bannedUser = await prisma.user.findFirst({
+                  where: {
+                    banned: true,
+                    OR: [
+                      { email: { equals: email, mode: "insensitive" } },
+                      { username: { equals: email, mode: "insensitive" } },
+                    ],
+                  },
+                  select: { banReason: true },
+                })
+                const reason = bannedUser?.banReason?.trim()
+                if (reason) {
+                  throw APIError.from("FORBIDDEN", {
+                    code: "BANNED_USER",
+                    message: i18n.t("auth.errors.bannedUser", { reason }),
+                  })
+                }
+              }
+            }
+
             appLogger.info({
               event: "auth.login.failed",
               path: ctx.path,
@@ -447,7 +380,6 @@ export const auth = betterAuth({
         return i18n.language ?? null
       },
     }),
-    banReasonResponsePlugin,
     username(),
     admin({
       adminRoles: ["admin"],

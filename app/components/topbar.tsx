@@ -1,7 +1,7 @@
-import { List, Loader2, Plus, MessageCircle, Users, UserPlus } from "lucide-react";
+import { Bell, ExternalLink, List, Loader2, Plus, MessageCircle, Users, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { CreatePostDialog } from "~/routes/app/forum/CreatePostDialog";
-import { useLocation, useNavigate, useRouteLoaderData, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useRevalidator, useRouteLoaderData, useSearchParams } from "react-router";
 
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import i18n from "~/i18n";
@@ -10,12 +10,12 @@ import { Button, CheckWithLabel, Input } from "@polarnl/polarui-react";
 import { useTRPC } from '~/server/react';
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { RootLoaderData } from "~/lib/root-data";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { SearchBar } from "./searchBar";
+import { notificationIcons, type Notification } from "~/lib/notifications";
 
 export function TopBar() {
-  const rootData = useRouteLoaderData<RootLoaderData>("root")
+  const rootData = useRouteLoaderData("root")
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const theme = rootData?.theme ?? "dark"
@@ -23,6 +23,7 @@ export function TopBar() {
   const userName = rootData?.user.name ?? t("userMenu.guest")
   const rpc = useTRPC()
   const navigate = useNavigate()
+  const revalidator = useRevalidator()
   const [groupName, setGroupName] = useState("")
   const [groupDescription, setGroupDescription] = useState("")
   const [requiresModeratorApproval, setRequiresModeratorApproval] = useState(false)
@@ -55,6 +56,16 @@ export function TopBar() {
 
   const [isCreatePostDialogOpen, setIsCreatePostDialogOpen] = useState(false);
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
+
+  const notifications = rootData?.notifications ?? [];
+  const unreadNotificationsCount = rootData?.unreadNotificationsCount ?? 0;
+
+  const readNotification = useMutation({
+    ...rpc.notification.readNotification.mutationOptions(),
+    onSuccess: () => {
+      revalidator.revalidate();
+    },
+  })
 
   if (location.pathname.startsWith("/app/editlist/") || location.pathname.startsWith("/app/session/")) {
     return null;
@@ -99,6 +110,74 @@ export function TopBar() {
 
       {!location.pathname.startsWith("/app/search") && <div className="grow" />}
       <SearchBar query={searchParams.get("q") ?? ""} />
+      {rootData?.user.id ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 transition-all hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+              aria-label="Meldingen"
+            >
+              <Bell />
+              {unreadNotificationsCount > 0 ? (
+                <div className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white shadow-sm ring-2 ring-neutral-50 dark:ring-neutral-900">
+                  {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+                </div>
+              ) : null}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 max-w-[calc(100vw-1rem)]" align="end">
+            <PopoverHeader>
+              <h2 className="text-base font-semibold">Meldingen</h2>
+            </PopoverHeader>
+            {notifications.length > 0 ? (
+              <div className="max-h-96 overflow-auto">
+                {notifications.map((notification: Notification) => {
+                  const Icon = notificationIcons.find((iconDef) => iconDef.value === notification.icon)?.icon ?? Bell;
+                  return (
+                    <Button
+                      variant={"transparent"}
+                      scheme={theme}
+                      className={`w-full gap-1 justify-start items-center px-0 py-2`}
+                      key={notification.id}
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await readNotification.mutateAsync({ id: notification.id })
+                          if (notification.navigate) {
+                            navigate(notification.navigate);
+                          }
+                        } catch {
+                          toast.error(t("errors.unknown"));
+                        }
+                      }}
+                    >
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                        <Icon className="size-4" />
+                      </span>
+                      <span className="min-w-0 flex-1 space-y-1 text-left">
+                        <span className={
+                          notification.read
+                            ? "block text-sm leading-snug text-muted-foreground text-left"
+                            : "block text-sm leading-snug font-semibold text-foreground text-left"
+                        }>
+                          {notification.content}
+                        </span>
+                        <span className="block text-xs text-muted-foreground text-left">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </span>
+                      </span>
+                      {notification.navigate ? <ExternalLink className="mt-1 size-4 shrink-0 text-muted-foreground" /> : null}
+                    </Button>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="px-3 py-2 text-sm text-muted-foreground">Je hebt nog geen meldingen.</p>
+            )}
+          </PopoverContent>
+        </Popover>
+      ) : null}
       <Popover>
         <PopoverTrigger>
           <div className="h-10 w-10 flex flex-row items-center justify-center rounded-full bg-neutral-200 cursor-pointer hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all">

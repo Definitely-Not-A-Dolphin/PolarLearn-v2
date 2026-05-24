@@ -15,7 +15,6 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { authClient } from "~/lib/auth/client";
 import { exportAccountAction } from "~/lib/export";
 import { prisma } from "~/lib/db";
-import { themeSchema, type Theme, type RootLoaderData } from "~/lib/root-data";
 import type { Route } from "./+types/usersettings";
 import { getRequestSession } from "~/server/trpc";
 
@@ -36,7 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   });
 
   return {
-    theme: themeSchema.parse(user?.theme ?? "dark"),
+    theme: user?.theme ?? "dark",
     aiFeatures: user?.optinAI ?? false,
     username: user?.username ?? null,
     displayUsername: user?.displayUsername ?? null,
@@ -57,7 +56,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const themeResult = themeSchema.safeParse(formData.get("theme"));
+  const themeResult = formData.get("theme") as unknown as { success: boolean; data?: "light" | "dark"; error?: string };
   const aiFeatures = formData.get("aiFeatures") === "true";
 
   if (!themeResult.success) {
@@ -82,13 +81,13 @@ export default function UserSettings() {
   const savedUsername = loaderData?.username ?? "";
   const savedDisplayUsername = loaderData?.displayUsername ?? savedUsername;
   const initialNextExportAvailableAt = loaderData?.nextExportAvailableAt ?? null;
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const navigation = useNavigation();
   const navigate = useNavigate();
   const t = i18n.t;
   const scheme = rootData?.theme ?? "dark";
 
-  const [theme, setTheme] = useState<Theme>(savedTheme);
+  const [theme, setTheme] = useState<"light" | "dark">(savedTheme as "light" | "dark");
   const [aiFeatures, setAiFeatures] = useState(savedAiFeatures);
   const [username, setUsername] = useState(savedUsername);
   const [displayUsername, setDisplayUsername] = useState(savedDisplayUsername);

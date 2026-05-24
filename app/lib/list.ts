@@ -7,6 +7,25 @@ export const listItem = z.object({
   answer: z.string(),
 });
 
+export const listResultUserSchema = z.object({
+  id: z.string(),
+  displayUsername: z.string().nullable(),
+  username: z.string().nullable(),
+  name: z.string().nullable(),
+});
+
+export type ListResultUser = z.infer<typeof listResultUserSchema>;
+
+export const listResultSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  subject: z.string().nullable(),
+  updatedAt: z.date(),
+  user: listResultUserSchema.nullable(),
+});
+
+export type ListResult = z.infer<typeof listResultSchema>;
+
 export const listSnapshot = z.array(listItem);
 
 export type ListItem = z.infer<typeof listItem>;

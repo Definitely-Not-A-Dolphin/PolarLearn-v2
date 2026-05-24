@@ -27,24 +27,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/trpc";
-
-function getForumBanMessage(reason: string | null | undefined) {
-  return reason?.trim() || "You are banned from the forum";
-}
-
-function assertCanParticipateInForum(user: {
-  forumBanned?: boolean | null
-  forumBanReason?: string | null
-}) {
-  if (!user.forumBanned) {
-    return
-  }
-
-  throw new TRPCError({
-    code: "FORBIDDEN",
-    message: getForumBanMessage(user.forumBanReason),
-  });
-}
+import { t } from "~/i18n";
 
 export const forumRouter = createTRPCRouter({
   getPosts: publicProcedure
@@ -126,7 +109,12 @@ export const forumRouter = createTRPCRouter({
     .input(createPostInputSchema)
     .output(createPostOutputSchema)
     .mutation(async ({ input, ctx }) => {
-      assertCanParticipateInForum(ctx.user)
+      if (ctx.user.forumBanned) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: ctx.user.forumBanReason?.trim(),
+        });
+      }
       const { title, content, subject, category } = input;
       if (category === "announcement" && ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN" });
@@ -276,11 +264,22 @@ export const forumRouter = createTRPCRouter({
     .input(replyToPostInputSchema)
     .output(postSchema)
     .mutation(async ({ input, ctx }) => {
-      assertCanParticipateInForum(ctx.user)
+      if (ctx.user.forumBanned) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: ctx.user.forumBanReason?.trim(),
+        });
+      }
       const { postId, content } = input;
       const parentPost = await ctx.prisma.forumPost.findUnique({
         where: { id: postId },
-        select: { category: true, subject: true, deleted: true },
+        select: {
+          authorId: true,
+          category: true,
+          subject: true,
+          title: true,
+          deleted: true,
+        },
       });
       if (!parentPost || parentPost.deleted)
         throw new TRPCError({ code: "NOT_FOUND", message: "Post not found" });
@@ -309,6 +308,22 @@ export const forumRouter = createTRPCRouter({
           },
         },
       });
+
+      if (parentPost.authorId !== ctx.user.id) {
+        const replierName = ctx.user.name?.trim() || "?";
+        const postTitle = parentPost.title?.trim() || "?";
+
+        await ctx.prisma.notification.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: parentPost.authorId,
+            content: t("forum.post.notification", { title: postTitle, username: replierName }),
+            icon: "mail",
+            navigate: `/app/forum/posts/${postId}`,
+          },
+        });
+      }
+
       appLogger.info({
         event: "forum.reply.created",
         userId: ctx.user.id,
