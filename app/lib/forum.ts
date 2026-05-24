@@ -17,7 +17,6 @@
 import { z } from "zod";
 import { Globe, GraduationCap, Megaphone, type LucideIcon } from "lucide-react";
 import { SubjectNamesArray } from "./subjectnames";
-import { idObjectSchema, idStringSchema } from "./schemas";
 
 export type CategoryInfo = {
   label: string;
@@ -88,9 +87,9 @@ export const getMyRepliesInputSchema = z.object({
 
 export type GetMyRepliesInput = z.infer<typeof getMyRepliesInputSchema>;
 
-export const postIdSchema = idObjectSchema;
-
-export const getPostInputSchema = postIdSchema;
+export const getPostInputSchema = z.object({
+  postId: z.string().min(1),
+});
 export type GetPostInput = z.infer<typeof getPostInputSchema>;
 
 export const createPostInputSchema = z.object({
@@ -129,7 +128,9 @@ export const editPostOutputSchema = z.object({
 
 export type EditPostOutput = z.infer<typeof editPostOutputSchema>;
 
-export const deletePostInputSchema = postIdSchema;
+export const deletePostInputSchema = z.object({
+  id: z.string().min(1),
+});
 export type DeletePostInput = z.infer<typeof deletePostInputSchema>;
 
 export const voteSchema = z.enum(["up", "down"]);
@@ -167,7 +168,8 @@ export function calculateVoteTotals(voters: Voters) {
   };
 }
 
-export const votePostInputSchema = postIdSchema.extend({
+export const votePostInputSchema = z.object({
+  postId: z.string().min(1),
   vote: voteSchema,
 });
 
@@ -224,7 +226,7 @@ export const getPostsOutputSchema = z.object({
 export type GetPostsOutput = z.infer<typeof getPostsOutputSchema>;
 
 export const getPostRepliesInputSchema = z.object({
-  postId: idStringSchema,
+  postId: z.string().min(1),
   cursor: z.string().min(1).optional(),
   limit: z.number().int().min(1).max(50).default(10),
 });
