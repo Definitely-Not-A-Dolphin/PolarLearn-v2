@@ -28,9 +28,6 @@ import { appRouter } from "~/server/main";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { RootLoaderData, Theme } from "~/lib/root-data";
-
-
 import type { Route } from "./+types/[id]";
 
 gsap.registerPlugin(useGSAP);
@@ -315,7 +312,7 @@ export default function EditListPage() {
 
 function EditListEditor({ list }: { list: LoaderData["list"] }) {
   const t = i18n.t;
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const listName = list.name;
   const listSubject = list.subject;
@@ -912,7 +909,7 @@ function EditableListItemRow({
   item: ListItem;
   index: number;
   totalItems: number;
-  theme: Theme;
+  theme: "light" | "dark";
   isRemoving: boolean;
   provided: DraggableProvided;
   snapshot: DraggableStateSnapshot;
@@ -1034,7 +1031,7 @@ function SaveDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  theme: Theme;
+  theme: "light" | "dark";
   commitMessage: string;
   isSaving: boolean;
   onCommitMessageChange: (value: string) => void;
@@ -1096,7 +1093,7 @@ function ImportDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  theme: Theme;
+  theme: "light" | "dark";
   activeTabIndex: number;
   onActiveTabChange: (index: number) => void;
   plainTextValue: string;
@@ -1231,7 +1228,7 @@ function DraftImportDialog({
   open: boolean;
   baseDraft: EditableListDraft;
   importedDraft: EditableListDraft | null;
-  theme: Theme;
+  theme: "light" | "dark";
   onDiscardLocalDraft: () => void;
   onApplyLocalDraft: () => void;
 }) {

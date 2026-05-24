@@ -1,3 +1,19 @@
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+// 
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import { useRouteLoaderData, useNavigate } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,7 +24,6 @@ import { SubjectNamesArray, type SubjectNames } from "~/lib/subjectnames";
 import { t } from "~/i18n";
 import { useTRPC } from "~/server/react";
 import { useState } from "react";
-import type { RootLoaderData } from "~/lib/root-data";
 
 type CreatePostDialogProps = {
   open: boolean;
@@ -19,7 +34,7 @@ export function CreatePostDialog({
   open,
   onOpenChange,
 }: CreatePostDialogProps) {
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "light";
   const isAdmin = rootData?.user.role === "admin";
   const rpc = useTRPC();

@@ -1,3 +1,19 @@
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import { redirect, useLoaderData, useNavigate } from "react-router";
 import i18n from "~/i18n";
 import { List, ListX } from "lucide-react";
@@ -6,11 +22,6 @@ import { prisma } from "~/lib/db";
 import { subjects as subjectsList } from "~/lib/subjects";
 import type { Route } from "./+types/favorites";
 import { getRequestSession } from "~/server/trpc";
-import type { ListResult } from "~/lib/list";
-
-interface LoaderData {
-  lists: ListResult[]
-}
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers)
@@ -46,7 +57,7 @@ export default function MyListsPage() {
   const navigate = useNavigate()
   const t = i18n.t;
 
-  const { lists } = useLoaderData<LoaderData>()
+  const { lists } = useLoaderData()
 
   return (
     <div className="flex min-w-0 flex-col p-4">
@@ -57,7 +68,7 @@ export default function MyListsPage() {
               {t("favorites.empty")}
             </div>
           ) : (
-            lists.map((list) => {
+            lists.map((list: any) => {
               const hasSubject = typeof list.subject === "string"
                 && Object.prototype.hasOwnProperty.call(subjectsList, list.subject)
               const subject = hasSubject

@@ -1,11 +1,27 @@
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import { redirect, useLoaderData, useNavigate } from "react-router"
 import { createTRPCContext } from "~/server/trpc"
 import { prisma } from "~/lib/db"
-import { buildSessionSummary, sessionSummaryLoaderSchema, type SessionSummaryLoaderData, type SessionSummarySource } from "~/lib/stats"
+import { buildSessionSummary, type SessionSummarySource } from "~/lib/stats"
 import i18n from "~/i18n"
 import type { Route } from "./+types/stats"
 
-export async function loader({ params, request }: Route.LoaderArgs): Promise<SessionSummaryLoaderData> {
+export async function loader({ params, request }: Route.LoaderArgs){
   const listId = params.id
 
   if (!listId) {
@@ -39,10 +55,10 @@ export async function loader({ params, request }: Route.LoaderArgs): Promise<Ses
     },
   })) as SessionSummarySource[]
 
-  return sessionSummaryLoaderSchema.parse({
+  return {
     listId,
     sessions: sessions.map((session) => buildSessionSummary(session)),
-  })
+  }
 }
 
 export default function StatsPage() {

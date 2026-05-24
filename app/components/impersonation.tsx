@@ -1,3 +1,19 @@
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+// 
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 "use client";
 
 import { useRouteLoaderData } from "react-router";
@@ -62,7 +78,7 @@ export default function ImpersonationBanner() {
   return (
     <div
       ref={bannerRef}
-      className="relative z-[60] bg-yellow-900/20 border-b border-yellow-900/30 px-4 py-3 flex items-center justify-between gap-4"
+      className="relative z-60 bg-yellow-900/20 border-b border-yellow-900/30 px-4 py-3 flex items-center justify-between gap-4"
     >
       <div className="flex items-center gap-3">
         <div className="text-sm text-yellow-800 dark:text-yellow-300">

@@ -1,3 +1,19 @@
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import { Button, Input } from "@polarnl/polarui-react";
 import { Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
@@ -6,7 +22,6 @@ import { toast } from "sonner";
 import i18n from "~/i18n";
 import { authClient } from "~/lib/auth/client";
 import { getRandomQuote } from "~/lib/quotes";
-import type { RootLoaderData } from "~/lib/root-data";
 import { getRequestSession } from "~/server/trpc";
 
 export async function loader({ request }: { request: Request }) {
@@ -26,7 +41,7 @@ export async function loader({ request }: { request: Request }) {
 
 export default function ResetPasswordPage() {
   const { quote, token, error } = useLoaderData<typeof loader>();
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const t = i18n.t;
   const navigate = useNavigate();

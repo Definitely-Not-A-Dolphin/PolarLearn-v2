@@ -1,13 +1,28 @@
-import React, { useRef, useEffect } from "react";
+// PolarLearn: A free and open-source learning platform.
+// Copyright(C) 2024-2026 PolarNL Group
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import { useRef, useEffect } from "react";
 import pl_logo from "~/img/polarlearn.svg";
 import pnl_logo from "~/img/pnl.svg";
 import { Button } from "@polarnl/polarui-react";
 import { useNavigate, useRouteLoaderData } from "react-router";
-import type { RootLoaderData } from "~/lib/root-data";
 import i18n from "~/i18n";
 
 function DescriptionReveal() {
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const textColorClass = theme === "dark" ? "text-white" : "text-gray-800";
 
@@ -84,7 +99,7 @@ function DescriptionReveal() {
 }
 
 function TextRevealInline() {
-  const rootData = useRouteLoaderData<RootLoaderData>("root");
+  const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
   const learnColorClass = theme === "dark" ? "text-white stroke-white" : "text-gray-500 stroke-gray-500";
 
