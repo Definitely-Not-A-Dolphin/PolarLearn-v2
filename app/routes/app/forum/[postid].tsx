@@ -99,7 +99,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const caller = createCallerFactory(appRouter)(context);
 
   const [post, initialReplies] = await Promise.all([
-    caller.forum.getPost({ id: postId }),
+    caller.forum.getPost({ postId }),
     caller.forum.getPostReplies({
       postId,
       limit: REPLIES_PER_PAGE,
@@ -232,7 +232,7 @@ export default function PostPage() {
 
   const handleVote = (vote: Vote) => {
     voteMutation.mutate({
-      id: currentPost.id,
+      postId: currentPost.id,
       vote,
     });
   };
@@ -897,7 +897,7 @@ function ReplyCard({
                 )
               }
               onClick={() => {
-                voteMutation.mutate({ id: reply.id, vote: "up" });
+                voteMutation.mutate({ postId: reply.id, vote: "up" });
               }}
               disabled={voteMutation.isPending}
               title={t("forum.vote.up")}
@@ -923,7 +923,7 @@ function ReplyCard({
                 )
               }
               onClick={() => {
-                voteMutation.mutate({ id: reply.id, vote: "down" });
+                voteMutation.mutate({ postId: reply.id, vote: "down" });
               }}
               disabled={voteMutation.isPending}
               title={t("forum.vote.down")}
