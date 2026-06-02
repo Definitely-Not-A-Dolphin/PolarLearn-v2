@@ -499,6 +499,7 @@
       "okEmail": "Je account is aangemaakt! Check je e-mail voor een bevestigingslink.",
       "username": "Gebruikersnaam",
       "usernamePlaceholder": "Je gebruikersnaam",
+      "usernameInvalid": "Gebruik alleen kleine letters, cijfers, koppeltekens en underscores.",
       "email": "E-mail",
       "emailPlaceholder": "Je e-mailadres",
       "password": "Wachtwoord",
