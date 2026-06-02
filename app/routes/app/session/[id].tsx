@@ -28,7 +28,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { toast } from "sonner";
 import { generateHint } from "~/lib/learn";
-import { BookOpenCheck, MoveLeft, X, Check, XCircle } from "lucide-react";
+import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
 import i18n from "~/i18n";
 
@@ -124,6 +124,8 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
     },
   })
   const { queue, answerLog, isComplete, getCurrentQuestion, submitAnswer, feedback, dismissFeedback, considerRight, listId } = useLearnStore()
+  const isFeedbackVisible = feedback?.isVisible ?? false
+  const suppressOverlayEnterRef = useRef(false)
 
 
   const currentQuestion = getCurrentQuestion()
@@ -179,6 +181,53 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
     })
   }, [answerLog, isComplete, queue, sessionId, updateSessionMutation])
 
+  useEffect(() => {
+    if (!isFeedbackVisible) {
+      return
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") return
+
+      if (suppressOverlayEnterRef.current) {
+        return
+      }
+
+      event.preventDefault()
+      dismissFeedback()
+    }
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") return
+
+      suppressOverlayEnterRef.current = false
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("keyup", onKeyUp)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener("keyup", onKeyUp)
+    }
+  }, [dismissFeedback, isFeedbackVisible])
+
+  useEffect(() => {
+    if (isFeedbackVisible) return
+
+    const canFocusInput = currentQuestion?.type === "test" || currentQuestion?.type === "hint"
+    if (!canFocusInput) return
+
+    const timer = window.setTimeout(() => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [currentQuestion?.id, currentQuestion?.type, isFeedbackVisible])
+
   return (
     <>
       {!isComplete && currentQuestion && (
@@ -198,7 +247,12 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
                   key={currentQuestion.id}
                   placeholder={t("learn.session.answerPlaceholder")}
                   onKeyDown={(e) => {
+                    if (isFeedbackVisible) {
+                      return
+                    }
+
                     if (e.key === "Enter") {
+                      suppressOverlayEnterRef.current = true
                       const answer = e.currentTarget.value
                       if (!answer.trim()) return
 
@@ -250,7 +304,12 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
                   placeholder={t("learn.session.answerPlaceholder")}
 
                   onKeyDown={(e) => {
+                    if (isFeedbackVisible) {
+                      return
+                    }
+
                     if (e.key === "Enter") {
+                      suppressOverlayEnterRef.current = true
                       const answer = e.currentTarget.value
                       if (!answer.trim()) return
 
@@ -339,6 +398,7 @@ function FeedbackOverlay({
 }) {
   const t = i18n.t
   const overlayRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -351,34 +411,34 @@ function FeedbackOverlay({
   }, [onConsiderRight, onDismiss])
 
   useEffect(() => {
-    const overlay = overlayRef.current
+    const backdrop = backdropRef.current
     const content = contentRef.current
     const progress = progressRef.current
 
-    if (!overlay || !content || !progress) return
+    if (!backdrop || !content || !progress) return
 
     const tl = gsap.timeline()
 
     tl.fromTo(
-      overlay,
+      backdrop,
       { opacity: 0 },
-      { opacity: 1, duration: 0.3, ease: "power2.out" }
+      { opacity: 0.35, duration: 0.3, ease: "power2.out" }
     )
     tl.fromTo(
-      content.children,
-      { opacity: 0, scale: 0.8, y: 20 },
-      { opacity: 1, scale: 1, y: 0, duration: 0.4, stagger: 0.1, ease: "back.out(1.7)" },
+      content,
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" },
       "-=0.1"
     )
     tl.fromTo(
       progress,
       { scaleX: 1 },
-      { scaleX: 0, duration: 1.5, ease: "linear" },
-      "-=0.3"
+      { scaleX: 0, duration: 1.5, ease: "none" },
+      "-=0.1"
     )
 
     timerRef.current = setTimeout(() => {
-      gsap.to(overlay, {
+      gsap.to(backdrop, {
         opacity: 0,
         duration: 0.3,
         ease: "power2.in",
@@ -400,7 +460,7 @@ function FeedbackOverlay({
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }
-    gsap.to(overlayRef.current, {
+    gsap.to(backdropRef.current, {
       opacity: 0,
       duration: 0.3,
       ease: "power2.in",
@@ -411,42 +471,42 @@ function FeedbackOverlay({
   }
 
   return (
-    <div
-      ref={overlayRef}
-      className={`absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl ${isCorrect
-        ? theme === "light" ? "bg-green-600/90" : "bg-green-500/80"
-        : theme === "light" ? "bg-red-600/90" : "bg-red-500/80"
-        }`}
-      style={{ opacity: 0 }}
-    >
-
-      <div ref={contentRef} className="flex flex-col items-center gap-3 px-6 text-center">
+    <div ref={overlayRef} className="absolute inset-0 z-50 rounded-xl overflow-hidden">
+      <div
+        ref={backdropRef}
+        className={`absolute inset-0 rounded-xl pointer-events-none ${isCorrect ? "bg-green-500" : "bg-red-500"}`}
+        style={{ opacity: 0 }}
+      />
+      <div
+        ref={contentRef}
+        className="absolute inset-0 flex items-center justify-center text-white z-20 flex-col"
+        style={{ opacity: 0, scale: 0.8, pointerEvents: "auto" }}
+      >
         {isCorrect ? (
-          <Check className="h-16 w-16 text-white" strokeWidth={3} />
+          <CircleCheck className="h-14 w-14" />
         ) : (
-          <X className="h-16 w-16 text-white" strokeWidth={3} />
+          <CircleX className="h-14 w-14" />
         )}
-        <span className="text-3xl font-bold text-white">
+        <h1 className="mt-2 text-3xl font-bold">
           {isCorrect ? t("learn.session.correct") : t("learn.session.wrong")}
-        </span>
+        </h1>
         {!isCorrect && (
           <>
-            <span className="text-lg text-white/90">
+            <p className="mt-2 text-lg">
               {t("learn.session.answerWas", { answer: correctAnswer })}
-            </span>
-            <button
-              onClick={handleConsiderRight}
-              className="mt-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 transition-colors"
-            >
-              {t("learn.session.considerRight")}
-            </button>
+            </p>
+            <div className="mt-6 flex gap-4">
+              <Button type="button" scheme={theme} variant="transparent" className="text-white hover:bg-white/20" onClick={handleConsiderRight}>
+                {t("learn.session.considerRight")}
+              </Button>
+            </div>
           </>
         )}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/30">
+      <div className="absolute bottom-4 left-4 right-4 pointer-events-none z-10">
         <div
           ref={progressRef}
-          className="h-full bg-white origin-left"
+          className="h-2 origin-left rounded-full bg-white"
           style={{ transform: "scaleX(1)" }}
         />
       </div>
