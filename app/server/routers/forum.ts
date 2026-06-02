@@ -97,9 +97,9 @@ export const forumRouter = createTRPCRouter({
     .input(getPostInputSchema)
     .output(postSchema)
     .query(async ({ input, ctx }) => {
-      const { id } = input;
+      const { postId } = input;
       const post = await ctx.prisma.forumPost.findUnique({
-        where: { id },
+        where: { id: postId },
         include: {
           author: {
             select: {
@@ -231,9 +231,9 @@ export const forumRouter = createTRPCRouter({
     .input(votePostInputSchema)
     .output(votePostOutputSchema)
     .mutation(async ({ input, ctx }) => {
-      const { id, vote } = input;
+      const { postId, vote } = input;
       const post = await ctx.prisma.forumPost.findUnique({
-        where: { id },
+        where: { id: postId },
         select: { voters: true, deleted: true },
       });
       if (!post || post.deleted)
@@ -255,7 +255,7 @@ export const forumRouter = createTRPCRouter({
       const { votes, cachedTotalVotes } = calculateVoteTotals(voters);
 
       await ctx.prisma.forumPost.update({
-        where: { id },
+        where: { id: postId },
         data: {
           voters,
           votes,
@@ -266,7 +266,7 @@ export const forumRouter = createTRPCRouter({
       appLogger.info({
         event: "forum.post.voted",
         userId: ctx.user.id,
-        postId: id,
+        postId,
         vote,
         previousVote: currentVote ?? null,
         toggledOff: currentVote === vote,
