@@ -32,8 +32,6 @@ import { authClient } from "~/lib/auth/client";
 import type { Route } from "./+types/sign-up";
 import { getRequestSession } from "~/server/trpc";
 
-const USERNAME_PATTERN = /^[a-z0-9_-]+$/;
-
 function getSafeNextPath(requestUrl: string) {
   const next = new URL(requestUrl).searchParams.get("next");
 
@@ -42,16 +40,6 @@ function getSafeNextPath(requestUrl: string) {
 
   return next;
 }
-
-function getUsernameError(username: string) {
-  if (!username) return "";
-  if (!USERNAME_PATTERN.test(username)) {
-    return i18n.t("auth.signUp.usernameInvalid");
-  }
-
-  return "";
-}
-
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
   const result = await getRequestSession({
@@ -82,7 +70,15 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const usernameError = getUsernameError(username);
+  const usernameError = () => {
+    if (!username) return "";
+    if (!/^[a-z0-9_-]+$/.test(username)) {
+      return i18n.t("auth.signUp.usernameInvalid");
+    }
+  
+    return "";
+  }
+  
   const passResult = password ? zxcvbn(password) : null;
   const score = passResult?.score ?? 0;
 
