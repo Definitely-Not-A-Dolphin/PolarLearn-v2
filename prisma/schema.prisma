@@ -295,6 +295,7 @@ model List {
 }
 
 // NOTE: This schema has to be **IDENTICAL** to the Zustand store for seamless resuning of sessions.
+// edit: fuck that (partially)
 model LearnSession {
   id         String  @id
   listId     String
@@ -303,6 +304,7 @@ model LearnSession {
   user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   queue      Json[]
   answerLog  Json[]
+  mode       String?
   isComplete Boolean @default(false)
 
   createdAt DateTime @default(now())

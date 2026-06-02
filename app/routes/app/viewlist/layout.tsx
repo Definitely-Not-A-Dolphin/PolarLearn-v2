@@ -146,8 +146,8 @@ export default function Layout() {
   });
   const learningModes = [
     {
-      mode: "quiz" as const,
-      title: t("learn.modes.quiz"),
+      mode: "learn" as const,
+      title: t("learn.modes.learn"),
       icon: GraduationCap,
     },
     {

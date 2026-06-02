@@ -29,7 +29,7 @@
   },
   "learn": {
     "modes": {
-      "quiz": "Quiz",
+      "learn": "Leren",
       "test": "Toets",
       "hint": "Hint",
       "multiplechoice": "Meerkeuze"

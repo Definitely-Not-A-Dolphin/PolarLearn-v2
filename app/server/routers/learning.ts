@@ -28,24 +28,9 @@ export const learningRouter = createTRPCRouter({
   generateLearnSession: protectedProcedure
     .input(z.object({
       listId: z.string(),
-      mode: modes.optional().default('quiz'),
+      mode: modes.optional().default('learn'),
     }))
     .mutation(async ({ input, ctx }) => {
-      const existingSession = await prisma.learnSession.findFirst({
-        where: {
-          listId: input.listId,
-          userId: ctx.user.id,
-          isComplete: false,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      })
-
-      if (existingSession) {
-        return { id: existingSession.id }
-      }
-
       const list = await prisma.list.findFirst({
         where: {
           id: input.listId,
@@ -79,7 +64,7 @@ export const learningRouter = createTRPCRouter({
         userId: ctx.user.id,
         sessionId: session.id,
         listId: input.listId,
-        mode: input.mode ?? "quiz",
+        mode: input.mode ?? "learn",
         queueSize: queue.length,
       })
 
@@ -180,6 +165,7 @@ export const learningRouter = createTRPCRouter({
           listId: true,
           updatedAt: true,
           queue: true,
+          mode: true,
           answerLog: true,
           list: {
             select: {
@@ -216,5 +202,34 @@ export const learningRouter = createTRPCRouter({
           },
         }
       })
-    })
+    }),
+  rmSession: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = await prisma.learnSession.findFirst({
+        where: {
+          id: input.sessionId,
+          userId: ctx.user.id,
+        },
+      })
+
+      if (!session) {
+        throw new TRPCError({ code: 'NOT_FOUND' })
+      }
+
+      await prisma.learnSession.delete({
+        where: {
+          id: input.sessionId,
+        },
+      })
+
+      appLogger.info({
+        event: "learn.session.deleted",
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        listId: session.listId,
+      })
+    }),
 })

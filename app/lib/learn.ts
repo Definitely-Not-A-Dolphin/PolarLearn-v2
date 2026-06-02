@@ -17,7 +17,7 @@
 import { z } from 'zod'
 import type { ListItem } from './list'
 
-export const modes = z.enum(["test", "hint", "multiplechoice", "quiz"])
+export const modes = z.enum(["test", "hint", "multiplechoice", "learn"])
 
 export const queueQuestion = z.object({
   id: z.string(),
@@ -83,7 +83,7 @@ export function createLearningQueue(items: ListItem[], mode: z.infer<typeof mode
   }
 
   for (const item of items) {
-    if (mode === "quiz") {
+    if (mode === "learn") {
       queue.push({
         id: crypto.randomUUID(),
         type: "test",

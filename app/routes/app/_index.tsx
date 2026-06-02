@@ -92,6 +92,15 @@ export default function HomePage() {
       toast.error(t("errors.unknown"));
     },
   });
+  const removeSessionMutation = useMutation({
+    ...trpc.learning.rmSession.mutationOptions(),
+    onSuccess: async () => {
+      await revalidator.revalidate();
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"));
+    }
+  });
 
   const { recentItems, recentSessions } = useLoaderData<LoaderData>();
   return (
@@ -293,6 +302,7 @@ export default function HomePage() {
                   <div className="min-w-0">
                     <span className="block truncate text-base font-semibold">
                       {session.list.name ?? t("lists.namePlaceholder")}
+                      
                     </span>
                   </div>
                 </div>
@@ -319,15 +329,13 @@ export default function HomePage() {
                   </div>
                   <button
                     type="button"
-                    aria-label={t("home.resumeSession")}
-                    title={t("home.resumeSession")}
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-300 text-neutral-700 transition-all hover:bg-neutral-400 dark:bg-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-600"
                     onClick={(event) => {
                       event.stopPropagation();
-                      void navigate(`/app/session/${session.id}`);
+                      removeSessionMutation.mutate({ sessionId: session.id });
                     }}
                   >
-                    <Play className="h-4 w-4" />
+                    <ListX className="text-red-400" />
                   </button>
                 </div>
               </div>
