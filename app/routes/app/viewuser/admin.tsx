@@ -267,8 +267,6 @@ export default function ViewUserAdminPage() {
   const platformBanReason = typeof target.banReason === "string" ? target.banReason.trim() : "";
   const forumBanReason = typeof target.forumBanReason === "string" ? target.forumBanReason.trim() : "";
 
-  const actionButtonClass = "w-full justify-start";
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
@@ -319,7 +317,7 @@ export default function ViewUserAdminPage() {
         <Button
           scheme={theme}
           variant="transparent"
-          className={actionButtonClass}
+          className={"w-full justify-start"}
           icon={<KeyRound className="size-4" />}
           onClick={() => {
             setResetPw("");
@@ -334,7 +332,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+            className={"w-full justify-start"}
             icon={<Unlock className="size-4" />}
             onClick={() => setUnbanOpen(true)}
           >
@@ -344,7 +342,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+              className={"w-full justify-start"}
             icon={<Lock className="size-4" />}
             onClick={() => { setBanReason(""); setBanOpen(true); }}
           >
@@ -356,7 +354,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+            className={"w-full justify-start"}
             icon={<MessageCircle className="size-4" />}
             onClick={() => setForumUnbanOpen(true)}
           >
@@ -366,7 +364,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+              className={"w-full justify-start"}
             icon={<Ban className="size-4" />}
             onClick={() => { setBanReason(""); setForumBanOpen(true); }}
           >
@@ -377,7 +375,7 @@ export default function ViewUserAdminPage() {
         <Button
           scheme={theme}
           variant="transparent"
-          className={actionButtonClass}
+          className={"w-full justify-start"}
           icon={<Trash2 className="size-4" />}
           onClick={() => setDeleteOpen(true)}
         >
@@ -387,7 +385,7 @@ export default function ViewUserAdminPage() {
         <Button
           scheme={theme}
           variant="transparent"
-          className={actionButtonClass}
+          className={"w-full justify-start"}
           icon={<Bell className="size-4" />}
           onClick={() => { setNotifIcon("info"); setNotifContent(""); setNotifOpen(true); }}
         >
@@ -398,7 +396,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+            className={"w-full justify-start"}
             onClick={() => { void handleSetRole("user"); }}
             disabled={roleChanging !== null}
             icon={roleChanging === "demote" ? <Loader2 className="size-4 animate-spin" /> : <UserRound className="size-4" />}
@@ -409,7 +407,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+              className={"w-full justify-start"}
             icon={roleChanging === "promote" ? <Loader2 className="size-4 animate-spin" /> : <ShieldUser className="size-4" />}
             onClick={() => { void handleSetRole("admin"); }}
             disabled={roleChanging !== null}
@@ -422,7 +420,7 @@ export default function ViewUserAdminPage() {
           <Button
             scheme={theme}
             variant="transparent"
-            className={actionButtonClass}
+            className={"w-full justify-start"}
             onClick={() => { void handleVerifyEmail(); }}
             disabled={verifyPending}
             icon={verifyPending ? <Loader2 className="size-4 animate-spin" /> : <MailCheck className="size-4" />}
@@ -434,7 +432,7 @@ export default function ViewUserAdminPage() {
         <Button
           scheme={theme}
           variant="transparent"
-          className={actionButtonClass}
+          className={"w-full justify-start"}
           icon={impersonatePending ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
           onClick={() => { void handleImpersonate(); }}
           disabled={impersonatePending}
