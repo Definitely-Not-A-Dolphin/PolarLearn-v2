@@ -16,9 +16,10 @@
 
 import { redirect, useLoaderData, useNavigate, useRevalidator } from "react-router";
 import i18n from "~/i18n";
-import { Clock3, List, ListX, Play, Star } from "lucide-react";
+import { CheckSquare, Clock3, GraduationCap, Lightbulb, List, ListX, PencilLine, Play, Star } from "lucide-react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Progress } from "~/components/ui/progress";
+import { Badge } from "~/components/ui/badge";
 import {
   RecentListsSchema,
   RecentSubjectsSchema,
@@ -31,6 +32,7 @@ import { useTRPC } from "~/server/react";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import type { Route } from "./+types/_index";
 import { appRouter } from "~/server/main";
+import { learningModes } from "~/lib/learn";
 
 interface LoaderData {
   recentItems: {
@@ -46,6 +48,7 @@ interface LoaderData {
     id: string;
     listId: string;
     updatedAt: string;
+    mode: string;
     list: {
       id: string;
       name: string;
@@ -103,6 +106,7 @@ export default function HomePage() {
   });
 
   const { recentItems, recentSessions } = useLoaderData<LoaderData>();
+
   return (
     <div className="flex min-w-0 flex-col p-4">
       <h1 className="font-bold text-3xl">{t("home.quickstart")}</h1>
@@ -300,9 +304,21 @@ export default function HomePage() {
                     <Clock3 size={20} className="shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <span className="block truncate text-base font-semibold">
-                      {session.list.name ?? t("lists.namePlaceholder")}
-                      
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-base font-semibold">
+                        {session.list.name ?? "Internal Error Occurred"}
+                      </span>
+                      {(() => {
+                        const modeConfig = learningModes.find(m => m.mode === session.mode);
+                        if (!modeConfig) return null;
+                        const Icon = modeConfig.icon;
+                        return (
+                          <Badge variant={"outline"} className="dark:bg-neutral-700 dark:text-white text-black bg-neutral-300 rounded-sm">
+                            <Icon className="size-3" />
+                            {modeConfig.title}
+                          </Badge>
+                        );
+                      })()}
                     </span>
                   </div>
                 </div>

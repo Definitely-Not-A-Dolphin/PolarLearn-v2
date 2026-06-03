@@ -53,6 +53,7 @@ export const learningRouter = createTRPCRouter({
           id: crypto.randomUUID(),
           listId: input.listId,
           userId: ctx.user.id,
+          mode: input.mode,
           queue,
           answerLog: [],
           isComplete: false,
@@ -84,6 +85,7 @@ export const learningRouter = createTRPCRouter({
           id: true,
           listId: true,
           queue: true,
+          mode: true,
           answerLog: true,
           isComplete: true,
           createdAt: true,
@@ -195,6 +197,7 @@ export const learningRouter = createTRPCRouter({
           listId: session.listId,
           updatedAt: session.updatedAt.toISOString(),
           list: session.list,
+          mode: session.mode,
           progress: {
             completed,
             total,

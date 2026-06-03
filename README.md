@@ -17,7 +17,7 @@
 
 # PolarLearn
 
-Polarlearn is a free and open-source learning platform designed to provide the best learning experience for students.
+PolarLearn is a free and open-source learning platform designed to provide the best learning experience for students.
 
 ## Features
 - **Open Source**: We are transparent about our code and we welcome contributions from the community.

@@ -56,6 +56,7 @@ import {
 } from "~/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import type { LoaderData, ListData } from "~/lib/viewlist";
+import { learningModes } from "~/lib/learn";
 
 export async function loader({
   params,
@@ -144,28 +145,6 @@ export default function Layout() {
       },
     }),
   });
-  const learningModes = [
-    {
-      mode: "learn" as const,
-      title: t("learn.modes.learn"),
-      icon: GraduationCap,
-    },
-    {
-      mode: "test" as const,
-      title: t("learn.modes.test"),
-      icon: PencilLine,
-    },
-    {
-      mode: "hint" as const,
-      title: t("learn.modes.hint"),
-      icon: Lightbulb,
-    },
-    {
-      mode: "multiplechoice" as const,
-      title: t("learn.modes.multiplechoice"),
-      icon: CheckSquare,
-    },
-  ] as const;
   return (
     <div className="p-4">
       <div className="flex flex-row items-center gap-3">
