@@ -149,7 +149,7 @@ export default function Layout() {
     <div className="p-4">
       <div className="flex flex-row items-center gap-3">
         {icon}
-        <h1 className="text-4xl font-bold">{data.list.name}</h1>
+        <h1 className="min-w-0 wrap-break-word text-4xl font-bold">{data.list.name}</h1>
       </div>
       {/* <p>{data.list.description}</p> implement later */}
       <p className="mt-4">

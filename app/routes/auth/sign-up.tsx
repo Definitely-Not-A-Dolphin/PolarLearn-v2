@@ -15,14 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Button, Input } from "@polarnl/polarui-react";
-import { Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
-import {
-  Link,
-  redirect,
-  useLoaderData,
-  useNavigate,
-  useRouteLoaderData,
-} from "react-router";
+import { Mail, Lock, User, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
+import { Link, redirect, useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
 import { useState } from "react";
 import { zxcvbn } from "@zxcvbn-ts/core";
 import { toast } from "sonner";
@@ -40,12 +34,10 @@ function getSafeNextPath(requestUrl: string) {
 
   return next;
 }
+
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
-  const result = await getRequestSession({
-    headers,
-    request: loaderArgs.request,
-  });
+  const result = await getRequestSession({ headers, request: loaderArgs.request });
   const next = getSafeNextPath(loaderArgs.request.url);
   if (result?.user) return redirect(next);
 
@@ -65,20 +57,11 @@ export default function SignUpPage() {
   const t = i18n.t;
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("")
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const usernameError = () => {
-    if (!username) return "";
-    if (!/^[a-z0-9_-]+$/.test(username)) {
-      return i18n.t("auth.signUp.usernameInvalid");
-    }
-  
-    return "";
-  }
-  
   const passResult = password ? zxcvbn(password) : null;
   const score = passResult?.score ?? 0;
 
@@ -93,13 +76,9 @@ export default function SignUpPage() {
     e.preventDefault();
     if (isLoading) return;
 
-    if (usernameError) {
-      toast.error(usernameError);
-      return;
-    }
-
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
+    const username = formData.get("username") as string;
     const email = formData.get("email") as string;
     const passwordValue = formData.get("password") as string;
 
@@ -127,8 +106,8 @@ export default function SignUpPage() {
     } catch (err) {
       toast.error(
         err instanceof Error
-          ? (err.message ?? t("auth.errors.unknown"))
-          : t("auth.errors.unknown"),
+          ? err.message ?? t("auth.errors.unknown")
+          : t("auth.errors.unknown")
       );
     } finally {
       setIsLoading(false);
@@ -146,51 +125,30 @@ export default function SignUpPage() {
         </p>
       </div>
       <div className="p-10 w-full md:w-[33%] flex flex-col justify-center">
-        <h1 className="text-4xl font-bold mb-2 text-white">
-          {t("auth.signUp.title")}
-        </h1>
-        <p className="text-lg mb-8 text-neutral-300">
-          {t("auth.signUp.subtitle")}
-        </p>
-        <form
-          onSubmit={(e) => {
-            void handleSubmit(e);
-          }}
-        >
+        <h1 className="text-4xl font-bold mb-2 text-white">{t("auth.signUp.title")}</h1>
+        <p className="text-lg mb-8 text-neutral-300">{t("auth.signUp.subtitle")}</p>
+        <form onSubmit={(e) => { void handleSubmit(e); }}>
           <label
             htmlFor="username"
             className={`block mb-2 text-sm font-medium ${theme === "dark" ? "text-white" : "text-neutral-900"}`}
           >
             {t("auth.signUp.username")}
           </label>
-          <div className="mb-5">
-            <Input
-              id="username"
-              name="username"
-              scheme={theme === "dark" ? "dark" : "light"}
-              icon={<User />}
-              placeholder={t("auth.signUp.usernamePlaceholder")}
-              className="w-full"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              aria-invalid={usernameError ? "true" : undefined}
-              aria-describedby={usernameError ? "username-error" : undefined}
-              required
-            />
-            {usernameError ? (
-              <p
-                id="username-error"
-                className={`mt-2 text-sm ${theme === "dark" ? "text-red-300" : "text-red-600"}`}
-              >
-                {usernameError}
-              </p>
-            ) : null}
-          </div>
+          <Input
+            id="username"
+            name="username"
+            scheme={theme === "dark" ? "dark" : "light"}
+            icon={<User />}
+            placeholder={t("auth.signUp.usernamePlaceholder")}
+            className="w-full mb-5"
+            onChange={(e) => { setUsername(e.target.value) }}
+          />
+          {!/^[a-z0-9_-]+$/.test(username) && username !== "" && (
+            <p className="-mt-4 mb-5 text-sm text-red-400 font-medium flex items-center gap-1.5">
+              <XCircle />
+              <span>{t("auth.signUp.usernameInvalid")}</span>
+            </p>
+          )}
 
           <label
             htmlFor="email"
@@ -223,15 +181,11 @@ export default function SignUpPage() {
               placeholder={t("auth.signUp.passwordPlaceholder")}
               className="w-full pr-10"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
+              onChange={(e) => { setPassword(e.target.value); }}
             />
             <button
               type="button"
-              onClick={() => {
-                setShowPassword(!showPassword);
-              }}
+              onClick={() => { setShowPassword(!showPassword); }}
               className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
             >
               {showPassword ? <Eye /> : <EyeOff />}
@@ -257,9 +211,7 @@ export default function SignUpPage() {
                     >
                       <div
                         className={`absolute inset-0 rounded-full origin-left transition-transform duration-300 ease-out ${activeColor} ${isActive ? "scale-x-100" : "scale-x-0"}`}
-                        style={{
-                          transitionDelay: `${((level - 1) * 70).toString()}ms`,
-                        }}
+                        style={{ transitionDelay: `${((level - 1) * 70).toString()}ms` }}
                       />
                     </div>
                   );

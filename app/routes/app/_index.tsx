@@ -282,7 +282,7 @@ export default function HomePage() {
                 key={session.id}
                 role="button"
                 tabIndex={0}
-                className="grid w-full grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] items-center gap-x-4 rounded-xl bg-neutral-200 px-4 py-3 transition-all hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 cursor-pointer"
+                className="grid w-full grid-cols-1 gap-x-4 gap-y-2 rounded-xl bg-neutral-200 px-4 py-3 transition-all hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 cursor-pointer lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] lg:items-center"
                 onClick={() => {
                   void navigate(`/app/session/${session.id}`);
                 }}
