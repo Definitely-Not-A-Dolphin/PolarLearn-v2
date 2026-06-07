@@ -7,7 +7,6 @@ Things marked with (?) are feature suggestions and might not be added.
 - [ ] Add Security Tab (Admin Panel)
 - [ ] Finish "General" admin tab (admin panel)
 - [ ] Add Profile Pictures
-- (?) Add Documents (upload a document and publish them for viewing)
 - (?) Group Discovery (public only)
 
 **Known Bugs/Issues**
