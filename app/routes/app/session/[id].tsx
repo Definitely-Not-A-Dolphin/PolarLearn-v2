@@ -28,9 +28,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { toast } from "sonner";
 import { generateHint } from "~/lib/learn";
-import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX } from "lucide-react";
+import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
-import i18n from "~/i18n";
+import i18n, { t } from "~/i18n";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id
@@ -100,6 +101,20 @@ function TopBar({ theme }: { theme: "light" | "dark" }) {
         <Progress value={progress.percentage} className="h-2" />
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="px-1 py-1 bg-neutral-300 dark:bg-neutral-700 rounded-full hover:bg-neutral-400 hover:dark:bg-neutral-600 cursor-pointer transition-all">
+              <Settings />
+            </div>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                {t("learn.settings.dialogTitle")}
+              </DialogTitle>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
         <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${theme === "dark" ? "bg-green-900/50" : "bg-green-100"}`}>
           <Check className={`h-4 w-4 ${theme === "dark" ? "text-green-400" : "text-green-700"}`} />
           <span className={`text-sm font-medium ${theme === "dark" ? "text-green-400" : "text-green-700"}`}>{correctCount}</span>

@@ -28,6 +28,9 @@
     "empty": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!"
   },
   "learn": {
+    "settings": {
+      "dialogTitle": "Wijzig je leerinstellingen"
+    },
     "modes": {
       "learn": "Leren",
       "test": "Toets",
@@ -245,7 +248,8 @@
         "platformBanned": "Geblokkeerd",
         "forumBanned": "Forum geblokkeerd",
         "verified": "Geverifieerd",
-        "unverified": "Niet geverifieerd"
+        "unverified": "Niet geverifieerd",
+        "admin": "Administrator"
       },
       "actions": {
         "platformBan": "Platform ban",
