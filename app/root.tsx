@@ -171,12 +171,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     details =
       error.status === 404 ? t("errors.404.message") : t("errors.500.message");
     technicalDetails = error.statusText || error.status.toString();
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
+  } else if (error && error instanceof Error) {
     details = error.message || details;
     stack = error.stack;
     technicalDetails = error.message;
-  } else if (error instanceof Error) {
-    technicalDetails = error.message || technicalDetails;
   }
 
   const [isMoreInfoOpen, setIsMoreInfoOpen] = useState(false);
