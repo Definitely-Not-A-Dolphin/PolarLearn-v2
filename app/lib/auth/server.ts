@@ -95,14 +95,17 @@ export const auth = betterAuth({
       },
       forumBanned: {
         type: "boolean",
+        input: false
       },
       forumBanReason: {
         type: "string",
         nullable: true,
+        input: false
       },
       banReason: {
         type: "string",
         nullable: true,
+        input: false
       },
     }
   },
@@ -253,15 +256,14 @@ export const auth = betterAuth({
           return
         }
         case "/reset-password": {
-          const adminSession = ctx.context.session
-          if (!adminSession) return
+          const session = ctx.context.session
+          if (!session) return
 
-          const body = ctx.body as Record<string, unknown> | undefined
           appLogger.info({
             event: "auth.password.reset",
             path: ctx.path,
-            userId: adminSession.user.id,
-            email: adminSession.user.email,
+            userId: session.user.id,
+            email: session.user.email,
             ipAddress,
             userAgent,
           })

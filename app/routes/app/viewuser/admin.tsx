@@ -37,7 +37,7 @@ import { authClient } from "~/lib/auth/client";
 import { notificationIcons } from "~/lib/notifications";
 import { useTRPC } from "~/server/react";
 import i18n from "~/i18n";
-import { type Route } from './+types/admin';
+import type { Route } from "./+types/admin";
 import { getRequestSession } from "~/server/trpc";
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
