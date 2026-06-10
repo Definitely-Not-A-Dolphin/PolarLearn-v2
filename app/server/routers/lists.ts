@@ -469,7 +469,7 @@ export const ListRouter = createTRPCRouter({
       const recentListsSlice = lists.slice(0, 20)
 
       const seen = new Set<string>()
-      const deduped = [...recentListsSlice].reverse().filter((item) => {
+      const deduped = recentListsSlice.filter((item) => {
         if (seen.has(item.id)) return false
         seen.add(item.id)
         return true
@@ -544,7 +544,7 @@ export const ListRouter = createTRPCRouter({
       const recentListsSlice = lists.slice(0, 20)
 
       const seen = new Set<string>()
-      const deduped = [...recentListsSlice].reverse().filter((item) => {
+      const deduped = recentListsSlice.filter((item) => {
         if (seen.has(item.id)) return false
         seen.add(item.id)
         return true

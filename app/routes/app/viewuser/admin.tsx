@@ -57,12 +57,7 @@ export default function ViewUserAdminPage() {
   const revalidator = useRevalidator();
   const trpc = useTRPC();
 
-  const viewerRole = rootData?.user?.role;
   const target = layoutData?.user;
-
-  if (viewerRole !== "admin" || !target) {
-    return null;
-  }
 
   const targetLabel = target.displayUsername ?? target.name ?? target.id;
 
