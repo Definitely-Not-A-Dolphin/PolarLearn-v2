@@ -7,6 +7,7 @@ Things marked with (?) are feature suggestions and might not be added.
 - [ ] Add Security Tab (Admin Panel)
 - [ ] Finish "General" admin tab (admin panel)
 - [ ] Add Profile Pictures
+- [ ] Folders
 - (?) Add Admin Logs to Admin Panel
 - (?) Discord Webhooks for Admin Logs
 - (?) Add Documents (upload a document and publish them for viewing)
@@ -28,6 +29,6 @@ Things marked with (?) are feature suggestions and might not be added.
 - [ ] Add icons to admin panel categories
 - [ ] Add Group Logo's
 - [ ] Add sorting to forum (?) (based on name, date and up/downvotes)
-- [ ] Question/Answer switching when learning
+- [x] Question/Answer switching when learning
 - [ ] Sort subjects alphabetically
 - (?) Improve Forum Quality by splitting it into categories you select when you open the forum.

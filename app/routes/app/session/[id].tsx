@@ -18,10 +18,10 @@ import type { Route } from "./+types/[id]";
 import { redirect } from "react-router";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
-import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { useLoaderData, useNavigate, useRouteLoaderData, useLocation } from "react-router";
 import { LearnStoreProvider, useLearnStore } from "./store";
 import { Input, Button } from "@polarnl/polarui-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 
 import { useMutation } from "@tanstack/react-query";
@@ -31,7 +31,10 @@ import { generateHint } from "~/lib/learn";
 import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
 import i18n, { t } from "~/i18n";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
+import { Label } from "~/components/ui/label";
+import { learningModes, modes } from "~/lib/learn";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id
@@ -62,6 +65,7 @@ export default function LearnPage() {
 
   return (
     <LearnStoreProvider
+      key={session.id}
       initialData={{
         listId: session.listId,
         queue: session.queue,
@@ -69,7 +73,7 @@ export default function LearnPage() {
         isComplete: session.isComplete,
       }}
     >
-      <TopBar theme={theme} />
+      <TopBar theme={theme} session={session} />
       <div className={`flex min-h-dvh w-full items-center justify-center p-4 sm:p-6 ${theme === "dark" ? "bg-neutral-900" : "bg-neutral-50"}`}>
         <LearnTool sessionId={session.id} theme={theme} />
       </div>
@@ -77,11 +81,54 @@ export default function LearnPage() {
   )
 }
 
-function TopBar({ theme }: { theme: "light" | "dark" }) {
+type LoaderData = Exclude<Awaited<ReturnType<typeof loader>>, Response>
+
+function TopBar({ theme, session }: { theme: "light" | "dark"; session: LoaderData["session"] }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const store = useLearnStore()
   const { answerLog, getProgress } = store
   const progress = getProgress()
+  const rpc = useTRPC()
+
+  const [selectedMode, setSelectedMode] = useState<string>(session.mode ?? "learn")
+  const [selectedAsk, setSelectedAsk] = useState<string>(session.ask ?? "q")
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  useEffect(() => {
+    setDialogOpen(false)
+  }, [location.pathname])
+
+  const changeSettingsMutation = useMutation({
+    ...rpc.learning.changeLearnSettings.mutationOptions(),
+  })
+  const rmSessionMutation = useMutation({
+    ...rpc.learning.rmSession.mutationOptions(),
+  })
+  const generateSessionMutation = useMutation({
+    ...rpc.learning.generateLearnSession.mutationOptions(),
+    onSuccess: (data) => {
+      rmSessionMutation.mutate({ sessionId: session.id })
+      void navigate(`/app/session/${data.id}`)
+    },
+    onError: () => {
+      toast.error(t("learn.settings.failedToSave"))
+    },
+  })
+
+  const handleSave = async () => {
+    const parsedMode = modes.safeParse(selectedMode)
+    if (!parsedMode.success) return
+
+    await changeSettingsMutation.mutateAsync({
+      id: session.listId,
+      opts: { ask: selectedAsk as "q" | "a" | "both", },
+    })
+    generateSessionMutation.mutate({
+      listId: session.listId,
+      mode: parsedMode.data,
+    })
+  }
 
   const correctCount = answerLog.filter((entry) => entry.isCorrect).length
   const incorrectCount = answerLog.filter((entry) => !entry.isCorrect).length
@@ -101,7 +148,13 @@ function TopBar({ theme }: { theme: "light" | "dark" }) {
         <Progress value={progress.percentage} className="h-2" />
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          if (open) {
+            setSelectedMode(session.mode ?? "learn")
+            setSelectedAsk(session.ask ?? "q")
+          }
+          setDialogOpen(open)
+        }}>
           <DialogTrigger asChild>
             <div className="px-1 py-1 bg-neutral-300 dark:bg-neutral-700 rounded-full hover:bg-neutral-400 hover:dark:bg-neutral-600 cursor-pointer transition-all">
               <Settings />
@@ -113,6 +166,55 @@ function TopBar({ theme }: { theme: "light" | "dark" }) {
                 {t("learn.settings.dialogTitle")}
               </DialogTitle>
             </DialogHeader>
+            <div className="flex flex-col gap-6 py-2">
+              <div className="flex flex-col gap-3">
+                <p className="text-sm font-medium">{t("learn.settings.askLabel")}</p>
+                <RadioGroup value={selectedAsk} onValueChange={setSelectedAsk} className="flex flex-col gap-2">
+                  {(() => {
+                    const example = session.queue[0]
+                    const word = example?.question ?? "…"
+                    const definition = example?.answer[0] ?? "…"
+                    return (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="q" id="ask-q" />
+                          <Label htmlFor="ask-q">{t("learn.settings.askQuestion", { word })}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="a" id="ask-a" />
+                          <Label htmlFor="ask-a">{t("learn.settings.askAnswer", { definition })}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="both" id="ask-both" />
+                          <Label htmlFor="ask-both">{t("learn.settings.askMixed", { word, definition })}</Label>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </RadioGroup>
+              </div>
+              <div className="flex flex-col gap-3">
+                <p className="text-sm font-medium">{t("learn.settings.modeLabel")}</p>
+                <RadioGroup value={selectedMode} onValueChange={setSelectedMode} className="flex flex-col gap-2">
+                  {learningModes.map(({ mode, title }) => (
+                    <div key={mode} className="flex items-center gap-2">
+                      <RadioGroupItem value={mode} id={`mode-${mode}`} />
+                      <Label htmlFor={`mode-${mode}`}>{title}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{t("learn.settings.saveWarning")}</p>
+            <DialogFooter>
+              <Button
+                scheme={theme}
+                onClick={() => { void handleSave() }}
+                disabled={changeSettingsMutation.isPending || generateSessionMutation.isPending || rmSessionMutation.isPending}
+              >
+                {t("navigation.confirm")}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
         <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${theme === "dark" ? "bg-green-900/50" : "bg-green-100"}`}>

@@ -17,7 +17,12 @@
 import { z } from "zod";
 import type { ListItem } from "./list";
 import { t } from "~/i18n";
-import { GraduationCap, PencilLine, Lightbulb, CheckSquare } from "lucide-react";
+import {
+  GraduationCap,
+  PencilLine,
+  Lightbulb,
+  CheckSquare,
+} from "lucide-react";
 
 export const modes = z.enum(["test", "hint", "multiplechoice", "learn"]);
 
@@ -77,59 +82,66 @@ export function generateHint(answer: string): string {
 export function createLearningQueue(
   items: ListItem[],
   mode: z.infer<typeof modes>,
+  ask: "q" | "a" | "both" = "q",
 ): z.infer<typeof queueSchema> {
   const queue: z.infer<typeof queueSchema> = [];
 
-  const getMultipleChoiceDecoys = (item: ListItem): string[] => {
-    const otherAnswers = items
-      .filter((i) => i.id !== item.id)
-      .map((i) => i.answer);
-
-    const decoys = shuffleArray(otherAnswers).slice(0, 3);
-
-    return decoys;
-  };
+  const directions = ask === "both" ? (["q", "a"] as const) : ([ask] as const);
 
   for (const item of items) {
-    if (mode === "learn") {
-      queue.push({
-        id: crypto.randomUUID(),
-        type: "test",
-        question: item.question,
-        answer: [item.answer],
-      });
-      queue.push({
-        id: crypto.randomUUID(),
-        type: "hint",
-        question: item.question,
-        answer: [item.answer],
-      });
-      queue.push({
-        id: crypto.randomUUID(),
-        type: "multiplechoice",
-        question: item.question,
-        answer: [item.answer],
-        decoys: getMultipleChoiceDecoys(item),
-      });
-    }
+    for (const direction of directions) {
+      const isReversed = direction === "a";
+      const getQuestion = (i: ListItem) => (isReversed ? i.answer : i.question);
+      const getAnswer = (i: ListItem) => (isReversed ? i.question : i.answer);
 
-    if (mode === "test" || mode === "hint") {
-      queue.push({
-        id: crypto.randomUUID(),
-        type: mode,
-        question: item.question,
-        answer: [item.answer],
-      });
-    }
+      const getMultipleChoiceDecoys = (target: ListItem): string[] => {
+        const otherAnswers = items
+          .filter((i) => i.id !== target.id)
+          .map((i) => getAnswer(i));
 
-    if (mode === "multiplechoice") {
-      queue.push({
-        id: crypto.randomUUID(),
-        type: "multiplechoice",
-        question: item.question,
-        answer: [item.answer],
-        decoys: getMultipleChoiceDecoys(item),
-      });
+        return shuffleArray(otherAnswers).slice(0, 3);
+      };
+
+      if (mode === "learn") {
+        queue.push({
+          id: crypto.randomUUID(),
+          type: "test",
+          question: getQuestion(item),
+          answer: [getAnswer(item)],
+        });
+        queue.push({
+          id: crypto.randomUUID(),
+          type: "hint",
+          question: getQuestion(item),
+          answer: [getAnswer(item)],
+        });
+        queue.push({
+          id: crypto.randomUUID(),
+          type: "multiplechoice",
+          question: getQuestion(item),
+          answer: [getAnswer(item)],
+          decoys: getMultipleChoiceDecoys(item),
+        });
+      }
+
+      if (mode === "test" || mode === "hint") {
+        queue.push({
+          id: crypto.randomUUID(),
+          type: mode,
+          question: getQuestion(item),
+          answer: [getAnswer(item)],
+        });
+      }
+
+      if (mode === "multiplechoice") {
+        queue.push({
+          id: crypto.randomUUID(),
+          type: "multiplechoice",
+          question: getQuestion(item),
+          answer: [getAnswer(item)],
+          decoys: getMultipleChoiceDecoys(item),
+        });
+      }
     }
   }
 
@@ -158,3 +170,12 @@ export const learningModes = [
     icon: CheckSquare,
   },
 ] as const;
+
+export const listPrefsSchema = z.record(
+  z.string(),
+  z.object({
+    ask: z.enum(["q", "a", "both"]),
+  }),
+);
+
+export type listPrefs = z.infer<typeof listPrefsSchema>;

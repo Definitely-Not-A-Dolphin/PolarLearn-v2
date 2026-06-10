@@ -29,7 +29,14 @@
   },
   "learn": {
     "settings": {
-      "dialogTitle": "Wijzig je leerinstellingen"
+      "dialogTitle": "Wijzig je leerinstellingen",
+      "saveWarning": "Je sessie zal opnieuw aangemaakt worden nadat je deze instellingen wijzigt.",
+      "askLabel": "Wat wil je beantwoorden?",
+      "modeLabel": "Leermodus",
+      "askQuestion": "Vraag → Antwoord (bijv. Vraag: {{word}})",
+      "askAnswer": "Antwoord → Vraag (bijv. Vraag: {{definition}})",
+      "askMixed": "Gemengd (bijv. soms Vraag: {{word}}, soms Vraag: {{definition}})",
+      "failedToSave": "Instellingen konden niet opgeslagen worden."
     },
     "modes": {
       "learn": "Leren",
