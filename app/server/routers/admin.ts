@@ -56,4 +56,23 @@ export const adminRouter = {
       })
       return input.banned ? 'BANNED' : 'UNBANNED'
     }),
+  setAnnouncement: protectedProcedure
+    .input(z.object({
+      content: z.string().max(5000),
+      scope: z.string().optional() // if no scope then global
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'nice try lmao' })
+      }
+      await ctx.prisma.config.update({
+        where: {
+          key: "announcement",
+          scope: input.scope || "global",
+        },
+        data: {
+          value: input.content,
+        }
+      })
+    })
 } satisfies TRPCRouterRecord

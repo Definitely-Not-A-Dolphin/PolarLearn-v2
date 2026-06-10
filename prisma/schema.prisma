@@ -395,3 +395,13 @@ model Notification {
 
   @@index([userId])
 }
+
+model Config {
+  id    String @id
+  scope String // global for entire platform, or tenant-specific (uuid)
+  key   String @unique
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

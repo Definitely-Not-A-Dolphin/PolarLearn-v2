@@ -43,7 +43,7 @@ import { getRequestSession } from "~/server/trpc";
 export async function loader(loaderArgs: Route.LoaderArgs) {
   const headers = new Headers(loaderArgs.request.headers);
   const result = await getRequestSession({ headers, request: loaderArgs.request });
-  if (result?.user) return redirect("/app");
+  if (result?.user.role !== "admin") return redirect("/app");
 }
 
 export default function ViewUserAdminPage() {

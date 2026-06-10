@@ -18,6 +18,10 @@ import { t } from "~/i18n";
 
 export default function GeneralAdminPage() {
   return (
-    <p className="text-sm text-muted-foreground">bla bla placeholder</p>
+    <div className="p-4">
+      <div className="dark:bg-neutral-800 bg-neutral-200 border dark:border-neutral-700 border-neutral-300 rounded-lg">
+        
+      </div>
+    </div>
   )
 }
