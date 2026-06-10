@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { useState } from "react";
-import { useRouteLoaderData, useRevalidator } from "react-router";
+import { useRouteLoaderData, useRevalidator, redirect } from "react-router";
 import {
   KeyRound, Ban, MessageCircle, Trash2,
   ShieldUser, Loader2, MailCheck,
@@ -37,6 +37,14 @@ import { authClient } from "~/lib/auth/client";
 import { notificationIcons } from "~/lib/notifications";
 import { useTRPC } from "~/server/react";
 import i18n from "~/i18n";
+import { type Route } from './+types/admin';
+import { getRequestSession } from "~/server/trpc";
+
+export async function loader(loaderArgs: Route.LoaderArgs) {
+  const headers = new Headers(loaderArgs.request.headers);
+  const result = await getRequestSession({ headers, request: loaderArgs.request });
+  if (result?.user) return redirect("/app");
+}
 
 export default function ViewUserAdminPage() {
   const layoutData = useRouteLoaderData(

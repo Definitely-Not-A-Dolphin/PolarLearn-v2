@@ -42,12 +42,6 @@ export async function loader({ params }: Route.LoaderArgs) {
       displayUsername: true,
       image: true,
       role: true,
-      email: true,
-      emailVerified: true,
-      banned: true,
-      banReason: true,
-      forumBanned: true,
-      forumBanReason: true,
       lists: {
         orderBy: {
           updatedAt: "desc",

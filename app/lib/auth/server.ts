@@ -107,7 +107,7 @@ export const auth = betterAuth({
     }
   },
   secret: process.env.SECRET,
-  trustedOrigins: ["*"],
+  trustedOrigins: process.env.NODE_ENV === "production" ? [process.env.APP_BASE as string] : ["*"],
   advanced: {
     database: {
       generateId: () => {

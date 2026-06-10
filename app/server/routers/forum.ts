@@ -174,9 +174,11 @@ export const forumRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Post not found" });
       if (post.authorId !== ctx.user.id && ctx.user.role !== "admin")
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You can only edit your own posts",
+          code: "FORBIDDEN"
         });
+      if (category === "announcement" && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
 
       const updatedPost = await ctx.prisma.forumPost.update({
         where: { id },

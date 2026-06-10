@@ -191,8 +191,6 @@ export const searchRouter = createTRPCRouter({
 					username: true,
 					image: true,
 					role: true,
-					banned: true,
-					forumBanned: true,
 					createdAt: true,
 				},
 			});

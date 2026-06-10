@@ -32,12 +32,18 @@ import { getRequestSession } from "~/server/trpc";
 gsap.registerPlugin(useGSAP);
 
 export function getSafeNextPath(requestUrl: string) {
-  const next = new URL(requestUrl).searchParams.get("next");
+  const url = new URL(requestUrl);
+  const next = url.searchParams.get("next");
 
   if (!next) return "/app";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/app";
 
-  return next;
+  try {
+    const resolved = new URL(next, url.origin);
+    if (resolved.origin !== url.origin) return "/app";
+    return resolved.pathname + resolved.search + resolved.hash;
+  } catch {
+    return "/app";
+  }
 }
 
 
