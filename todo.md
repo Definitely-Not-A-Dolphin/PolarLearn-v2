@@ -1,7 +1,9 @@
 # PolarLearn V2 To-Do
+
 Things marked with (?) are feature suggestions and might not be added.
 
 **Features**
+
 - [ ] Announcement Dialog/Modal
 - [ ] Add Analytics (Anonymous, to admin panel)
 - [ ] Add Security Tab (Admin Panel)
@@ -14,6 +16,7 @@ Things marked with (?) are feature suggestions and might not be added.
 - (?) Group Discovery (public only)
 
 **Known Bugs/Issues**
+
 - [x] As Admin on viewuser's admin tab, the admin badge says "admin.users.badges.admin" (Fix has been completed, will be pushed soon)
 - [ ] When enabling/disabling ai features in settings, you get logged out until u refresh.
 - [ ] When selecting My Favorites / My Lists, there's akward spacing between the top and the list of items.
@@ -24,6 +27,7 @@ Things marked with (?) are feature suggestions and might not be added.
 - [ ] In groups, lists somewhy tend to say "Invalid Date" instead of the regular date
 
 **Quality Improvement**
+
 - [ ] Replace Announcement Dialog with PolarUI Dialog/Modal'
 - [ ] Replace username with display names in most scenarios (eg: sidebar should display Display Name, not username)
 - [ ] Add icons to admin panel categories
