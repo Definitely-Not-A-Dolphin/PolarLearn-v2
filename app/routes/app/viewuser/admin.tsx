@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { useState } from "react";
-import { useRouteLoaderData, useRevalidator, redirect } from "react-router";
+import { useLoaderData, useRouteLoaderData, useRevalidator, redirect } from "react-router";
 import {
   KeyRound, Ban, MessageCircle, Trash2,
   ShieldUser, Loader2, MailCheck,
@@ -39,17 +39,38 @@ import { useTRPC } from "~/server/react";
 import i18n from "~/i18n";
 import type { Route } from "./+types/admin";
 import { getRequestSession } from "~/server/trpc";
+import { auth } from "~/lib/auth/server";
+import type { UserModel } from "~/prisma/models";
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
+  const userId = loaderArgs.params.id;
+  if (!userId) {
+    throw new Response("", { status: 400 });
+  }
+
   const headers = new Headers(loaderArgs.request.headers);
   const result = await getRequestSession({ headers, request: loaderArgs.request });
   if (result?.user.role !== "admin") return redirect("/app");
+
+  const adminUser = await auth.api.getUser({
+    headers,
+    query: {
+      id: userId,
+    },
+  });
+
+  if (!adminUser) {
+    throw new Response("", { status: 404 });
+  }
+
+  return { adminUser: adminUser as UserModel };
 }
 
 export default function ViewUserAdminPage() {
+  const { adminUser } = useLoaderData<typeof loader>();
   const layoutData = useRouteLoaderData(
     "../routes/app/viewuser/layout",
-  )
+  ) as { user?: { email: string; username: string; displayUsername: string | null } } | undefined;
 
   const rootData = useRouteLoaderData("root");
   const theme = rootData?.theme ?? "dark";
@@ -57,7 +78,10 @@ export default function ViewUserAdminPage() {
   const revalidator = useRevalidator();
   const trpc = useTRPC();
 
-  const target = layoutData?.user;
+  const target = {
+    ...layoutData?.user,
+    ...adminUser,
+  };
 
   const targetLabel = target.displayUsername ?? target.name ?? target.id;
 
