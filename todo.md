@@ -6,7 +6,6 @@ Things marked with (?) are feature suggestions and might not be added.
 
 - [ ] Announcement Dialog/Modal
 - [ ] Add Analytics (Anonymous, to admin panel)
-- [ ] Add Security Tab (Admin Panel)
 - [ ] Finish "General" admin tab (admin panel)
 - [ ] Add Profile Pictures
 - [ ] Folders

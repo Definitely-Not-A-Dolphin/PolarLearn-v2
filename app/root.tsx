@@ -22,12 +22,12 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from "react-router";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Megaphone } from "lucide-react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { initI18n } from "./i18n";
+import { initI18n, t } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
@@ -35,6 +35,8 @@ import { prisma } from "./lib/db";
 import { getRequestSession } from "./server/trpc";
 import { TRPCReactProvider } from "./server/react";
 import ImpersonationBanner from "./components/impersonation";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./components/ui/dialog";
+import { Button } from "@polarnl/polarui-react";
 export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/svg+xml", href: polarlearnLogo },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -96,7 +98,12 @@ export async function loader(loaderArgs: { request: Request }) {
       },
     })
     : 0
-
+  const announcement = await prisma.config.findFirst({
+    where: {
+      scope: "global",
+      key: "announcement",
+    },
+  })
   return {
     theme,
     lang: process.env.APP_LANG ?? "nl",
@@ -118,7 +125,44 @@ export async function loader(loaderArgs: { request: Request }) {
       createdAt: notification.createdAt.toISOString(),
     })),
     unreadNotificationsCount,
+    announcement: announcement?.value ?? null,
   };
+}
+
+function AnnouncementDialog({ announcement }: { announcement: string }) {
+  const [open, setOpen] = useState(true);
+  const t = i18n.t;
+  const storageKey = `polarlearn.announcement-${btoa(announcement)}`;
+
+  useEffect(() => {
+    if (localStorage.getItem(storageKey)) {
+      setOpen(false);
+    }
+  }, [storageKey]);
+
+  return (
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="flex flex-row gap-2 items-center font-bold text-xl">
+            <Megaphone />
+            {t("navigation.announcement")}
+          </DialogTitle>
+        </DialogHeader>
+        <p>{announcement}</p>
+        <DialogFooter>
+          <Button
+            onClick={() => {
+              localStorage.setItem(storageKey, "1");
+              setOpen(false);
+            }}
+          >
+            {t("common.close")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -140,6 +184,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Toaster richColors position="top-center" theme={theme} />
         <TRPCReactProvider>
           <ImpersonationBanner />
+          {loaderData?.announcement ? (
+            <AnnouncementDialog announcement={loaderData.announcement} />
+          ) : null}
           {children}
         </TRPCReactProvider>
         <ScrollRestoration />

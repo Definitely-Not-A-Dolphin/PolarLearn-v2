@@ -28,7 +28,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { toast } from "sonner";
 import { generateHint } from "~/lib/learn";
-import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings } from "lucide-react";
+import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings, Save, Loader2 } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
 import i18n, { t } from "~/i18n";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
@@ -211,6 +211,7 @@ function TopBar({ theme, session }: { theme: "light" | "dark"; session: LoaderDa
                 scheme={theme}
                 onClick={() => { void handleSave() }}
                 disabled={changeSettingsMutation.isPending || generateSessionMutation.isPending || rmSessionMutation.isPending}
+                icon={changeSettingsMutation.isPending || generateSessionMutation.isPending || rmSessionMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               >
                 {t("navigation.confirm")}
               </Button>

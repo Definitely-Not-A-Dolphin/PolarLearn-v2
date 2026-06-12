@@ -97,7 +97,8 @@
     "administration": "Administratie",
     "cancel": "Annuleren",
     "confirm": "Bevestigen",
-    "userProfile": "Profiel"
+    "userProfile": "Profiel",
+    "announcement": "Aankondiging"
   },
   "userSettings": {
     "title": "Instellingen",
@@ -240,7 +241,12 @@
       "lists": "Lijsten",
       "analytics": "Analytics"
     },
-    "general": {},
+    "general": {
+      "announcements": {
+        "title": "Aankondigingen",
+        "placeholder": "Voer een aankondiging in..."
+      }
+    },
     "users": {
       "loadError": "Gebruikers konden niet worden geladen.",
       "actionError": "Actie kon niet worden uitgevoerd.",

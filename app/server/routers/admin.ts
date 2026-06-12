@@ -18,7 +18,7 @@ import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
 
 import { logger as appLogger } from '~/lib/logger'
-import { protectedProcedure } from '~/server/trpc'
+import { protectedProcedure, publicProcedure } from '~/server/trpc'
 
 export const adminRouter = {
   setForumBan: protectedProcedure
@@ -65,14 +65,35 @@ export const adminRouter = {
       if (ctx.user.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'nice try lmao' })
       }
-      await ctx.prisma.config.update({
+      await ctx.prisma.config.upsert({
         where: {
           key: "announcement",
           scope: input.scope || "global",
         },
-        data: {
+        create: {
+          id: crypto.randomUUID(),
+          key: "announcement",
+          scope: input.scope || "global",
           value: input.content,
-        }
+        },
+        update: {
+          value: input.content,
+        },
       })
-    })
+    }),
+  rmAnnouncement: protectedProcedure
+    .input(z.object({
+      scope: z.string().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'nice try lmao' })
+      }
+      await ctx.prisma.config.deleteMany({
+        where: {
+          key: "announcement",
+          scope: input.scope || "global",
+        },
+      })
+    }),
 } satisfies TRPCRouterRecord
