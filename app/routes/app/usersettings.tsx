@@ -72,17 +72,17 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const themeResult = formData.get("theme") as unknown as { success: boolean; data?: "light" | "dark"; error?: string };
+  const theme = formData.get("theme") as "light" | "dark" | null;
   const aiFeatures = formData.get("aiFeatures") === "true";
 
-  if (!themeResult.success) {
+  if (!theme) {
     return new Response("Invalid theme", { status: 400 });
   }
 
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      theme: themeResult.data,
+      theme,
       optinAI: aiFeatures,
     },
   });

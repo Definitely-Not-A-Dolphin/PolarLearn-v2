@@ -4,20 +4,18 @@ Things marked with (?) are feature suggestions and might not be added.
 
 **Features**
 
-- [ ] Announcement Dialog/Modal
+- [x] Announcement Dialog/Modal
 - [ ] Add Analytics (Anonymous, to admin panel)
 - [ ] Finish "General" admin tab (admin panel)
 - [ ] Add Profile Pictures
 - [ ] Folders
-- (?) Add Admin Logs to Admin Panel
-- (?) Discord Webhooks for Admin Logs
 - (?) Add Documents (upload a document and publish them for viewing)
 - (?) Group Discovery (public only)
+- [ ] Commits page on list
 
 **Known Bugs/Issues**
 
 - [x] As Admin on viewuser's admin tab, the admin badge says "admin.users.badges.admin" (Fix has been completed, will be pushed soon)
-- [ ] When enabling/disabling ai features in settings, you get logged out until u refresh.
 - [ ] When selecting My Favorites / My Lists, there's akward spacing between the top and the list of items.
 - [ ] Add spacing between username and admin badge on viewuser (there's no spacing rn)
 - [ ] No character limits on forum title/content

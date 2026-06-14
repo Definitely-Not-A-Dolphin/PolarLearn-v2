@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { FileText, Grip, Import, Loader2, Plus, Trash, Save, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { parse as parseCsv } from "csv/sync";
 import z from "zod";
 import {
   Dialog,
@@ -40,172 +41,6 @@ const editableListDraftSchema = z.object({
 });
 
 type EditableListDraft = z.infer<typeof editableListDraftSchema>;
-const EMPTY_PLAINTEXT_IMPORT_ERROR = "EMPTY_PLAINTEXT_IMPORT";
-const INVALID_PLAINTEXT_IMPORT_ERROR = "INVALID_PLAINTEXT_IMPORT";
-const EMPTY_CSV_IMPORT_ERROR = "EMPTY_CSV_IMPORT";
-const INVALID_CSV_IMPORT_ERROR = "INVALID_CSV_IMPORT";
-const CSV_DELIMITERS = [",", ";", "\t"] as const;
-
-function countUnquotedOccurrences(line: string, separator: string) {
-  let count = 0;
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      if (inQuotes && line[index + 1] === '"') {
-        index += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-
-      continue;
-    }
-
-    if (!inQuotes && character === separator) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function detectCsvSeparator(input: string) {
-  const firstNonEmptyLine = input.split(/\r?\n/).find((line) => line.trim() !== "") ?? "";
-
-  return CSV_DELIMITERS.reduce<{
-    separator: string;
-    count: number;
-  }>((best, separator) => {
-    const count = countUnquotedOccurrences(firstNonEmptyLine, separator);
-
-    if (count > best.count) {
-      return {
-        separator,
-        count,
-      };
-    }
-
-    return best;
-  }, {
-    separator: ",",
-    count: -1,
-  }).separator;
-}
-
-function parseCsvLine(line: string, separator: string) {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-
-    if (character === '"') {
-      if (inQuotes && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-
-      continue;
-    }
-
-    if (!inQuotes && character === separator) {
-      cells.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += character;
-  }
-
-  if (inQuotes) {
-    throw new Error(INVALID_CSV_IMPORT_ERROR);
-  }
-
-  cells.push(current.trim());
-  return cells;
-}
-
-function parsePlaintextKeyValueImport(input: string): ListItem[] {
-  const pairs: ListItem[] = [];
-  let sawNonEmptyLine = false;
-
-  for (const rawLine of input.split(/\r?\n/)) {
-    if (rawLine.trim() === "") {
-      continue;
-    }
-
-    sawNonEmptyLine = true;
-
-    const separatorIndex = rawLine.indexOf("=");
-
-    if (separatorIndex < 0) {
-      throw new Error(INVALID_PLAINTEXT_IMPORT_ERROR);
-    }
-
-    const question = rawLine.slice(0, separatorIndex).trim();
-    const answer = rawLine.slice(separatorIndex + 1).trim();
-
-    if (question === "") {
-      throw new Error(INVALID_PLAINTEXT_IMPORT_ERROR);
-    }
-
-    pairs.push({
-      id: globalThis.crypto.randomUUID(),
-      question,
-      answer,
-    });
-  }
-
-  if (!sawNonEmptyLine || pairs.length === 0) {
-    throw new Error(EMPTY_PLAINTEXT_IMPORT_ERROR);
-  }
-
-  return pairs;
-}
-
-function parseCsvKeyValueImport(input: string): ListItem[] {
-  const lines = input.split(/\r?\n/).filter((line) => line.trim() !== "");
-
-  if (lines.length === 0) {
-    throw new Error(EMPTY_CSV_IMPORT_ERROR);
-  }
-
-  const separator = detectCsvSeparator(input);
-  const pairs: ListItem[] = [];
-
-  for (const line of lines) {
-    const cells = parseCsvLine(line, separator);
-
-    if (cells.length < 2) {
-      throw new Error(INVALID_CSV_IMPORT_ERROR);
-    }
-
-    const question = cells[0] ?? "";
-    const answer = cells.slice(1).join(separator).trim();
-
-    if (question === "") {
-      throw new Error(INVALID_CSV_IMPORT_ERROR);
-    }
-
-    pairs.push({
-      id: globalThis.crypto.randomUUID(),
-      question,
-      answer,
-    });
-  }
-
-  if (pairs.length === 0) {
-    throw new Error(EMPTY_CSV_IMPORT_ERROR);
-  }
-
-  return pairs;
-}
-
 function createBlankListItem(): ListItem {
   return {
     id: globalThis.crypto.randomUUID(),
@@ -285,7 +120,6 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         user.role === "admin"
       )
     ) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw new Response("FORBIDDEN", { status: 403 });
     }
 
@@ -683,9 +517,64 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
         }}
         onImport={() => {
           try {
-            const importedItems = importTabIndex === 0
-              ? parsePlaintextKeyValueImport(importPlainText)
-              : parseCsvKeyValueImport(importCsvText);
+            const importedItems: ListItem[] = [];
+
+            if (importTabIndex === 0) {
+              let sawNonEmptyLine = false;
+
+              for (const rawLine of importPlainText.split(/\r?\n/)) {
+                if (rawLine.trim() === "") {
+                  continue;
+                }
+
+                sawNonEmptyLine = true;
+
+                const separatorIndex = rawLine.indexOf("=");
+
+                if (separatorIndex < 0) {
+                  throw new Error("INVALID_PLAINTEXT_IMPORT");
+                }
+
+                const question = rawLine.slice(0, separatorIndex).trim();
+                const answer = rawLine.slice(separatorIndex + 1).trim();
+
+                if (question === "") {
+                  throw new Error("INVALID_PLAINTEXT_IMPORT");
+                }
+
+                importedItems.push({
+                  id: globalThis.crypto.randomUUID(),
+                  question,
+                  answer,
+                });
+              }
+
+              if (!sawNonEmptyLine) {
+                throw new Error("EMPTY_PLAINTEXT_IMPORT");
+              }
+            } else {
+              const records = parseCsv(importCsvText, {
+                delimiter: ",",
+                skip_empty_lines: true,
+                relax_column_count: true,
+              }) as string[][];
+
+              if (records.length === 0) {
+                throw new Error("EMPTY_CSV_IMPORT");
+              }
+
+              for (const cells of records) {
+                if (cells.length < 2 || cells[0]!.trim() === "") {
+                  throw new Error("INVALID_CSV_IMPORT");
+                }
+
+                importedItems.push({
+                  id: globalThis.crypto.randomUUID(),
+                  question: cells[0]!.trim(),
+                  answer: cells.slice(1).join(", ").trim(),
+                });
+              }
+            }
 
             setDraft((currentDraft) => ({
               ...currentDraft,
@@ -696,19 +585,18 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
             resetImportDialogState();
           } catch (error) {
             const message = importTabIndex === 0
-              ? error instanceof Error && error.message === EMPTY_PLAINTEXT_IMPORT_ERROR
+              ? error instanceof Error && error.message === "EMPTY_PLAINTEXT_IMPORT"
                 ? "Plak eerst een of meer key=value-regels."
-                : error instanceof Error && error.message === INVALID_PLAINTEXT_IMPORT_ERROR
+                : error instanceof Error && error.message === "INVALID_PLAINTEXT_IMPORT"
                   ? "De geplakte tekst moet regels in het formaat key=value bevatten."
                   : "Importeren van platte tekst is mislukt."
-              : error instanceof Error && error.message === EMPTY_CSV_IMPORT_ERROR
+              : error instanceof Error && error.message === "EMPTY_CSV_IMPORT"
                 ? "Kies eerst een CSV-bestand."
-                : error instanceof Error && error.message === INVALID_CSV_IMPORT_ERROR
+                : error instanceof Error && error.message === "INVALID_CSV_IMPORT"
                   ? "Het CSV-bestand moet twee kolommen bevatten."
                   : "Importeren van CSV is mislukt.";
 
             toast.error(message);
-
           }
         }}
         csvInputRef={importCsvInputRef}
