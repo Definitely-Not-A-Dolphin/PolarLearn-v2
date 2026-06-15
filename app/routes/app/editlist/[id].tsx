@@ -6,7 +6,52 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { FileText, Grip, Import, Loader2, Plus, Trash, Save, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { parse as parseCsv } from "csv/sync";
+function parseSimpleCsv(
+  text: string,
+  options: { delimiter?: string; skip_empty_lines?: boolean } = {},
+): string[][] {
+  const delimiter = options.delimiter ?? ",";
+  const records: string[][] = [];
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    if (options.skip_empty_lines && rawLine.trim() === "") {
+      continue;
+    }
+
+    const cells: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < rawLine.length; i++) {
+      const char = rawLine[i]!;
+
+      if (inQuotes) {
+        if (char === '"') {
+          if (i + 1 < rawLine.length && rawLine[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === delimiter) {
+        cells.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+
+    cells.push(current);
+    records.push(cells);
+  }
+
+  return records;
+}
 import z from "zod";
 import {
   Dialog,
@@ -553,11 +598,10 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
                 throw new Error("EMPTY_PLAINTEXT_IMPORT");
               }
             } else {
-              const records = parseCsv(importCsvText, {
+              const records = parseSimpleCsv(importCsvText, {
                 delimiter: ",",
                 skip_empty_lines: true,
-                relax_column_count: true,
-              }) as string[][];
+              });
 
               if (records.length === 0) {
                 throw new Error("EMPTY_CSV_IMPORT");
