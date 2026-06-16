@@ -626,4 +626,31 @@ export const groupsRouter = {
     })
     return updatedGroup
   }),
+  rmGroup: protectedProcedure.input(
+    groupIdInput
+  ).mutation(async ({ ctx, input }) => {
+    const group = await ctx.prisma.group.findUnique({
+      where: {
+        id: input.id,
+      },
+    })
+    if (!group) {
+      throw new TRPCError({ code: 'NOT_FOUND' })
+    }
+    if (group.creatorId !== ctx.user.id) {
+      throw new TRPCError({ code: 'FORBIDDEN' })
+    }
+
+    await ctx.prisma.group.delete({
+      where: {
+        id: input.id,
+      },
+    })
+    appLogger.info({
+      event: "group.removed",
+      userId: ctx.user.id,
+      groupId: input.id,
+    })
+    return 'OK'
+  }),
 } satisfies TRPCRouterRecord

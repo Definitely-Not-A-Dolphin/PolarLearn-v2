@@ -453,7 +453,7 @@ export default function UserSettings() {
             </form>
           </div>
 
-          <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="space-y-4 rounded-xl bg-card p-5 shadow-sm">
             <form method="post" className="space-y-4">
               <input type="hidden" name="intent" value="settings" />
               <input type="hidden" name="theme" value={theme} />
@@ -466,14 +466,12 @@ export default function UserSettings() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-neutral-300/80 bg-neutral-50/70 p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
-                <CheckWithLabel
-                  label={theme === "dark" ? t("userSettings.theme.dark") : t("userSettings.theme.light")}
-                  checked={theme === "dark"}
-                  onChange={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-                  className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
-                />
-              </div>
+              <CheckWithLabel
+                label={theme === "dark" ? t("userSettings.theme.dark") : t("userSettings.theme.light")}
+                checked={theme === "dark"}
+                onChange={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+                className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
+              />
 
               <div className="flex justify-end">
                 <Button
@@ -501,17 +499,12 @@ export default function UserSettings() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-neutral-300/80 bg-neutral-50/70 p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
-                <CheckWithLabel
-                  label={t("userSettings.ai.label")}
-                  checked={aiFeatures}
-                  onChange={() => setAiFeatures((current) => !current)}
-                  className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
-                />
-                <p className="ml-6 mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  {aiFeatures ? t("userSettings.ai.enabled") : t("userSettings.ai.disabled")}
-                </p>
-              </div>
+              <CheckWithLabel
+                label={t("userSettings.ai.label")}
+                checked={aiFeatures}
+                onChange={() => setAiFeatures((current) => !current)}
+                className="[&>span:last-child]:text-neutral-900! dark:[&>span:last-child]:text-neutral-100!"
+              />
 
               <div className="flex justify-end">
                 <Button

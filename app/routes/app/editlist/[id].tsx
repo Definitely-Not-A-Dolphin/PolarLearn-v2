@@ -86,13 +86,6 @@ const editableListDraftSchema = z.object({
 });
 
 type EditableListDraft = z.infer<typeof editableListDraftSchema>;
-function createBlankListItem(): ListItem {
-  return {
-    id: globalThis.crypto.randomUUID(),
-    question: "",
-    answer: "",
-  };
-}
 
 function normalizeEditableListDraft(draft: EditableListDraft): EditableListDraft {
   const seenIds = new Set<string>();
@@ -117,7 +110,11 @@ function normalizeEditableListDraft(draft: EditableListDraft): EditableListDraft
 
   return {
     ...draft,
-    items: normalizedItems.length === 0 ? [createBlankListItem()] : normalizedItems,
+    items: normalizedItems.length === 0 ? [{
+        id: globalThis.crypto.randomUUID(),
+        question: "",
+        answer: "",
+      }] : normalizedItems,
   };
 }
 
@@ -406,7 +403,11 @@ function EditListEditor({ list }: { list: LoaderData["list"] }) {
   };
 
   const appendDraftItem = (focusNewItem: boolean) => {
-    const newItem = createBlankListItem();
+    const newItem = {
+      id: globalThis.crypto.randomUUID(),
+      question: "",
+      answer: "",
+    }
 
     setDraft((currentDraft) => ({
       ...currentDraft,

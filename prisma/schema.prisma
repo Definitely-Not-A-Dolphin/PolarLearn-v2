@@ -305,6 +305,7 @@ model LearnSession {
   user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   queue      Json[]
   answerLog  Json[]
+  commit     String?
   mode       String?
   isComplete Boolean @default(false)
 

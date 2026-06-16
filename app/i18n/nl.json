@@ -11,7 +11,7 @@
     "recentLists": "Recente lijsten",
     "noRecentLists": "Je hebt nog geen lijsten. Klik op het plusje bovenin om een nieuwe lijst aan te maken!",
     "recentSessions": "Recente sessies",
-    "noRecentSessions": "Je hebt nog geen actieve sessies.",
+    "noRecentSessions": "Je hebt nog geen actieve sessies. Begin met leren en je sessies zullen hier verschijnen!",
     "resumeSession": "Verder leren",
     "learn": "Leren"
   },
@@ -117,7 +117,7 @@
     },
     "password": {
       "title": "Wachtwoord",
-      "description": "Wijzig je wachtwoord met je huidige wachtwoord.",
+      "description": "Wijzig je wachtwoord met je huidige wachtwoord. Als je je huidige wachtwoord bent vergeten, log uit en klik op 'Wachtwoord vergeten' op het inlogscherm.",
       "currentPasswordLabel": "Huidig wachtwoord",
       "currentPasswordPlaceholder": "Voer je huidige wachtwoord in",
       "newPasswordLabel": "Nieuw wachtwoord",
@@ -165,8 +165,12 @@
     "new": "Nieuw"
   },
   "groups": {
-    "fallbackName": "Groep",
-    "metaTitle": "{{groupName}} | PolarLearn group",
+    "fallbackName": "Onbekende groep",
+    "notJoined": {
+      "title": "Je bent nog geen lid van een groep",
+      "description": "Sluit je aan bij een groep en je zal die hier zien."
+    },
+    "metaTitle": "{{groupName}} | PolarLearn groep",
     "metaDescription": "Bekijk groepslijsten, leden en instellingen op PolarLearn.",
     "loginToJoin": "Log in om lid te worden.",
     "loginToJoinDescription": "Log in om lid te worden, toegang aan te vragen of lijsten toe te voegen.",
@@ -214,6 +218,14 @@
       "onlyModsCanAddListsDescription": "Gewone leden kunnen geen lijsten aan deze groep koppelen.",
       "create": "Groep aanmaken",
       "success": "Groep aangemaakt!"
+    },
+    "delete": {
+      "title": "Groep verwijderen",
+      "description": "Verwijder deze groep permanent. Alle gekoppelde lijsten, sessies en andere gegevens zullen niet verwijderd worden.",
+      "dialogDescription": "Weet je zeker dat je deze groep wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "confirm": "Ja, verwijder deze groep",
+      "cancel": "Toch behouden",
+      "success": "Groep succesvol verwijderd."
     },
     "update": {
       "success": "Groepsinstellingen opgeslagen!"

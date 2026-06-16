@@ -19,6 +19,8 @@ import type { Route } from './+types/groups'
 import { appRouter } from "~/server/main";
 import { useLoaderData, useNavigate } from 'react-router';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Users } from 'lucide-react';
+import { t } from '~/i18n';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const headers = new Headers(request.headers);
@@ -41,7 +43,11 @@ export default function GroupsPage() {
   return (
     <div className='p-4 flex flex-col gap-4'>
       {groups.length === 0 ? (
-        <p>You have not joined any groups yet.</p>
+        <div className="flex flex-col gap-2 items-center justify-center text-muted-foreground bg-neutral-50 dark:bg-neutral-800 rounded-xl p-6">
+          <Users className="size-10" />
+          <p className="font-semibold">{t('groups.notJoined.title')}</p>
+          <p className="text-sm">{t('groups.notJoined.description')}</p>
+        </div>
       ) : (
         <>
           {groups.map((group: any) => (

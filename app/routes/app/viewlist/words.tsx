@@ -37,7 +37,7 @@ export default function WordsPage() {
               list.items.map((item: { id: string; question: string; answer: string }) => (
                 <tr
                   key={item.id}
-                  className="border-t border-neutral-200 text-[15px] leading-6 text-neutral-900 odd:bg-neutral-50 even:bg-transparent dark:border-neutral-800/80 dark:text-neutral-100 dark:odd:bg-white/5 dark:even:bg-transparent"
+                  className="border-t border-neutral-200 text-[15px] leading-6 text-neutral-900 even:bg-neutral-50 odd:bg-transparent dark:border-neutral-800/80 dark:text-neutral-100 dark:even:bg-white/5 dark:odd:bg-transparent"
                 >
                   <td className="px-8 py-4 align-middle font-medium text-neutral-900 dark:text-neutral-100">
                     <span className="block truncate">{item.question}</span>

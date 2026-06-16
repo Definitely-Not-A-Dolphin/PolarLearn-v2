@@ -17,18 +17,20 @@
 
 import { Input, Button, CheckWithLabel } from "@polarnl/polarui-react";
 import { useState } from "react";
-import { useRouteLoaderData, useRevalidator } from "react-router";
+import { useRouteLoaderData, useRevalidator, useNavigate } from "react-router";
 import { useTRPC } from "~/server/react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import i18n from "~/i18n";
-import { Loader2, Save, X } from "lucide-react";
+import { Loader2, Save, Trash2, X } from "lucide-react";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
 
 export default function SettingsPage() {
   const loaderData = useRouteLoaderData("../routes/app/group/layout")
   const rootData = useRouteLoaderData("root")
   const trpc = useTRPC()
   const revalidator = useRevalidator()
+  const navigate = useNavigate()
   const t = i18n.t
   const theme = rootData?.theme ?? "dark"
   const isLoggedIn = Boolean(rootData?.user?.id)
@@ -53,6 +55,17 @@ export default function SettingsPage() {
     onSuccess: async () => {
       toast.success(t("groups.update.success"))
       revalidator.revalidate()
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("errors.unknown"))
+    }
+  })
+
+  const rmGroupMutation = useMutation({
+    ...trpc.groups.rmGroup.mutationOptions(),
+    onSuccess: async () => {
+      toast.success(t("groups.delete.success"))
+      navigate("/app/groups")
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : t("errors.unknown"))
@@ -128,21 +141,73 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {rootData?.user?.id === loaderData.group.ownerId ? (
+        <div className="space-y-4 rounded-xl border border-red-500/20 bg-red-500/5 p-5 shadow-sm">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-red-700 dark:text-red-300">
+              {t("userSettings.delete.title")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t("userSettings.delete.description")}
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  scheme={theme}
+                  type="button"
+                  color="red"
+                  textColor="white"
+                  icon={<Trash2 className="size-4" />}
+                >
+                  {t("common.delete")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold">
+                    {t("groups.delete.title")}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {t("groups.delete.dialogDescription")}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button
+                      scheme={theme}
+                      variant="transparent"
+                      textColor="white"
+                      icon={<X className="size-4" />}
+                    >
+                      {t("groups.delete.cancel")}
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    scheme={theme}
+                    type="button"
+                    color="red"
+                    textColor="white"
+                    icon={rmGroupMutation.isPending ? <Loader2 className="animate-spin" /> : <Trash2 className="size-4" />}
+                    disabled={rmGroupMutation.isPending}
+                    onClick={() => {
+                      rmGroupMutation.mutate({
+                        id: loaderData.group.id,
+                      })
+                    }}
+                  >
+                    {t("groups.delete.confirm")}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex gap-x-3 justify-end pt-4">
-        <Button
-          variant="transparent"
-          scheme={theme}
-          onClick={() => {
-            setGroupName(loaderData.group.name)
-            setGroupDescription(loaderData.group.description ?? "")
-            setApprovalRequired(loaderData.group.approvalRequired ?? false)
-            setOnlyModsCanAddLists(loaderData.group.onlyModsCanAddLists ?? false)
-          }}
-          disabled={updateMutation.isPending}
-          icon={<X />}
-        >
-          {t("common.cancel")}
-        </Button>
         <Button
           scheme={theme}
           onClick={() => {
