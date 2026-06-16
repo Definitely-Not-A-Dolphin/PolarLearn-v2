@@ -27,12 +27,13 @@ import { ChevronDown, Megaphone } from "lucide-react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { initI18n, t } from "./i18n";
+import { initI18n } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import polarlearnLogo from "~/img/polarlearn.svg";
 import { prisma } from "./lib/db";
-import { getRequestSession } from "./server/trpc";
+import { createCallerFactory, createTRPCContext, getRequestSession } from "./server/trpc";
+import { appRouter } from "./server/main";
 import { TRPCReactProvider } from "./server/react";
 import ImpersonationBanner from "./components/impersonation";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./components/ui/dialog";
@@ -76,42 +77,28 @@ export async function loader(loaderArgs: { request: Request }) {
   const userRecord = user as Record<string, unknown> | undefined
   const sessionRecord = session as Record<string, unknown> | undefined
   const theme = userRecord?.theme as 'light' | 'dark'
-  const rawNotifications = user?.id
-    ? await prisma.notification.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 6, // One extra to check if there's a next page
-      select: {
-        id: true,
-        content: true,
-        icon: true,
-        navigate: true,
-        read: true,
-        createdAt: true,
-      },
-    })
-    : []
-  const hasMoreNotifications = rawNotifications.length > 5
-  const initialNotifications = hasMoreNotifications
-    ? rawNotifications.slice(0, 5)
-    : rawNotifications
-  const notificationsNextCursor = hasMoreNotifications
-    ? rawNotifications[4].id
-    : null
-  const unreadNotificationsCount = user?.id
-    ? await prisma.notification.count({
+  const ctx = await createTRPCContext({ headers, request: loaderArgs.request, session: result })
+  const caller = createCallerFactory(appRouter)(ctx)
+
+  const [notificationResult, unreadNotificationsCount, announcement] = await Promise.all([
+    user?.id
+      ? caller.notification.getNotifications({ limit: 5 }).then(r => ({ notifications: r.notifications, nextCursor: r.nextCursor }))
+      : Promise.resolve({ notifications: [], nextCursor: undefined }),
+    user?.id
+      ? prisma.notification.count({
+          where: {
+            userId: user.id,
+            read: false,
+          },
+        })
+      : Promise.resolve(0),
+    prisma.config.findFirst({
       where: {
-        userId: user.id,
-        read: false,
+        scope: "global",
+        key: "announcement",
       },
-    })
-    : 0
-  const announcement = await prisma.config.findFirst({
-    where: {
-      scope: "global",
-      key: "announcement",
-    },
-  })
+    }),
+  ])
   return {
     theme,
     lang: process.env.APP_LANG ?? "nl",
@@ -127,12 +114,11 @@ export async function loader(loaderArgs: { request: Request }) {
         : null,
     },
     impersonatedBy: typeof sessionRecord?.impersonatedBy === "string" ? sessionRecord.impersonatedBy : null,
-    notifications: initialNotifications.map((notification) => ({
-      ...notification,
-      navigate: notification.navigate ?? null,
-      createdAt: notification.createdAt.toISOString(),
+    notifications: notificationResult.notifications.map((n) => ({
+      ...n,
+      navigate: n.navigate ?? null,
     })),
-    notificationsNextCursor,
+    notificationsNextCursor: notificationResult.nextCursor ?? null,
     unreadNotificationsCount,
     announcement: announcement?.value ?? null,
   };

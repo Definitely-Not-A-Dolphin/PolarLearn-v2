@@ -6,6 +6,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import type { Plugin } from "vite";
 import rsc from "@vitejs/plugin-rsc";
 import { unstable_reactRouterRSC as reactRouterRSC } from "@react-router/dev/vite";
+import compress from "vite-plugin-compression";
 
 function prependBundleBanner() {
   return {
@@ -49,6 +50,8 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
     prependBundleBanner(),
+    compress({ algorithm: "brotliCompress", ext: ".br", threshold: 1024 }),
+    compress({ algorithm: "gzip", ext: ".gz", threshold: 1024 }),
   ],
   optimizeDeps: {
     exclude: [
@@ -58,6 +61,30 @@ export default defineConfig({
     ]
   },
   build: {
-    target: "esnext"
-  }
+    target: "esnext",
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/gsap")) {
+            return "vendor-animations";
+          }
+          if (id.includes("node_modules/@trpc") || id.includes("node_modules/@tanstack/react-query")) {
+            return "vendor-data";
+          }
+          if (id.includes("node_modules/@polarnl") || id.includes("node_modules/radix-ui")) {
+            return "vendor-ui";
+          }
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+          if (id.includes("node_modules/")) {
+            return "vendor";
+          }
+        },
+      },
+    },
+  },
 });

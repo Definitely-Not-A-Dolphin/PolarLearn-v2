@@ -32,12 +32,12 @@ function DescriptionReveal() {
 
   useEffect(() => {
     let mounted = true;
+    let tl: any = null;
 
-    const delayTimer = setTimeout(async () => {
-      if (!mounted) return;
-
+    void (async () => {
       const gsapMod = await import("gsap");
       const gsap = (gsapMod as any).default ?? gsapMod;
+      if (!mounted) return;
 
       const words = wordRefsRef.current;
       if (!words.length) return;
@@ -47,7 +47,7 @@ function DescriptionReveal() {
       gsap.set(containerRef.current, { opacity: 0 });
       gsap.set(words, { filter: "blur(8px)", opacity: 0 });
 
-      const tl = gsap.timeline();
+      tl = gsap.timeline();
       tlRef.current = tl;
 
       tl.to(containerRef.current, { opacity: 1, duration: 0 }, 0);
@@ -64,14 +64,11 @@ function DescriptionReveal() {
           index * 0.15
         );
       });
-
-      return () => tl.kill();
-    }, 3300);
+    })();
 
     return () => {
       mounted = false;
-      clearTimeout(delayTimer);
-      tlRef.current?.kill?.();
+      tl?.kill();
     };
   }, [theme]);
 
@@ -259,12 +256,12 @@ function AnimatedButton() {
 
   useEffect(() => {
     let mounted = true;
+    let tl: any = null;
 
-    const delayTimer = setTimeout(async () => {
-      if (!mounted) return;
-
+    void (async () => {
       const gsapMod = await import("gsap");
       const gsap = (gsapMod as any).default ?? gsapMod;
+      if (!mounted) return;
 
       const button = buttonRef.current;
       if (!button) return;
@@ -273,7 +270,7 @@ function AnimatedButton() {
 
       gsap.set(button, { opacity: 0, y: 40 });
 
-      const tl = gsap.timeline();
+      tl = gsap.timeline();
       tlRef.current = tl;
 
       tl.to(button, {
@@ -282,12 +279,11 @@ function AnimatedButton() {
         duration: 0.6,
         ease: "power2.out",
       });
-    }, 4200);
+    })();
 
     return () => {
       mounted = false;
-      clearTimeout(delayTimer);
-      tlRef.current?.kill?.();
+      tl?.kill();
     };
   }, []);
   const nav = useNavigate()
