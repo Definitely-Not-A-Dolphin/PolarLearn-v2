@@ -76,10 +76,11 @@ export async function loader(loaderArgs: { request: Request }) {
   const userRecord = user as Record<string, unknown> | undefined
   const sessionRecord = session as Record<string, unknown> | undefined
   const theme = userRecord?.theme as 'light' | 'dark'
-  const notifications = user?.id
+  const rawNotifications = user?.id
     ? await prisma.notification.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
+      take: 6, // One extra to check if there's a next page
       select: {
         id: true,
         content: true,
@@ -90,6 +91,13 @@ export async function loader(loaderArgs: { request: Request }) {
       },
     })
     : []
+  const hasMoreNotifications = rawNotifications.length > 5
+  const initialNotifications = hasMoreNotifications
+    ? rawNotifications.slice(0, 5)
+    : rawNotifications
+  const notificationsNextCursor = hasMoreNotifications
+    ? rawNotifications[4].id
+    : null
   const unreadNotificationsCount = user?.id
     ? await prisma.notification.count({
       where: {
@@ -119,11 +127,12 @@ export async function loader(loaderArgs: { request: Request }) {
         : null,
     },
     impersonatedBy: typeof sessionRecord?.impersonatedBy === "string" ? sessionRecord.impersonatedBy : null,
-    notifications: notifications.map((notification) => ({
+    notifications: initialNotifications.map((notification) => ({
       ...notification,
       navigate: notification.navigate ?? null,
       createdAt: notification.createdAt.toISOString(),
     })),
+    notificationsNextCursor,
     unreadNotificationsCount,
     announcement: announcement?.value ?? null,
   };

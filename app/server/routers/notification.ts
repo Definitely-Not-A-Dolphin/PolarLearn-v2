@@ -18,18 +18,44 @@ import { TRPCError, type TRPCRouterRecord } from '@trpc/server'
 import crypto from 'crypto'
 import z from 'zod'
 
-import { protectedProcedure, publicProcedure } from '~/server/trpc'
+import { protectedProcedure } from '~/server/trpc'
 import { logger as appLogger } from '~/lib/logger'
+import { getNotificationsInputSchema, getNotificationsOutputSchema } from '~/lib/notifications'
 
 export const notificationRouter = {
-  getNotifications: protectedProcedure.query(async ({ ctx }) => {
-    const notifs = await ctx.prisma.notification.findMany({
-      where: {
-        userId: ctx.user.id
+  getNotifications: protectedProcedure
+    .input(getNotificationsInputSchema)
+    .output(getNotificationsOutputSchema)
+    .query(async ({ ctx, input }) => {
+      const { cursor, limit } = input
+      const notifs = await ctx.prisma.notification.findMany({
+        where: {
+          userId: ctx.user.id
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit + 1,
+        cursor: cursor ? { id: cursor } : undefined,
+        skip: cursor ? 1 : undefined,
+      })
+      const hasNextPage = notifs.length > limit
+      let nextCursor: string | undefined
+      if (hasNextPage) {
+        const last = notifs.pop()
+        nextCursor = last!.id
       }
-    })
-    return notifs
-  }),
+      return {
+        notifications: notifs.map((n) => ({
+          id: n.id,
+          userId: n.userId,
+          content: n.content,
+          icon: n.icon,
+          navigate: n.navigate ?? undefined,
+          read: n.read,
+          createdAt: n.createdAt.toISOString(),
+        })),
+        nextCursor,
+      }
+    }),
   readNotification: protectedProcedure
     .input(z.object({
       id: z.string(),

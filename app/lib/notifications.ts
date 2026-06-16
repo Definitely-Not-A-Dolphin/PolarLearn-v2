@@ -37,6 +37,20 @@ export const notificationSchema = z.object({
 
 export type Notification = z.infer<typeof notificationSchema>;
 
+export const getNotificationsInputSchema = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.number().int().min(1).max(50).default(10),
+});
+
+export type GetNotificationsInput = z.infer<typeof getNotificationsInputSchema>;
+
+export const getNotificationsOutputSchema = z.object({
+  notifications: z.array(notificationSchema),
+  nextCursor: z.string().optional(),
+});
+
+export type GetNotificationsOutput = z.infer<typeof getNotificationsOutputSchema>;
+
 export const notificationIcons: readonly {
   value: string;
   labelKey: string;

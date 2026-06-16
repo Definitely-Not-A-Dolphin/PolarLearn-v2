@@ -15,16 +15,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Bell, ExternalLink, List, Loader2, Plus, MessageCircle, Users, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreatePostDialog } from "~/routes/app/forum/CreatePostDialog";
 import { useLocation, useNavigate, useRevalidator, useRouteLoaderData, useSearchParams } from "react-router";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import i18n from "~/i18n";
 import { PopoverTrigger, Popover, PopoverContent, PopoverHeader } from "./ui/popover";
 import { Button, CheckWithLabel, Input } from "@polarnl/polarui-react";
 import { useTRPC } from '~/server/react';
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { SearchBar } from "./searchBar";
@@ -73,12 +74,55 @@ export function TopBar() {
   const [isCreatePostDialogOpen, setIsCreatePostDialogOpen] = useState(false);
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
 
-  const notifications = rootData?.notifications ?? [];
+  const initialNotifications = rootData?.notifications ?? [];
   const unreadNotificationsCount = rootData?.unreadNotificationsCount ?? 0;
+  const [allNotifications, setAllNotifications] = useState<Notification[]>(initialNotifications);
+  const [nextCursor, setNextCursor] = useState<string | null | undefined>(rootData?.notificationsNextCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const queryClient = useQueryClient();
+
+  const rootNotifications = rootData?.notifications ?? [];
+  useEffect(() => {
+    setAllNotifications((prev) => {
+      let changed = false;
+      const map = new Map(prev.map((n) => [n.id, n]));
+      for (const n of rootNotifications) {
+        const nn = n as Notification;
+        const existing = map.get(nn.id);
+        if (!existing || existing.read !== nn.read || existing.content !== nn.content) {
+          map.set(nn.id, nn);
+          changed = true;
+        }
+      }
+      return changed ? Array.from(map.values()) : prev;
+    });
+  }, [rootNotifications]);
+
+  const fetchMore = async () => {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = await queryClient.fetchQuery(
+        rpc.notification.getNotifications.queryOptions({
+          cursor: nextCursor,
+          limit: 10,
+        }),
+      );
+      setAllNotifications((prev) => [...prev, ...nextPage.notifications]);
+      setNextCursor(nextPage.nextCursor);
+    } catch {
+      toast.error(t("errors.unknown"));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const readNotification = useMutation({
     ...rpc.notification.readNotification.mutationOptions(),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      setAllNotifications((prev) =>
+        prev.map((n) => (n.id === variables.id ? { ...n, read: true } : n))
+      );
       revalidator.revalidate();
     },
   })
@@ -146,9 +190,24 @@ export function TopBar() {
             <PopoverHeader>
               <h2 className="text-base font-semibold">Meldingen</h2>
             </PopoverHeader>
-            {notifications.length > 0 ? (
-              <div className="max-h-96 overflow-auto">
-                {notifications.map((notification: Notification) => {
+            {allNotifications.length > 0 ? (
+              <InfiniteScroll
+                dataLength={allNotifications.length}
+                next={fetchMore}
+                hasMore={Boolean(nextCursor)}
+                loader={
+                  <div className="flex items-center justify-center py-3">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                }
+                endMessage={
+                  <div className="px-3 py-2 text-center text-xs text-muted-foreground">
+                    {t("forum.posts.noMore")}
+                  </div>
+                }
+                height={384}
+              >
+                {allNotifications.map((notification: Notification) => {
                   const Icon = notificationIcons.find((iconDef) => iconDef.value === notification.icon)?.icon ?? Bell;
                   return (
                     <Button
@@ -187,7 +246,7 @@ export function TopBar() {
                     </Button>
                   )
                 })}
-              </div>
+              </InfiniteScroll>
             ) : (
               <p className="px-3 py-2 text-sm text-muted-foreground">Je hebt nog geen meldingen.</p>
             )}

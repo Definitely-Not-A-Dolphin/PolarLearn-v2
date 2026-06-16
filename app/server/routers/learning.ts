@@ -193,7 +193,6 @@ export const learningRouter = createTRPCRouter({
         isComplete: false,
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-      take: 5,
       select: {
         id: true,
         listId: true,
