@@ -58,6 +58,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover
 import type { LoaderData, ListData } from "~/lib/viewlist";
 import { learningModes } from "~/lib/learn";
 
+export function shouldRevalidate() {
+  return false
+}
+
 export async function loader({
   params,
   request,

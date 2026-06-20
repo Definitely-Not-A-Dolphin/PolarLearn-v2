@@ -68,6 +68,10 @@ export function meta({ }: Route.MetaArgs) {
     { property: "og:image", content: '/banner.png' },
   ]
 }
+// the provided info from loader likely wont change during navigation
+export function shouldRevalidate() {
+  return false
+}
 
 export async function loader(loaderArgs: { request: Request }) {
   const headers = new Headers(loaderArgs.request.headers)

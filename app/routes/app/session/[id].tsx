@@ -36,6 +36,10 @@ import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Label } from "~/components/ui/label";
 import { learningModes, modes } from "~/lib/learn";
 
+export function shouldRevalidate() {
+  return false
+}
+
 export async function loader({ params, request }: Route.LoaderArgs) {
   const id = params.id
 

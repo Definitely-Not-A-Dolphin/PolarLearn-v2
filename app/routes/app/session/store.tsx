@@ -58,6 +58,35 @@ export interface LearnStoreState {
 
 const normalizeAnswer = (answer: string) => answer.trim().toLowerCase()
 
+const expandAnswerPart = (answer: string): string[] => {
+  const optional = answer.match(/\(([^()]*)\)/)
+  if (optional?.index !== undefined) {
+    const before = answer.slice(0, optional.index)
+    const after = answer.slice(optional.index + optional[0].length)
+
+    return [
+      ...expandAnswerPart(`${before}${after}`),
+      ...expandAnswerPart(`${before}${optional[1]}${after}`),
+    ]
+  }
+
+  const choices = answer.match(/\{([^{}]*)\}/)
+  if (choices?.index !== undefined) {
+    const before = answer.slice(0, choices.index)
+    const after = answer.slice(choices.index + choices[0].length)
+
+    return choices[1]
+      .split(',')
+      .flatMap((choice) => expandAnswerPart(`${before}${choice}${after}`))
+  }
+
+  return [answer]
+}
+
+const expandAnswerSyntax = (answer: string) => [
+  ...new Set([answer, ...answer.split('/').flatMap(expandAnswerPart)]),
+]
+
 export const createLearnStore = (initData: LearnStoreInitData) => {
   const initialAnswerLog = initData.answerLog ?? []
 
@@ -79,8 +108,10 @@ export const createLearnStore = (initData: LearnStoreInitData) => {
         return false
       }
 
-      const isCorrect = currentQuestion.answer.some(
-        (expectedAnswer) => normalizeAnswer(expectedAnswer) === normalizeAnswer(answer),
+      const isCorrect = currentQuestion.answer.some((expectedAnswer) =>
+        expandAnswerSyntax(expectedAnswer).some((allowedAnswer) =>
+          normalizeAnswer(allowedAnswer) === normalizeAnswer(answer)
+        ),
       )
 
       set({
