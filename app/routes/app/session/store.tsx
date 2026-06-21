@@ -23,7 +23,6 @@ import { answerLogSchema, queueSchema, queueQuestion } from '~/lib/learn'
 type LearnQueue = z.infer<typeof queueSchema>
 type QueueQuestion = z.infer<typeof queueQuestion>
 type AnswerLogEntry = z.infer<typeof answerLogSchema>[number]
-
 export interface FeedbackState {
   isVisible: boolean
   isCorrect: boolean

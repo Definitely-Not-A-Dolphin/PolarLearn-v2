@@ -18,7 +18,7 @@ import type { Route } from "./+types/[id]";
 import { redirect } from "react-router";
 import { createCallerFactory, createTRPCContext } from "~/server/trpc";
 import { appRouter } from "~/server/main";
-import { useLoaderData, useNavigate, useRouteLoaderData, useLocation } from "react-router";
+import { useLoaderData, useNavigate, useRouteLoaderData, useLocation, type ShouldRevalidateFunctionArgs } from "react-router";
 import { LearnStoreProvider, useLearnStore } from "./store";
 import { Input, Button } from "@polarnl/polarui-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,7 +28,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/server/react";
 import { toast } from "sonner";
 import { generateHint } from "~/lib/learn";
-import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings, Save, Loader2 } from "lucide-react";
+import { BookOpenCheck, MoveLeft, X, Check, XCircle, CircleCheck, CircleX, Settings, Save, Loader2, CircleAlert, TriangleAlert } from "lucide-react";
 import { Progress } from "~/components/ui/progress";
 import i18n, { t } from "~/i18n";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
@@ -36,8 +36,8 @@ import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Label } from "~/components/ui/label";
 import { learningModes, modes } from "~/lib/learn";
 
-export function shouldRevalidate() {
-  return false
+export function shouldRevalidate({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) {
+  return currentParams.id !== nextParams.id
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {
@@ -59,29 +59,93 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const caller = createCallerFactory(appRouter)(context)
   const session = await caller.learning.getLearnSession({ sessionId: id })
 
-  return { session }
+  const sourceList = await caller.list.getLatestListData({ listId: session.listId })
+  let stale = false;
+
+  if (sourceList.versionData.branches.main.headCommitId !== session.commit) {
+    stale = true
+  }
+
+  return { session, stale }
+}
+
+function StaleDialog({ session }: { session: LoaderData["session"] }) {
+  const [open, setOpen] = useState(true);
+  const t = i18n.t;
+  const rpc = useTRPC();
+  const navigate = useNavigate();
+  const rmSessionMutation = useMutation({
+    ...rpc.learning.rmSession.mutationOptions(),
+  })
+  const regenMutation = useMutation({
+    ...rpc.learning.generateLearnSession.mutationOptions(),
+    onSuccess: (data) => {
+      void navigate(`/app/session/${data.id}`)
+    },
+    onError: () => {
+      toast.error(t("errors.unknown"))
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={() => { }}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="flex flex-col gap-2 items-center font-bold text-xl justify-center">
+            <CircleAlert className="w-10 h-10" />
+            {t("learn.session.stale.title")}
+          </DialogTitle>
+        </DialogHeader>
+        <p>{t("learn.session.stale.description")}</p>
+        <DialogFooter>
+          <Button
+            onClick={() => setOpen(false)}
+            color="red"
+            textColor="white"
+            icon={<TriangleAlert />}
+          >
+            {t("learn.session.stale.continueAnyway")}
+          </Button>
+          <Button
+            onClick={() => {
+              rmSessionMutation.mutate({ sessionId: session.id })
+              regenMutation.mutate({ listId: session.listId, mode: session.mode })
+              setOpen(false)
+            }}
+            disabled={regenMutation.isPending}
+            icon={regenMutation.isPending ? <Loader2 className="animate-spin" /> : <BookOpenCheck />}
+          >
+            {t("learn.session.stale.startNewSession")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function LearnPage() {
-  const { session } = useLoaderData<typeof loader>()
+  const { session, stale } = useLoaderData<typeof loader>()
   const rootData = useRouteLoaderData("root")
   const theme = rootData?.theme === "dark" ? "dark" : "light"
 
   return (
-    <LearnStoreProvider
-      key={session.id}
-      initialData={{
-        listId: session.listId,
-        queue: session.queue,
-        answerLog: session.answerLog,
-        isComplete: session.isComplete,
-      }}
-    >
-      <TopBar theme={theme} session={session} />
-      <div className={`flex min-h-dvh w-full items-center justify-center p-4 sm:p-6 ${theme === "dark" ? "bg-neutral-900" : "bg-neutral-50"}`}>
-        <LearnTool sessionId={session.id} theme={theme} />
-      </div>
-    </LearnStoreProvider>
+    <>
+      {stale && <StaleDialog session={session} />}
+      <LearnStoreProvider
+        key={session.id}
+        initialData={{
+          listId: session.listId,
+          queue: session.queue,
+          answerLog: session.answerLog,
+          isComplete: session.isComplete,
+        }}
+      >
+        <TopBar theme={theme} session={session} />
+        <div className={`flex min-h-dvh w-full items-center justify-center p-4 sm:p-6 ${theme === "dark" ? "bg-neutral-900" : "bg-neutral-50"}`}>
+          <LearnTool sessionId={session.id} theme={theme} />
+        </div>
+      </LearnStoreProvider>
+    </>
   )
 }
 
@@ -248,7 +312,6 @@ function LearnTool({ sessionId, theme }: { sessionId: string; theme: "light" | "
   const { queue, answerLog, isComplete, getCurrentQuestion, submitAnswer, feedback, dismissFeedback, considerRight, listId } = useLearnStore()
   const isFeedbackVisible = feedback?.isVisible ?? false
   const suppressOverlayEnterRef = useRef(false)
-
 
   const currentQuestion = getCurrentQuestion()
   const inputRef = useRef<HTMLInputElement>(null)

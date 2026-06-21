@@ -29,6 +29,7 @@ import {
 import { listSnapshot } from "~/lib/list";
 import { prisma } from "~/lib/db";
 import { logger as appLogger } from "~/lib/logger";
+import type { VersionData } from "~/server/routers/lists";
 
 export const learningRouter = createTRPCRouter({
   generateLearnSession: protectedProcedure
@@ -46,6 +47,7 @@ export const learningRouter = createTRPCRouter({
         select: {
           id: true,
           items: true,
+          versionData: true,
         },
       });
 
@@ -70,6 +72,7 @@ export const learningRouter = createTRPCRouter({
           listId: input.listId,
           userId: ctx.user.id,
           mode: input.mode,
+          commit: (list.versionData as VersionData).branches.main.headCommitId,
           queue,
           answerLog: [],
           isComplete: false,
@@ -108,6 +111,7 @@ export const learningRouter = createTRPCRouter({
           isComplete: true,
           createdAt: true,
           updatedAt: true,
+          commit: true,
         },
       });
 
@@ -133,6 +137,7 @@ export const learningRouter = createTRPCRouter({
         isComplete: session.isComplete,
         mode: session.mode as z.infer<typeof modes>,
         ask,
+        commit: session.commit,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       };

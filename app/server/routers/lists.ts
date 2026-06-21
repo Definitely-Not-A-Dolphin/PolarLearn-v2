@@ -98,7 +98,7 @@ const listRecordSchema = listDataSchema.extend({
 }).loose()
 
 type VersionCommit = z.infer<typeof versionCommitSchema>
-type VersionData = z.infer<typeof versionData>
+export type VersionData = z.infer<typeof versionData>
 type BranchRecord = z.infer<typeof branchRecordSchema>
 type ListRecord = z.infer<typeof listRecordSchema>
 
@@ -764,11 +764,7 @@ export const ListRouter = createTRPCRouter({
           items: updatedItems,
         }
       })
-
-      await ctx.prisma.learnSession.deleteMany({
-        where: { listId: input.id },
-      })
-
+      
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
         select: { recentItems: true },

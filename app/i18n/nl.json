@@ -56,7 +56,13 @@
       "answerWas": "Het antwoord was: {{answer}}",
       "considerRight": "Goed rekenen",
       "backToList": "Terug naar lijst",
-      "viewResults": "Resultaten bekijken"
+      "viewResults": "Resultaten bekijken",
+      "stale": {
+        "title": "Deze sessie is verouderd",
+        "description": "De lijst die je aan het leren bent is bijgewerkt sinds je deze sessie bent begonnen. We raden aan om een nieuwe sessie te starten zodat je de nieuwste versie van de lijst leert.",
+        "startNewSession": "Nieuwe sessie starten",
+        "continueAnyway": "Toch doorgaan"
+      }
     },
     "stats": {
       "noFinishedSessions": "Je hebt nog geen voltooide sessies voor deze lijst.",
