@@ -27,6 +27,7 @@ import { prisma } from "~/lib/db";
 import type { Route } from "./+types/layout";
 import i18n, { t } from "~/i18n";
 import { Badge } from "~/components/ui/badge";
+import { ShieldUser } from "lucide-react";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const userId = params.id;
@@ -146,14 +147,15 @@ export default function Layout() {
             {(user.displayUsername ?? user.name ?? "?").charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0">
-          <h1 className="truncate text-3xl font-bold">
+        <div>
+          <h1 className="text-3xl font-bold flex flex-row items-center gap-2">
             {user.displayUsername ?? user.name ?? "User"}
             {user.role === "admin" ? (
               <Badge
                 variant="outline"
                 className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
               >
+                <ShieldUser />
                 {t("userMenu.admin")}
               </Badge>
             ) : null}

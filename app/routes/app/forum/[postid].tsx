@@ -849,16 +849,25 @@ function ReplyCard({
         </Avatar>
         <div className="flex flex-col items-start justify-start">
           {authorId ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                void navigate(`/app/viewuser/${authorId}/lists`);
-              }}
-              className="font-medium text-neutral-800 underline-offset-2 hover:underline dark:text-neutral-200"
-            >
-              {authorLabel}
-            </button>
+            <div className="flex flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void navigate(`/app/viewuser/${authorId}/lists`);
+                }}
+                className="font-medium text-neutral-800 underline-offset-2 hover:underline dark:text-neutral-200"
+              >
+                {authorLabel}
+              </button>
+              <Badge
+                variant="outline"
+                className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
+              >
+                <ShieldUser />
+                {t("userMenu.admin")}
+              </Badge>
+            </div>
           ) : (
             <span className="font-medium">{authorLabel}</span>
           )}

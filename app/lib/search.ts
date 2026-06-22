@@ -39,8 +39,6 @@ export const searchUserSchema = z.object({
   username: z.string().nullable(),
   image: z.string().nullable(),
   role: z.string().nullable(),
-  banned: z.boolean().nullable(),
-  forumBanned: z.boolean().nullable(),
   createdAt: z.date(),
 });
 

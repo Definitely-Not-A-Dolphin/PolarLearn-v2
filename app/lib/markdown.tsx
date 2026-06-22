@@ -49,7 +49,7 @@ function GfmAlert({ type, children }: GfmAlertProps) {
   const label = ALERT_LABELS[type] || ALERT_LABELS.NOTE;
   return (
     <div
-      className="my-4 flex flex-col rounded-lg border-l-4 px-4 py-2"
+      className="my-4 flex flex-col border-l-4 px-4 py-2"
       style={{ borderColor: alert.color, background: 'rgba(24,26,32,0.7)' }}
     >
       <div className="flex items-center gap-2 font-semibold" style={{ color: alert.color }}>

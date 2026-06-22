@@ -11,15 +11,23 @@ import compress from "vite-plugin-compression";
 function prependBundleBanner() {
   return {
     name: "prepend-bundle-banner",
-    writeBundle(outputOptions: {
-      dir?: string;
-      file?: string;
-    }, bundle: Record<string, {
-      type: "chunk" | "asset";
-      fileName: string;
-    }>) {
+    writeBundle(
+      outputOptions: {
+        dir?: string;
+        file?: string;
+      },
+      bundle: Record<
+        string,
+        {
+          type: "chunk" | "asset";
+          fileName: string;
+        }
+      >,
+    ) {
       const bundleBanner = `/* PolarLearn V2 */\n/* We are open source! https://github.com/polarnl/polarlearn*/\n/* Licensed under AGPL3 */\n\n`;
-      const outDir = outputOptions.dir ?? (outputOptions.file ? dirname(outputOptions.file) : undefined);
+      const outDir =
+        outputOptions.dir ??
+        (outputOptions.file ? dirname(outputOptions.file) : undefined);
 
       if (!outDir) {
         return;
@@ -55,36 +63,12 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: [
-      '@napi-rs/snappy-linux-x64-gnu',
-      '@napi-rs/snappy-linux-x64-musl',
-      'snappy'
-    ]
+      "@napi-rs/snappy-linux-x64-gnu",
+      "@napi-rs/snappy-linux-x64-musl",
+      "snappy",
+    ],
   },
   build: {
     target: "esnext",
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
-            return "vendor-react";
-          }
-          if (id.includes("node_modules/gsap")) {
-            return "vendor-animations";
-          }
-          if (id.includes("node_modules/@trpc") || id.includes("node_modules/@tanstack/react-query")) {
-            return "vendor-data";
-          }
-          if (id.includes("node_modules/@polarnl") || id.includes("node_modules/radix-ui")) {
-            return "vendor-ui";
-          }
-          if (id.includes("node_modules/lucide-react")) {
-            return "vendor-icons";
-          }
-          if (id.includes("node_modules/")) {
-            return "vendor";
-          }
-        },
-      },
-    },
   },
 });
