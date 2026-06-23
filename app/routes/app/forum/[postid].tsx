@@ -860,13 +860,15 @@ function ReplyCard({
               >
                 {authorLabel}
               </button>
-              <Badge
-                variant="outline"
-                className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
-              >
-                <ShieldUser />
-                {t("userMenu.admin")}
-              </Badge>
+              {author.role === "admin" && (
+                <Badge
+                  variant="outline"
+                  className="h-auto rounded px-2 py-1 text-xs font-semibold bg-red-500 text-white"
+                >
+                  <ShieldUser />
+                  {t("userMenu.admin")}
+                </Badge>  
+              )}
             </div>
           ) : (
             <span className="font-medium">{authorLabel}</span>
