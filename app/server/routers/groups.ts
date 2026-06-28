@@ -169,7 +169,28 @@ export const groupsRouter = {
     if (!group) {
       throw new TRPCError({ code: 'NOT_FOUND' })
     }
-    return group
+    const userId = ctx.user?.id
+    const isMember = userId ? group.members.some((member) => member.id === userId) : false
+    const isModerator = userId ? group.moderators.some((mod) => mod.id === userId) : false
+    const isOwner = userId ? group.creatorId === userId : false
+    const isPending = userId ? group.approvalQueue.some((member) => member.id === userId) : false
+    if (group.approvalRequired && !isMember && !isPending) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+      })
+    }
+    const canSeeLists = !group.approvalRequired || isMember
+    const canSeeApprovalQueue = isOwner || isModerator
+
+    return {
+      ...group,
+      lists: canSeeLists ? group.lists : [],
+      approvalQueue: canSeeApprovalQueue ? group.approvalQueue : [],
+      isMember,
+      isModerator,
+      isOwner,
+      isPending,
+    }
   }),
   addListToGroup: protectedProcedure.input(
     groupListInput
