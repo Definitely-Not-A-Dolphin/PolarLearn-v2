@@ -2,7 +2,7 @@
   "name": "polarlearn-v2",
   "private": false,
   "type": "module",
-  "version": "v2.0-PRE-3",
+  "version": "v2.0-PRE-4",
   "scripts": {
     "build": "react-router build",
     "openapi": "tsx scripts/generate-openapi.ts",
